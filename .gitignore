@@ -46,3 +46,9 @@ public/uploads/*
 next-env.d.ts
 test-db.js
 seed-prod.js
+
+# Temp build scripts
+debug-render.js
+fix-db.js
+fix-google.bat
+update-render.js
