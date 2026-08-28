@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  username      String    @unique
+  email         String    @unique
+  password      String
+  avatar        String?
+  bio           String?
+  collegeEmail  String?   @unique
+  rollNumber    String?   @unique
+  department    String?
+  batchYear     Int?
+  coverPhoto    String?
+  createdAt     DateTime  @default(now())
+
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  saves         Save[]
+  stories       Story[]
+  sentMessages     Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
+  notifications    Notification[] @relation("NotifUser")
+  notifFrom        Notification[] @relation("NotifFrom")
+
+  followers     Follow[] @relation("Following")
+  following     Follow[] @relation("Follower")
+
+  @@map("users")
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  content   String?
+  images    String   @default("[]")
+  authorId  String
+  createdAt DateTime @default(now())
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+  saves    Save[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  postId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Like {
+  id     String @id @default(uuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
+
+model Follow {
+  id          String @id @default(uuid())
+  followerId  String
+  followingId String
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Story {
+  id        String   @id @default(uuid())
+  images    String   @default("[]")
+  authorId  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("stories")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  receiverId String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Save {
+  id     String @id @default(uuid())
+  postId String
+  userId String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("saves")
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  type       String
+  userId     String
+  fromUserId String
+  postId     String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user     User @relation("NotifUser", fields: [userId], references: [id], onDelete: Cascade)
+  fromUser User @relation("NotifFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
