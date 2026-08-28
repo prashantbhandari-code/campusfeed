@@ -52,3 +52,5 @@ debug-render.js
 fix-db.js
 fix-google.bat
 update-render.js
+check-env.js
+check-render.js
