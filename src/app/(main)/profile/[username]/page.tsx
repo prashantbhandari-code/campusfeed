@@ -6,7 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";
 import EditProfile from "@/components/EditProfile";
-import { HiOutlineMail, HiCamera, HiHeart } from "react-icons/hi";
+import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout } from "react-icons/hi";
+import { signOut } from "next-auth/react";
 import { parseImages } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -176,12 +177,21 @@ export default function ProfilePage() {
             </div>
             <div className="flex-1 text-center sm:text-left sm:pb-1">
               {isSelf ? (
-                <button
-                  onClick={() => setShowEditProfile(true)}
-                  className="px-5 py-1.5 border border-white/20 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all"
-                >
-                  Edit Profile
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowEditProfile(true)}
+                    className="px-5 py-1.5 border border-white/20 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="px-3 py-1.5 border border-red-500/30 text-red-400 rounded-lg text-sm font-semibold hover:bg-red-500/10 transition-all"
+                    title="Sign out"
+                  >
+                    <HiOutlineLogout className="text-lg" />
+                  </button>
+                </div>
               ) : (
                 <div className="flex gap-2 justify-center sm:justify-start">
                   <button
