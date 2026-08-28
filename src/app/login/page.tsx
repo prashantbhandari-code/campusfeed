@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { HiAcademicCap, HiCheckCircle } from "react-icons/hi";
+import { HiAcademicCap, HiCheckCircle, HiMail } from "react-icons/hi";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const justVerified = searchParams.get("verified") === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +28,11 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        if (result.error.includes("verify")) {
+          toast.error("Please verify your email first. Check your inbox!");
+        } else {
+          toast.error("Invalid email or password");
+        }
       } else {
         toast.success("Welcome back to CampusConnect!");
         router.push("/feed");
@@ -51,6 +58,13 @@ export default function LoginPage() {
             <span className="text-sm text-campus-300 font-medium">KIIT Students Only 🔒</span>
           </div>
         </div>
+
+        {justVerified && (
+          <div className="mb-4 p-3 bg-green-600/20 border border-green-500/30 rounded-xl flex items-center gap-2">
+            <HiCheckCircle className="text-green-400" />
+            <span className="text-sm text-green-300">Email verified! You can now sign in.</span>
+          </div>
+        )}
 
         <div className="glass rounded-2xl p-8 space-y-5">
           {/* Google Sign-In Button */}

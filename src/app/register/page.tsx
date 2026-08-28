@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { HiAcademicCap, HiCheckCircle } from "react-icons/hi";
+import { HiAcademicCap, HiCheckCircle, HiMail } from "react-icons/hi";
 
 const DEPARTMENTS = [
   "CSE", "CSE (Data Science)", "CSE (AI & ML)", "CSE (IoT)", "CSE (Cyber Security)",
@@ -25,6 +25,8 @@ export default function RegisterPage() {
   const [department, setDepartment] = useState("");
   const [batchYear, setBatchYear] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const isValidEmail = email.endsWith("@kiit.ac.in");
 
@@ -46,19 +48,10 @@ export default function RegisterPage() {
         return;
       }
 
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        toast.error("Account created but sign-in failed. Try logging in.");
-        router.push("/login");
-      } else {
-        toast.success("Welcome to CampusConnect!");
-        router.push("/feed");
-      }
+      // Show email verification message
+      setRegisteredEmail(email);
+      setRegistered(true);
+      toast.success("Account created! Check your email to verify.");
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -81,6 +74,25 @@ export default function RegisterPage() {
           </div>
         </div>
 
+        {registered ? (
+          <div className="glass rounded-2xl p-8 text-center">
+            <HiMail className="text-5xl text-primary-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Check your email!</h2>
+            <p className="text-gray-400 mb-2">
+              We sent a verification link to
+            </p>
+            <p className="text-white font-semibold mb-4">{registeredEmail}</p>
+            <p className="text-gray-500 text-sm mb-6">
+              Click the link in the email to verify your account, then come back to sign in.
+            </p>
+            <Link
+              href="/login"
+              className="inline-block px-6 py-3 bg-primary-600 hover:bg-primary-700 rounded-xl font-semibold transition-colors"
+            >
+              Go to Login
+            </Link>
+          </div>
+        ) : (
         <div className="glass rounded-2xl p-8 space-y-5">
           {/* Google Sign-In Button */}
           <button
@@ -239,6 +251,7 @@ export default function RegisterPage() {
           </button>
           </form>
         </div>
+        )}
 
         <p className="text-center mt-6 text-gray-400">
           Already have an account?{" "}

@@ -34,6 +34,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid credentials');
         }
 
+        // Block unverified users
+        if (!user.verified) {
+          throw new Error('Please verify your email first');
+        }
+
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
           user.password
@@ -92,6 +97,7 @@ export const authOptions: NextAuthOptions = {
               password: '', // No password for OAuth users
               avatar: user.image,
               collegeEmail: email,
+              verified: true, // OAuth users are auto-verified
             },
           });
           

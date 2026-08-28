@@ -20,6 +20,7 @@ model User {
   department    String?
   batchYear     Int?
   coverPhoto    String?
+  verified      Boolean   @default(false)
   createdAt     DateTime  @default(now())
 
   posts         Post[]
@@ -144,6 +145,17 @@ model Notification {
   fromUser User @relation("NotifFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  type      String   // email_verify, password_reset
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("verification_tokens")
 }
 
 model Group {
