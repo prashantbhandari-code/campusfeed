@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma";
-import { generateVerificationToken, sendVerificationEmail } from "@/lib/email";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    // Dynamic imports to avoid build-time database access
+    const { default: prisma } = await import("@/lib/prisma");
+    const { generateVerificationToken, sendVerificationEmail } = await import("@/lib/email");
+
     const { name, username, email, password, rollNumber, department, batchYear } = await req.json();
 
     if (!name || !username || !email || !password) {
