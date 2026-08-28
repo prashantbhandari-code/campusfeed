@@ -1,21 +1,19 @@
-import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  try {
-    // Dynamic imports to avoid build-time database access
-    const { default: prisma } = await import("@/lib/prisma");
-    const { generateVerificationToken, sendVerificationEmail } = await import("@/lib/email");
+  // All imports deferred to runtime — avoids build-time DB connection
+  const { NextResponse } = await import("next/server");
+  const bcrypt = await import("bcryptjs");
+  const { default: prisma } = await import("@/lib/prisma");
+  const { generateVerificationToken, sendVerificationEmail } = await import("@/lib/email");
 
+  try {
     const { name, username, email, password, rollNumber, department, batchYear } = await req.json();
 
     if (!name || !username || !email || !password) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
 
-    // KIIT email gate
     if (!email.endsWith("@kiit.ac.in")) {
       return NextResponse.json(
         { error: "Only @kiit.ac.in college emails are allowed" },
@@ -57,13 +55,11 @@ export async function POST(req: Request) {
       select: { id: true, name: true, username: true, email: true },
     });
 
-    // Send verification email
     try {
       const token = await generateVerificationToken(email);
       await sendVerificationEmail(email, token);
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
-      // Don't fail registration if email fails
     }
 
     return NextResponse.json({ ...user, message: "Verification email sent" }, { status: 201 });
