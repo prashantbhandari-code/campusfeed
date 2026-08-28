@@ -3,8 +3,9 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
+import { Suspense } from "react";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const error = searchParams.get("error");
@@ -47,5 +48,17 @@ export default function VerifyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }
