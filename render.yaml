@@ -4,26 +4,5 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npx prisma generate --no-engine && npm run build
-    startCommand: npx prisma generate && npx prisma db push --accept-data-loss && npm run start
+    startCommand: npx prisma generate && npx prisma db push --accept-data-loss --skip-generate && npm run start
     healthCheckPath: /
-    envVars:
-      - key: NEXTAUTH_SECRET
-        generateValue: true
-      - key: NEXTAUTH_URL
-        value: https://campusconnect-osm1.onrender.com
-      - key: DATABASE_URL
-        value: postgresql://postgres.cddlyuhoehvcfygychqy:9807855954campus@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        sync: false
-      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: GITHUB_ID
-        sync: false
-      - key: GITHUB_SECRET
-        sync: false
