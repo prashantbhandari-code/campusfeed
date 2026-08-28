@@ -3,6 +3,13 @@ services:
     name: campusconnect
     env: node
     plan: free
-    buildCommand: npm install && npx prisma generate --no-engine && npm run build
-    startCommand: npx prisma generate && npx prisma db push --accept-data-loss --skip-generate && npm run start
+    buildCommand: npm install && npm run build
+    startCommand: npx prisma db push --accept-data-loss --skip-generate && npm run start
     healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres.cddlyuhoehvcfygychqy:9807855954campus@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        value: https://campusconnect-osm1.onrender.com
