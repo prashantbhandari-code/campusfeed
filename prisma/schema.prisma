@@ -34,6 +34,9 @@ model User {
 
   followers     Follow[] @relation("Following")
   following     Follow[] @relation("Follower")
+  groups        Group[]
+  groupMembers  GroupMember[]
+  groupPosts    GroupPost[]
 
   @@map("users")
 }
@@ -141,4 +144,52 @@ model Notification {
   fromUser User @relation("NotifFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  avatar      String?
+  coverPhoto  String?
+  type        String   @default("custom") // department, batch, custom
+  department  String?
+  batchYear   Int?
+  createdById String
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  createdBy User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  members   GroupMember[]
+  posts     GroupPost[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id      String   @id @default(uuid())
+  groupId String
+  userId  String
+  role    String   @default("member") // admin, member
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model GroupPost {
+  id        String   @id @default(uuid())
+  content   String?
+  images    String   @default("[]")
+  groupId   String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("group_posts")
 }

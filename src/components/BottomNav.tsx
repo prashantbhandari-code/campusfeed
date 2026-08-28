@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { HiHome, HiSearch, HiChat, HiBell, HiPlusCircle, HiUser } from "react-icons/hi";
+import { HiHome, HiSearch, HiChat, HiBell, HiUser, HiOutlineUserGroup } from "react-icons/hi";
 
 export default function BottomNav() {
   const { data: session } = useSession();
@@ -13,6 +13,7 @@ export default function BottomNav() {
   const navItems = [
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Search" },
+    { href: "/groups", icon: HiOutlineUserGroup, label: "Groups" },
     { href: "/messages", icon: HiChat, label: "Chat" },
     { href: "/notifications", icon: HiBell, label: "Alerts" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
