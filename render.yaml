@@ -12,7 +12,7 @@ services:
       - key: NEXTAUTH_URL
         value: https://campusconnect-osm1.onrender.com
       - key: DATABASE_URL
-        value: file:./dev.db
+        value: postgresql://postgres.cddlyuhoehvcfygychqy:9807855954campus@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
