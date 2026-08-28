@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { supabaseAdmin } from "@/lib/supabase";
 import { v4 as uuid } from "uuid";
 
 export async function POST(req: Request) {
@@ -18,18 +17,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `${uuid()}.${ext}`;
+    const filePath = `uploads/${filename}`;
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${uuid()}.${ext}`;
-    const uploadDir = join(process.cwd(), "public", "uploads");
-    const filepath = join(uploadDir, filename);
+    const { error } = await supabaseAdmin.storage
+      .from("campusconnect")
+      .upload(filePath, buffer, {
+        contentType: file.type || `image/${ext}`,
+        upsert: false,
+      });
 
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(filepath, buffer);
+    if (error) {
+      console.error("Supabase upload error:", error);
+      return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    }
 
-    return NextResponse.json({ url: `/uploads/${filename}` }, { status: 201 });
+    const { data: urlData } = supabaseAdmin.storage
+      .from("campusconnect")
+      .getPublicUrl(filePath);
+
+    return NextResponse.json({ url: urlData.publicUrl }, { status: 201 });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
