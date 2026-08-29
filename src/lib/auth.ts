@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import prisma from './prisma';
 
 export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -69,7 +70,8 @@ export const authOptions: NextAuthOptions = {
         
         // Only allow @kiit.ac.in emails
         if (!email.endsWith('@kiit.ac.in')) {
-          return false;
+          console.error(`[Auth] Rejected non-KIIT email: ${email}`);
+          return `/login?error=not-kiit`;
         }
 
         // Check if user exists
