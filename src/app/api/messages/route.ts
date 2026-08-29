@@ -54,16 +54,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { receiverId, content } = await req.json();
-    if (!receiverId || !content) {
-      return NextResponse.json({ error: "Receiver and content required" }, { status: 400 });
+    const { receiverId, content, fileUrl, fileType, fileName } = await req.json();
+    if (!receiverId) {
+      return NextResponse.json({ error: "Receiver required" }, { status: 400 });
+    }
+    if (!content && !fileUrl) {
+      return NextResponse.json({ error: "Content or file required" }, { status: 400 });
     }
 
     const message = await prisma.message.create({
       data: {
-        content,
+        content: content || "",
         senderId: (session.user as any).id,
         receiverId,
+        fileUrl: fileUrl || null,
+        fileType: fileType || null,
+        fileName: fileName || null,
       },
       include: {
         sender: { select: { id: true, name: true, username: true, avatar: true } },

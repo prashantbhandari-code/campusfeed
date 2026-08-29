@@ -1,10 +1,12 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { v4 as uuid } from "uuid";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
@@ -19,32 +21,47 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${uuid()}.${ext}`;
-    const filePath = `uploads/${filename}`;
+    // Determine file type category
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "svg"];
+    const audioExts = ["mp3", "wav", "ogg", "m4a", "aac", "opus", "webm"];
+    const videoExts = ["mp4", "mov", "avi", "mkv", "webm"];
+    const docExts = ["pdf", "doc", "docx", "txt", "xls", "xlsx", "ppt", "pptx", "zip", "rar"];
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let fileType = "document";
+    if (imageExts.includes(ext)) fileType = "image";
+    else if (audioExts.includes(ext)) fileType = "audio";
+    else if (videoExts.includes(ext)) fileType = "video";
 
-    const { error } = await supabaseAdmin.storage
-      .from("campusconnect")
+    // Upload to Supabase Storage
+    const filePath = `chat/${(session.user as any).id}/${Date.now()}-${file.name}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    const { data, error } = await supabase.storage
+      .from("uploads")
       .upload(filePath, buffer, {
-        contentType: file.type || `image/${ext}`,
+        contentType: file.type,
         upsert: false,
       });
 
     if (error) {
-      console.error("Supabase upload error:", error);
+      console.error("Upload error:", error);
       return NextResponse.json({ error: "Upload failed" }, { status: 500 });
     }
 
-    const { data: urlData } = supabaseAdmin.storage
-      .from("campusconnect")
-      .getPublicUrl(filePath);
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("uploads")
+      .getPublicUrl(data.path);
 
-    return NextResponse.json({ url: urlData.publicUrl }, { status: 201 });
+    return NextResponse.json({
+      url: urlData.publicUrl,
+      fileType,
+      fileName: file.name,
+      fileSize: file.size,
+    });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

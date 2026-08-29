@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
-import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera } from "react-icons/hi";
+import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX } from "react-icons/hi";
 import CallModal from "@/components/CallModal";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -20,6 +20,14 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [recording, setRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+
   const [showOutgoingCall, setShowOutgoingCall] = useState(false);
   const [outgoingCallType, setOutgoingCallType] = useState<"audio" | "video">("audio");
   const [showIncomingCall, setShowIncomingCall] = useState(false);
@@ -100,19 +108,64 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !previewFile) return;
 
     try {
+      const body: any = { receiverId: userId, content: newMessage };
+      if (previewFile) {
+        body.fileUrl = previewFile.url;
+        body.fileType = previewFile.type;
+        body.fileName = previewFile.name;
+      }
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ receiverId: userId, content: newMessage }),
+        body: JSON.stringify(body),
       });
       const msg = await res.json();
       setMessages([...messages, msg]);
       setNewMessage("");
+      setPreviewFile(null);
       stopTyping();
     } catch {}
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setPreviewFile({ url: data.url, name: data.fileName, type: data.fileType });
+      }
+    } catch {} finally {
+      setUploading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+        await handleFileUpload(file);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      recorder.start();
+      setRecording(true);
+    } catch {}
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
   };
 
   return (
@@ -151,15 +204,38 @@ export default function ChatPage() {
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[70%] ${isMine ? "order-2" : ""}`}>
                 {!isMine && <UserAvatar user={msg.sender} size="sm" />}
-                <div
-                  className={`mt-1 px-4 py-2 rounded-2xl text-sm ${
-                    isMine
-                      ? "bg-primary-600 text-white rounded-br-md"
-                      : "bg-dark-600 text-gray-200 rounded-bl-md"
-                  }`}
-                >
-                  {msg.content}
-                </div>
+                {msg.fileUrl && (
+                  <div className="mt-1 mb-1">
+                    {msg.fileType === "image" ? (
+                      <img src={msg.fileUrl} alt="" className="rounded-2xl max-w-[250px] max-h-[300px] object-cover cursor-pointer" onClick={() => window.open(msg.fileUrl, "_blank")} />
+                    ) : msg.fileType === "audio" ? (
+                      <div className="bg-dark-700 rounded-2xl p-3 min-w-[200px]">
+                        <audio controls src={msg.fileUrl} className="w-full h-8" style={{ filter: "invert(0.8)" }} />
+                        {msg.fileName && <p className="text-[10px] text-gray-500 mt-1 truncate">{msg.fileName}</p>}
+                      </div>
+                    ) : msg.fileType === "video" ? (
+                      <video controls src={msg.fileUrl} className="rounded-2xl max-w-[280px] max-h-[300px]" />
+                    ) : (
+                      <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-3 rounded-2xl ${isMine ? "bg-primary-700" : "bg-dark-700"} hover:opacity-80 transition-all`}>                        <HiDocumentText className="w-8 h-8 text-blue-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{msg.fileName || "File"}</p>
+                          <p className="text-[10px] text-gray-400">Tap to download</p>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+                )}
+                {msg.content && (
+                  <div
+                    className={`mt-1 px-4 py-2 rounded-2xl text-sm ${
+                      isMine
+                        ? "bg-primary-600 text-white rounded-br-md"
+                        : "bg-dark-600 text-gray-200 rounded-bl-md"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                )}
                 <p className={`text-[10px] text-gray-500 mt-1 ${isMine ? "text-right" : ""}`}>
                   {formatDate(msg.createdAt)}
                 </p>
@@ -180,18 +256,51 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* File preview */}
+      {previewFile && (
+        <div className="glass border-t border-white/10 px-4 py-2 flex items-center gap-2">
+          {previewFile.type === "image" ? (
+            <img src={previewFile.url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+          ) : previewFile.type === "audio" ? (
+            <HiMusicNote className="w-6 h-6 text-green-400" />
+          ) : (
+            <HiDocumentText className="w-6 h-6 text-blue-400" />
+          )}
+          <span className="text-sm text-gray-300 truncate flex-1">{previewFile.name}</span>
+          <button onClick={() => setPreviewFile(null)} className="text-gray-500 hover:text-red-400"><HiX className="w-5 h-5" /></button>
+        </div>
+      )}
+
       {/* Input — pinned to bottom */}
-      <form onSubmit={handleSend} className="glass border-t border-white/10 p-3 flex gap-3 flex-shrink-0 mb-16 md:mb-0">
+      <form onSubmit={handleSend} className="glass border-t border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 md:mb-0">
+        <input type="file" ref={fileInputRef} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
+        <input type="file" ref={audioInputRef} className="hidden" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
+
+        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-all flex-shrink-0" title="Attach file">
+          <HiPaperClip className="text-xl" />
+        </button>
+
+        {recording ? (
+          <button type="button" onClick={stopRecording} className="w-10 h-10 rounded-full bg-red-500 animate-pulse flex items-center justify-center flex-shrink-0">
+            <HiStop className="text-xl text-white" />
+          </button>
+        ) : (
+          <button type="button" onClick={startRecording} className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-all flex-shrink-0" title="Voice note">
+            <HiMicrophone className="text-xl" />
+          </button>
+        )}
+
         <input
           type="text"
           value={newMessage}
           onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
-          placeholder="Type a message..."
-          className="flex-1 bg-dark-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          placeholder={uploading ? "Uploading..." : "Type a message..."}
+          disabled={uploading}
+          className="flex-1 bg-dark-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
         />
         <button
           type="submit"
-          disabled={!newMessage.trim()}
+          disabled={!newMessage.trim() && !previewFile}
           className="w-12 h-12 bg-primary-600 hover:bg-primary-700 rounded-xl flex items-center justify-center transition-all disabled:opacity-50 flex-shrink-0"
         >
           <HiPaperAirplane className="text-xl -rotate-45" />
