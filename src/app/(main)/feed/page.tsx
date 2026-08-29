@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import PostCard from "@/components/PostCard";
-import CreatePost from "@/components/CreatePost";
 import StoryBar from "@/components/StoryBar";
 import UserAvatar from "@/components/UserAvatar";
 import Link from "next/link";
@@ -41,8 +40,6 @@ export default function FeedPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <StoryBar />
-
-      <CreatePost onPostCreated={(post) => setPosts([post, ...posts])} />
 
       {loading ? (
         <div className="space-y-4">
