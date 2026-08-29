@@ -34,15 +34,9 @@ export default function Navbar() {
   // Desktop nav: only notifications, profile, sign out — sidebar handles main nav
   return (
     <>
-      {/* Desktop Navbar — minimal: logo left, profile + signout right */}
+      {/* Desktop Navbar — no logo (sidebar has it), just bell + profile + signout */}
       <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10 hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/feed" className="flex items-center gap-2 text-2xl font-bold text-gradient">
-            <HiAcademicCap className="text-2xl" />
-            CampusConnect
-          </Link>
-
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-end gap-2">
             <Link
               href="/notifications"
               className={`relative flex items-center gap-1 px-3 py-2 rounded-xl transition-all ${
@@ -74,7 +68,6 @@ export default function Navbar() {
               <HiLogout className="text-xl" />
             </button>
           </div>
-        </div>
       </nav>
 
       {/* Mobile Navbar — logo only, BottomNav handles navigation */}
