@@ -86,11 +86,12 @@ export default function FeedPage() {
     } catch {}
   };
 
-  return (
-    <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
+  return (      <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
       {/* Main Feed */}
       <div className="flex-1 max-w-2xl">
         <StoryBar />
+
+        <div className="border-b border-gray-200 dark:border-white/5 mb-4" />
 
         {/* Pull to refresh indicator */}
         {refreshing && (
@@ -157,7 +158,7 @@ export default function FeedPage() {
       {/* Sidebar Suggestions */}
       <div className="hidden lg:block w-80 flex-shrink-0">
         <div className="sticky top-20">
-          <div className="glass rounded-2xl p-4">
+          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Suggested for you</h3>
             {suggestions.map((s: any) => (
               <Link

@@ -115,9 +115,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
         <div
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => router.push(`/profile/${post.author.username}`)}

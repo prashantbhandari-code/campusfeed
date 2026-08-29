@@ -87,7 +87,7 @@ export default function StoryBar() {
 
   return (
     <>
-      <div className="glass rounded-2xl p-4 mb-4">
+      <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none">
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* My Story */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => fileRef.current?.click()}>
