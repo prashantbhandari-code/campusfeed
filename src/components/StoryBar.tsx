@@ -57,9 +57,22 @@ export default function StoryBar() {
     setCurrentImageIndex(0);
   };
 
+  // Helper to safely get story images
+  const getStoryImages = (story: any): string[] => {
+    if (!story?.images) return [];
+    // Handle both JSON string and array formats
+    if (Array.isArray(story.images)) return story.images;
+    try {
+      const parsed = JSON.parse(story.images);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
   useEffect(() => {
     if (!viewingStory) return;
-    const images = parseImages(viewingStory.images);
+    const images = getStoryImages(viewingStory);
     if (images.length <= 1) {
       const timer = setTimeout(() => setViewingStory(null), 5000);
       return () => clearTimeout(timer);
@@ -126,11 +139,17 @@ export default function StoryBar() {
           onClick={() => setViewingStory(null)}
         >
           <div className="relative w-full max-w-md h-[80vh] rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={parseImages(viewingStory.images)[currentImageIndex]}
-              alt=""
-              className="w-full h-full object-cover"
-            />
+            {(() => {
+    const imgs = getStoryImages(viewingStory);
+    const src = imgs[currentImageIndex];
+    return src ? (
+      <img src={src} alt="" className="w-full h-full object-cover" />
+    ) : (
+      <div className="w-full h-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+        <span className="text-white text-6xl">📖</span>
+      </div>
+    );
+  })()}
             <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
               <div className="flex items-center gap-3">
                 <UserAvatar user={viewingStory.author} size="sm" />
@@ -141,7 +160,7 @@ export default function StoryBar() {
               </div>
               {/* Progress bars */}
               <div className="flex gap-1 mt-3">
-                {parseImages(viewingStory.images).map((_: any, i: number) => (
+                {getStoryImages(viewingStory).map((_: any, i: number) => (
                   <div key={i} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
                     <div
                       className={`h-full bg-white rounded-full transition-all duration-300 ${
