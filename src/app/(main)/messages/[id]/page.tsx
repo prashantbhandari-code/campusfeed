@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
-import { HiArrowLeft, HiPaperAirplane } from "react-icons/hi";
+import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera } from "react-icons/hi";
+import CallModal from "@/components/CallModal";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
@@ -19,6 +20,10 @@ export default function ChatPage() {
   const [otherUser, setOtherUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
+  const [showOutgoingCall, setShowOutgoingCall] = useState(false);
+  const [outgoingCallType, setOutgoingCallType] = useState<"audio" | "video">("audio");
+  const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasTypedRef = useRef(false);
@@ -42,6 +47,11 @@ export default function ChatPage() {
     hasTypedRef.current = false;
     emit("stop-typing", { receiverId: userId });
   };
+
+  useSocketEvent("incoming-call", (data: any) => {
+    setIncomingCallData(data);
+    setShowIncomingCall(true);
+  }, []);
 
   useSocketEvent("new-message", (msg: any) => {
     if (msg.sender.id === userId || msg.receiverId === user?.id) {
@@ -118,12 +128,16 @@ export default function ChatPage() {
         {otherUser && (
           <>
             <UserAvatar user={otherUser} size="md" />
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">{otherUser.name}</p>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-gray-500">@{otherUser.username}</p>
                 <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-400" : "bg-gray-500"}`} />
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => { setOutgoingCallType("audio"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-white/5 hover:bg-green-500/20 text-gray-400 hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>
+              <button onClick={() => { setOutgoingCallType("video"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 flex items-center justify-center transition-all" title="Video call"><HiVideoCamera className="text-lg" /></button>
             </div>
           </>
         )}
@@ -183,6 +197,13 @@ export default function ChatPage() {
           <HiPaperAirplane className="text-xl -rotate-45" />
         </button>
       </form>
+
+      {showOutgoingCall && otherUser && user && (
+        <CallModal isOpen={showOutgoingCall} onClose={() => setShowOutgoingCall(false)} otherUser={otherUser} currentUser={user} callType={outgoingCallType} />
+      )}
+      {showIncomingCall && incomingCallData && user && (
+        <CallModal isOpen={showIncomingCall} onClose={() => { setShowIncomingCall(false); setIncomingCallData(null); }} otherUser={{ id: incomingCallData.callerId, name: incomingCallData.callerName, username: "", avatar: incomingCallData.callerAvatar }} currentUser={user} callType={incomingCallData.callType} isIncoming offer={incomingCallData.offer} />
+      )}
     </div>
   );
 }
