@@ -4,7 +4,6 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiLogout, HiAcademicCap } from "react-icons/hi";
-import { signOut } from "next-auth/react";
 
 export default function Sidebar() {
   const { data: session } = useSession();
@@ -21,8 +20,8 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 flex-col p-4 border-r border-white/5">
-      <div className="flex items-center gap-2 px-4 py-4 mb-2">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-white/5 bg-dark-900 z-40">
+      <div className="flex items-center gap-2 px-4 py-6 mb-4">
         <HiAcademicCap className="text-2xl text-campus-400" />
         <span className="text-xl font-bold text-gradient">CampusConnect</span>
       </div>
@@ -48,7 +47,7 @@ export default function Sidebar() {
 
       <div className="border-t border-white/5 pt-4">
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => window.location.href = "/api/auth/signout?callbackUrl=/login"}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-all w-full"
         >
           <HiLogout className="text-xl" />
