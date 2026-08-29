@@ -62,9 +62,21 @@ export async function POST(
       select: { id: true, name: true, username: true, avatar: true },
     });
 
-    await prisma.notification.create({
-      data: { type: "follow", userId: followingId, fromUserId: followerId },
+    // Deduplicate: only create if no recent follow notification exists
+    const recentNotif = await prisma.notification.findFirst({
+      where: {
+        type: "follow",
+        userId: followingId,
+        fromUserId: followerId,
+        createdAt: { gte: new Date(Date.now() - 60 * 1000) }, // last 1 min
+      },
     });
+
+    if (!recentNotif) {
+      await prisma.notification.create({
+        data: { type: "follow", userId: followingId, fromUserId: followerId },
+      });
+    }
 
     emitToUser(followingId, "new-notification", {
       type: "follow",
