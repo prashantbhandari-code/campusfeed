@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import PostCard from "@/components/PostCard";
 import StoryBar from "@/components/StoryBar";
@@ -11,22 +11,71 @@ export default function FeedPage() {
   const { data: session } = useSession();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const user = session?.user as any;
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(1);
     fetchSuggestions();
   }, []);
 
-  const fetchPosts = async () => {
+  // Infinite scroll observer
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => observerRef.current?.disconnect();
+  }, [hasMore, loadingMore, page]);
+
+  const fetchPosts = async (pageNum: number) => {
     try {
-      const res = await fetch("/api/posts");
+      const res = await fetch(`/api/posts?page=${pageNum}`);
       const data = await res.json();
-      setPosts(data);
+      if (pageNum === 1) {
+        setPosts(data);
+      } else {
+        setPosts((prev) => [...prev, ...data]);
+      }
+      setHasMore(data.length === 10); // If less than 10, no more posts
     } catch {} finally {
       setLoading(false);
     }
+  };
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    await fetchPosts(nextPage);
+    setPage(nextPage);
+    setLoadingMore(false);
+  }, [page, loadingMore, hasMore]);
+
+  // Pull to refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setPage(1);
+    setHasMore(true);
+    await fetchPosts(1);
+    setRefreshing(false);
   };
 
   const fetchSuggestions = async () => {
@@ -39,9 +88,24 @@ export default function FeedPage() {
 
   return (
     <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
-      {/* Main Feed — centered, constrained width */}
+      {/* Main Feed */}
       <div className="flex-1 max-w-2xl">
         <StoryBar />
+
+        {/* Pull to refresh indicator */}
+        {refreshing && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent" />
+          </div>
+        )}
+
+        {/* Refresh button (mobile) */}
+        <button
+          onClick={handleRefresh}
+          className="md:hidden w-full text-center py-2 text-sm text-gray-400 hover:text-white mb-2"
+        >
+          {refreshing ? "Refreshing..." : "Pull to refresh"}
+        </button>
 
         {loading ? (
           <div className="space-y-4">
@@ -75,11 +139,22 @@ export default function FeedPage() {
             {posts.map((post) => (
               <PostCard key={post.id} post={post} onDelete={() => setPosts(posts.filter((p) => p.id !== post.id))} />
             ))}
+            {/* Load more trigger */}
+            <div ref={loadMoreRef} className="py-4">
+              {loadingMore && (
+                <div className="flex justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent" />
+                </div>
+              )}
+              {!hasMore && posts.length > 0 && (
+                <p className="text-center text-gray-500 text-sm">No more posts</p>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Sidebar Suggestions — sticky, right side, hidden on small screens */}
+      {/* Sidebar Suggestions */}
       <div className="hidden lg:block w-80 flex-shrink-0">
         <div className="sticky top-20">
           <div className="glass rounded-2xl p-4">

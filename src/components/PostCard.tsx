@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "./UserAvatar";
-import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineShare, HiBookmark } from "react-icons/hi";
+import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineShare, HiBookmark, HiDotsHorizontal, HiOutlineTrash, HiOutlinePencil, HiOutlineBan } from "react-icons/hi";
 import { formatDate, parseImages } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -25,6 +25,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [heartAnimation, setHeartAnimation] = useState(false);
   const [doubleTapHeart, setDoubleTapHeart] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(post.content || "");
   const lastTapRef = useRef(0);
   const user = session?.user as any;
   const images = parseImages(post.images);
@@ -43,29 +46,28 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   };
 
   const handleLike = async () => {
+    const wasLiked = isLiked;
+    const prevCount = likesCount;
+    setIsLiked(!wasLiked);
+    setLikesCount(wasLiked ? prevCount - 1 : prevCount + 1);
+    if (!wasLiked) { setHeartAnimation(true); setTimeout(() => setHeartAnimation(false), 300); }
     try {
       const res = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
       const data = await res.json();
       setIsLiked(data.isLiked);
       setLikesCount(data.likesCount);
-      if (data.isLiked) {
-        setHeartAnimation(true);
-        setTimeout(() => setHeartAnimation(false), 300);
-      }
-    } catch {
-      toast.error("Failed to like post");
-    }
+    } catch { setIsLiked(wasLiked); setLikesCount(prevCount); toast.error("Failed"); }
   };
 
   const handleSave = async () => {
+    const wasSaved = isSaved;
+    setIsSaved(!wasSaved);
+    toast.success(wasSaved ? "Removed" : "Saved");
     try {
       const res = await fetch(`/api/posts/${post.id}/save`, { method: "POST" });
       const data = await res.json();
       setIsSaved(data.isSaved);
-      toast.success(data.isSaved ? "Saved" : "Removed from saved");
-    } catch {
-      toast.error("Failed to save post");
-    }
+    } catch { setIsSaved(wasSaved); toast.error("Failed"); }
   };
 
   const handleComment = async (e: React.FormEvent) => {
@@ -97,6 +99,21 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
+  
+  const handleEdit = async () => {
+    if (!editContent.trim()) return;
+    try {
+      const res = await fetch(`/api/posts/${post.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: editContent }) });
+      if (res.ok) { post.content = editContent; setIsEditing(false); toast.success("Updated"); }
+    } catch { toast.error("Failed"); }
+  };
+
+  const handleBlock = async () => {
+    if (!confirm(`Block ${post.author.name}?`)) return;
+    try { await fetch(`/api/users/${post.author.id}/block`, { method: "POST" }); onDelete?.(); toast.success("Blocked"); } catch { toast.error("Failed"); }
+    setShowMenu(false);
+  };
+
   return (
     <div className="mb-4">
       {/* Header */}
@@ -113,11 +130,16 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             )}
           </div>
         </div>
-        {user?.id === post.authorId && (
-          <button onClick={handleDelete} className="text-gray-500 hover:text-red-400 p-2 rounded-lg hover:bg-white/5 text-sm">
-            ···
-          </button>
-        )}
+        <div className="relative">
+          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-white/5"><HiDotsHorizontal className="text-xl" /></button>
+          {showMenu && (
+            <div className="absolute right-0 top-10 bg-dark-700 border border-white/10 rounded-xl shadow-xl py-2 min-w-[160px] z-50">
+              {user?.id === post.authorId && <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-white/5"><HiOutlinePencil className="w-4 h-4" /> Edit</button>}
+              {user?.id === post.authorId && <button onClick={() => { handleDelete(); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/5"><HiOutlineTrash className="w-4 h-4" /> Delete</button>}
+              {user?.id !== post.authorId && <button onClick={handleBlock} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/5"><HiOutlineBan className="w-4 h-4" /> Block</button>}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Images — full width */}
@@ -128,13 +150,13 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         >
           {images.length === 1 ? (
             <div className="relative aspect-square">
-              <img src={images[0]} alt="" className="w-full h-full object-cover" />
+              <img src={images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-0.5">
               {images.slice(0, 4).map((img, i) => (
                 <div key={i} className="relative aspect-square">
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
                   {i === 3 && images.length > 4 && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <span className="text-white text-2xl font-bold">+{images.length - 4}</span>
@@ -154,9 +176,17 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       )}
 
       {/* Content */}
-      {post.content && (
+      {isEditing ? (
+        <div className="px-4 py-3">
+          <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-dark-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none" rows={3} maxLength={5000} />
+          <div className="flex justify-end gap-2 mt-2">
+            <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-sm text-gray-400 hover:text-white">Cancel</button>
+            <button onClick={handleEdit} className="px-3 py-1 text-sm bg-primary-600 hover:bg-primary-700 rounded-lg text-white">Save</button>
+          </div>
+        </div>
+      ) : post.content ? (
         <p className="px-4 py-3 text-sm text-gray-200 whitespace-pre-wrap">{post.content}</p>
-      )}
+      ) : null}
 
       {/* Actions Bar — Instagram style */}
       <div className="px-4 py-2 flex items-center justify-between">
