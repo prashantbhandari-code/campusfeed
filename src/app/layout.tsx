@@ -4,6 +4,7 @@ import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import KeepAlive from "@/components/KeepAlive";
+import CallProvider from "@/components/CallProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
@@ -92,6 +93,7 @@ export default function RootLayout({
         <ThemeProvider>
           <KeepAlive />
           <AuthProvider>
+            <CallProvider>
             <Toaster
               position="top-right"
               toastOptions={{
@@ -103,6 +105,7 @@ export default function RootLayout({
               }}
             />
             {children}
+            </CallProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
