@@ -164,7 +164,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
+    <div className="h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
       {/* Header */}
       <div className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-white/10 p-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/messages" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white md:hidden">
@@ -192,12 +192,12 @@ export default function ChatPage() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-dark-900">
+      <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-gray-50 dark:bg-dark-900">
         {messages.map((msg: any) => {
           const isMine = msg.sender.id === user?.id;
           return (
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[70%] ${isMine ? "order-2" : ""}`}>
+              <div className={`max-w-[75%] ${isMine ? "order-2" : ""}`}>
                 {!isMine && <UserAvatar user={msg.sender} size="sm" />}
                 {msg.fileUrl && (
                   <div className="mt-1 mb-1">
@@ -267,7 +267,7 @@ export default function ChatPage() {
       )}
 
       {/* Input — pinned to bottom */}
-      <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 md:mb-0">
+      <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 lg:mb-0">
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
         <input type="file" ref={audioInputRef} className="hidden" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
 
