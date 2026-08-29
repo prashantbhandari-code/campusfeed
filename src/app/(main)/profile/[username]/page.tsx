@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";
 import EditProfile from "@/components/EditProfile";
+import FollowersModal from "@/components/FollowersModal";
 import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout } from "react-icons/hi";
 import { signOut } from "next-auth/react";
 import { parseImages } from "@/lib/utils";
@@ -27,6 +28,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"posts" | "grid">("posts");
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
   const coverFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -256,14 +259,20 @@ export default function ProfilePage() {
               <span className="font-bold">{posts.length}</span>{" "}
               <span className="text-gray-500">{posts.length === 1 ? "post" : "posts"}</span>
             </div>
-            <div>
+            <button
+              onClick={() => setShowFollowersModal(true)}
+              className="hover:opacity-80 transition-opacity"
+            >
               <span className="font-bold">{followersCount}</span>{" "}
               <span className="text-gray-500">{followersCount === 1 ? "follower" : "followers"}</span>
-            </div>
-            <div>
+            </button>
+            <button
+              onClick={() => setShowFollowingModal(true)}
+              className="hover:opacity-80 transition-opacity"
+            >
               <span className="font-bold">{profile._count?.following || 0}</span>{" "}
               <span className="text-gray-500">{(profile._count?.following || 0) === 1 ? "following" : "following"}</span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -356,6 +365,24 @@ export default function ProfilePage() {
       )}
 
       {/* Edit Profile Modal */}
+      {showFollowersModal && (
+        <FollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          userId={profile.id}
+          type="followers"
+          count={followersCount}
+        />
+      )}
+      {showFollowingModal && (
+        <FollowersModal
+          isOpen={showFollowingModal}
+          onClose={() => setShowFollowingModal(false)}
+          userId={profile.id}
+          type="following"
+          count={profile._count?.following || 0}
+        />
+      )}
       {showEditProfile && (
         <EditProfile
           user={profile}
