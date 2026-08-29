@@ -58,14 +58,14 @@ export default function CreatePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">Create Post</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Create Post</h1>
 
-      <div className="glass rounded-2xl p-6">
+      <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/10 rounded-2xl p-6 shadow-sm dark:shadow-none">
         <div className="flex items-center gap-3 mb-4">
           <UserAvatar user={user} />
           <div>
-            <p className="font-semibold">{user?.name}</p>
-            <p className="text-xs text-gray-500">@{user?.username}</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{user?.name}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">@{user?.username}</p>
           </div>
         </div>
 
@@ -73,7 +73,7 @@ export default function CreatePage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="What's on your mind?"
-          className="w-full bg-dark-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[150px] mb-4"
+          className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[150px] mb-4"
           rows={6}
           autoFocus
         />
@@ -82,7 +82,7 @@ export default function CreatePage() {
         {images.length > 0 && (
           <div className="grid grid-cols-2 gap-2 mb-4">
             {images.map((img, i) => (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-dark-700">
+              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-700">
                 <img src={img} alt="" className="w-full h-full object-cover" />
                 <button
                   onClick={() => setImages(images.filter((_, idx) => idx !== i))}
@@ -95,13 +95,13 @@ export default function CreatePage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/5">
           <div className="flex items-center gap-3">
             <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-400 hover:text-green-400 hover:bg-white/5 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
             >
               <HiOutlinePhotograph className="text-xl" />
               {uploading ? "Uploading..." : "Add Photos"}
