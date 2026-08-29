@@ -28,7 +28,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Messages</h1>
 
       {loading ? (
@@ -55,7 +55,7 @@ export default function MessagesPage() {
             <div
               key={conv.otherUser.id}
               onClick={() => router.push(`/messages/${conv.otherUser.id}`)}
-              className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all"
+              className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all active:scale-[0.98]"
             >
               <UserAvatar user={conv.otherUser} size="lg" />
               <div className="flex-1 min-w-0">

@@ -43,18 +43,15 @@ export default function ChatPage() {
     emit("stop-typing", { receiverId: userId });
   };
 
-  // Listen for incoming messages via socket
   useSocketEvent("new-message", (msg: any) => {
     if (msg.sender.id === userId || msg.receiverId === user?.id) {
       setMessages((prev) => {
-        // Avoid duplicates
         if (prev.find((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
     }
   }, [userId, user?.id]);
 
-  // Listen for typing indicators
   useSocketEvent("user-typing", (data: { senderId: string }) => {
     if (data.senderId === userId) setTyping(true);
   }, [userId]);
@@ -77,12 +74,10 @@ export default function ChatPage() {
       const data = await res.json();
       setMessages(data);
       if (!otherUser) {
-        // Try to get otherUser from messages
         const msg = data.find((m: any) => m.sender.id === userId);
         if (msg) {
           setOtherUser(msg.sender);
         } else {
-          // No messages yet — fetch user info directly
           const userRes = await fetch(`/api/users?userId=${userId}`);
           const users = await userRes.json();
           if (users.length > 0) setOtherUser(users[0]);
@@ -111,11 +106,14 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto h-full flex flex-col pb-16 md:pb-0">
+    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col max-w-3xl mx-auto">
       {/* Header */}
-      <div className="glass border-b border-white/10 p-4 flex items-center gap-3">
+      <div className="glass border-b border-white/10 p-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/messages" className="text-gray-400 hover:text-white md:hidden">
           <HiArrowLeft className="text-2xl" />
+        </Link>
+        <Link href="/messages" className="text-gray-400 hover:text-white hidden md:block mr-2">
+          <HiArrowLeft className="text-xl" />
         </Link>
         {otherUser && (
           <>
@@ -131,7 +129,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Messages */}
+      {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((msg: any) => {
           const isMine = msg.sender.id === user?.id;
@@ -168,8 +166,8 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} className="glass border-t border-white/10 p-4 mb-16 md:mb-0 flex gap-3 flex-shrink-0">
+      {/* Input — pinned to bottom */}
+      <form onSubmit={handleSend} className="glass border-t border-white/10 p-3 flex gap-3 flex-shrink-0 mb-16 md:mb-0">
         <input
           type="text"
           value={newMessage}
@@ -180,7 +178,7 @@ export default function ChatPage() {
         <button
           type="submit"
           disabled={!newMessage.trim()}
-          className="w-12 h-12 bg-primary-600 hover:bg-primary-700 rounded-xl flex items-center justify-center transition-all disabled:opacity-50"
+          className="w-12 h-12 bg-primary-600 hover:bg-primary-700 rounded-xl flex items-center justify-center transition-all disabled:opacity-50 flex-shrink-0"
         >
           <HiPaperAirplane className="text-xl -rotate-45" />
         </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
@@ -31,9 +31,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-dark-900">
       <Navbar />
-      <div className="flex max-w-7xl mx-auto pt-16">
+      <div className="flex pt-16 md:pt-16">
+        {/* Desktop sidebar */}
         <Sidebar />
-        <main className="flex-1 ml-0 md:ml-64 min-h-[calc(100vh-4rem)] pb-20 md:pb-0">
+        {/* Main content — offset by sidebar width on desktop, bottom nav height on mobile */}
+        <main className="flex-1 md:ml-64 min-h-[calc(100vh-4rem)] pb-20 md:pb-0">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
