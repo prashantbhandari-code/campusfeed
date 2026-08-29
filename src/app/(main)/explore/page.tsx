@@ -125,8 +125,8 @@ export default function ExplorePage() {
                   {u.bio && <p className="text-sm text-gray-400 mt-1 truncate">{u.bio}</p>}
                 </div>
                 <div className="text-right text-xs text-gray-500 flex-shrink-0">
-                  <p>{u._count?.followers || 0} followers</p>
-                  <p>{u._count?.posts || 0} posts</p>
+                  <p>{u._count?.followers || 0} {u._count?.followers === 1 ? "follower" : "followers"}</p>
+                  <p>{u._count?.posts || 0} {u._count?.posts === 1 ? "post" : "posts"}</p>
                 </div>
               </div>
             ))}

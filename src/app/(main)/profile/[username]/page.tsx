@@ -244,15 +244,15 @@ export default function ProfilePage() {
           <div className="flex justify-center sm:justify-start gap-8 text-sm">
             <div>
               <span className="font-bold">{posts.length}</span>{" "}
-              <span className="text-gray-500">posts</span>
+              <span className="text-gray-500">{posts.length === 1 ? "post" : "posts"}</span>
             </div>
             <div>
               <span className="font-bold">{followersCount}</span>{" "}
-              <span className="text-gray-500">followers</span>
+              <span className="text-gray-500">{followersCount === 1 ? "follower" : "followers"}</span>
             </div>
             <div>
               <span className="font-bold">{profile._count?.following || 0}</span>{" "}
-              <span className="text-gray-500">following</span>
+              <span className="text-gray-500">{(profile._count?.following || 0) === 1 ? "following" : "following"}</span>
             </div>
           </div>
         </div>
