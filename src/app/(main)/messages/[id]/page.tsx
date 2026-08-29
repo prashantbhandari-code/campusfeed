@@ -164,7 +164,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)] flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
+    <div className="h-full flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
       {/* Header */}
       <div className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-white/10 p-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/messages" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white md:hidden">
