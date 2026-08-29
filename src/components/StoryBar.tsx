@@ -26,7 +26,17 @@ export default function StoryBar() {
     try {
       const res = await fetch("/api/stories");
       const data = await res.json();
-      setStories(data);
+      // Filter out stories with no valid images
+      const validStories = data.filter((s: any) => {
+        if (!s.images) return false;
+        try {
+          const imgs = JSON.parse(s.images);
+          return Array.isArray(imgs) && imgs.some((i: any) => i && typeof i === 'string' && i.length > 0);
+        } catch {
+          return false;
+        }
+      });
+      setStories(validStories);
     } catch {}
   };
 
@@ -61,13 +71,19 @@ export default function StoryBar() {
   const getStoryImages = (story: any): string[] => {
     if (!story?.images) return [];
     // Handle both JSON string and array formats
-    if (Array.isArray(story.images)) return story.images;
-    try {
-      const parsed = JSON.parse(story.images);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+    let arr: any[];
+    if (Array.isArray(story.images)) {
+      arr = story.images;
+    } else {
+      try {
+        const parsed = JSON.parse(story.images);
+        arr = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
     }
+    // Filter out null/undefined/empty entries
+    return arr.filter((img: any) => img && typeof img === 'string' && img.length > 0);
   };
 
   useEffect(() => {
