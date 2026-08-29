@@ -51,7 +51,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     pc.onicecandidate = (e) => { if (e.candidate) emit("ice-candidate", { targetUserId: otherUser.id, candidate: e.candidate }); };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "connected") { setCallState("connected"); stopRing(); durationRef.current = setInterval(() => setCallDuration(p => p + 1), 1000); }
-      else if (pc.connectionState === "disconnected" || pc.connectionState === "failed") endCall();
+      else if (pc.connectionState === "failed") endCall();
+    };
+    // Also watch ICE connection state for more granular failure detection
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "failed") endCall();
+      // Don't end on 'disconnected' — allow for brief interruptions and reconnection
     };
   }, [otherUser.id, emit, endCall, stopRing]);
   const startOutgoing = useCallback(async () => {
@@ -86,7 +91,16 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   useSocketEvent("ice-candidate", async (d: { candidate: RTCIceCandidateInit }) => { if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(d.candidate)); }, []);
   useSocketEvent("call-rejected", () => { stopRing(); setCallState("ended"); setTimeout(onClose, 1500); }, []);
   useSocketEvent("call-ended", () => { endCall(); }, []);
-  useEffect(() => { if (isOpen && !isIncoming) startOutgoing(); return () => stopRing(); }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen) return;
+    let ringTimeout: NodeJS.Timeout | null = null;
+    if (!isIncoming) {
+      startOutgoing();
+      // Auto-end after 30 seconds if no answer
+      ringTimeout = setTimeout(() => { if (callState === "ringing") endCall(); }, 30000);
+    }
+    return () => { stopRing(); if (ringTimeout) clearTimeout(ringTimeout); };
+  }, [isOpen]);
   useEffect(() => () => { if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop()); if (pcRef.current) pcRef.current.close(); if (durationRef.current) clearInterval(durationRef.current); stopRing(); }, []);
   const toggleMute = () => { if (localStreamRef.current) { localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMuted; }); setIsMuted(!isMuted); } };
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };

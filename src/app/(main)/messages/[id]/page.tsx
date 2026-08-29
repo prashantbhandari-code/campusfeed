@@ -30,8 +30,6 @@ export default function ChatPage() {
 
   const [showOutgoingCall, setShowOutgoingCall] = useState(false);
   const [outgoingCallType, setOutgoingCallType] = useState<"audio" | "video">("audio");
-  const [showIncomingCall, setShowIncomingCall] = useState(false);
-  const [incomingCallData, setIncomingCallData] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasTypedRef = useRef(false);
@@ -56,10 +54,7 @@ export default function ChatPage() {
     emit("stop-typing", { receiverId: userId });
   };
 
-  useSocketEvent("incoming-call", (data: any) => {
-    setIncomingCallData(data);
-    setShowIncomingCall(true);
-  }, []);
+
 
   useSocketEvent("new-message", (msg: any) => {
     if (msg.sender.id === userId || msg.receiverId === user?.id) {
@@ -310,9 +305,7 @@ export default function ChatPage() {
       {showOutgoingCall && otherUser && user && (
         <CallModal isOpen={showOutgoingCall} onClose={() => setShowOutgoingCall(false)} otherUser={otherUser} currentUser={user} callType={outgoingCallType} />
       )}
-      {showIncomingCall && incomingCallData && user && (
-        <CallModal isOpen={showIncomingCall} onClose={() => { setShowIncomingCall(false); setIncomingCallData(null); }} otherUser={{ id: incomingCallData.callerId, name: incomingCallData.callerName, username: "", avatar: incomingCallData.callerAvatar }} currentUser={user} callType={incomingCallData.callType} isIncoming offer={incomingCallData.offer} />
-      )}
+
     </div>
   );
 }
