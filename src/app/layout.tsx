@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     description: "The private social network for KIIT University students. Connect with your campus community.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.svg",
         width: 1200,
         height: 630,
         alt: "CampusConnect - KIIT University",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CampusConnect - KIIT University",
     description: "The private social network for KIIT University students. Connect with your campus community.",
-    images: ["/og-image.png"],
+    images: ["/og-image.svg"],
   },
   robots: {
     index: true,
@@ -48,9 +48,7 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/favicon.svg",
   },
 };
 
