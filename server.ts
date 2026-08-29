@@ -33,7 +33,13 @@ app.prepare().then(() => {
     // User joins their personal room based on userId
     socket.on("join", (userId: string) => {
       socket.join(`user:${userId}`);
+      socket.data.userId = userId;
       console.log(`👤 User ${userId} joined their room`);
+    });
+
+    // Store userId on socket for later use
+    socket.on("register", (userId: string) => {
+      socket.data.userId = userId;
     });
 
     // User joins a group chat room
@@ -61,12 +67,54 @@ app.prepare().then(() => {
       });
     });
 
-    // Store userId on socket for later use
-    socket.on("register", (userId: string) => {
-      socket.data.userId = userId;
+    // ========== CALL SIGNALING ==========
+    // Incoming call: caller → receiver
+    socket.on("call-offer", (data: { receiverId: string; offer: any; callerName: string; callerAvatar?: string; callType: "audio" | "video" }) => {
+      console.log(`📞 Call offer from ${socket.data.userId} to ${data.receiverId} (${data.callType})`);
+      socket.to(`user:${data.receiverId}`).emit("incoming-call", {
+        callerId: socket.data.userId,
+        callerName: data.callerName,
+        callerAvatar: data.callerAvatar,
+        offer: data.offer,
+        callType: data.callType,
+      });
+    });
+
+    // Call accepted: receiver → caller
+    socket.on("call-answer", (data: { callerId: string; answer: any }) => {
+      console.log(`📞 Call answer from ${socket.data.userId} to ${data.callerId}`);
+      socket.to(`user:${data.callerId}`).emit("call-accepted", {
+        answer: data.answer,
+        receiverId: socket.data.userId,
+      });
+    });
+
+    // Call rejected
+    socket.on("call-reject", (data: { callerId: string }) => {
+      console.log(`📞 Call rejected by ${socket.data.userId}`);
+      socket.to(`user:${data.callerId}`).emit("call-rejected", {
+        receiverId: socket.data.userId,
+      });
+    });
+
+    // Call ended (by either party)
+    socket.on("call-end", (data: { otherUserId: string }) => {
+      console.log(`📞 Call ended by ${socket.data.userId}`);
+      socket.to(`user:${data.otherUserId}`).emit("call-ended", {
+        endedBy: socket.data.userId,
+      });
+    });
+
+    // ICE candidate exchange
+    socket.on("ice-candidate", (data: { targetUserId: string; candidate: any }) => {
+      socket.to(`user:${data.targetUserId}`).emit("ice-candidate", {
+        candidate: data.candidate,
+        fromUserId: socket.data.userId,
+      });
     });
 
     socket.on("disconnect", () => {
+      // Notify all ongoing calls that this user disconnected
       console.log("🔌 Socket disconnected:", socket.id);
     });
   });
