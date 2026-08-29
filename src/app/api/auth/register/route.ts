@@ -8,10 +8,14 @@ export async function POST(req: Request) {
   const { generateVerificationToken, sendVerificationEmail } = await import("@/lib/email");
 
   try {
-    const { name, username, email, password, rollNumber, department, batchYear } = await req.json();
+    const { name, username, email, password, confirmPassword, phone, department, batchYear } = await req.json();
 
-    if (!name || !username || !email || !password) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    if (!name || !username || !email || !password || !confirmPassword || !department || !batchYear) {
+      return NextResponse.json({ error: "All required fields must be filled" }, { status: 400 });
+    }
+
+    if (password !== confirmPassword) {
+      return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
 
     if (!email.endsWith("@kiit.ac.in")) {
@@ -25,18 +29,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username }, ...(rollNumber ? [{ rollNumber }] : [])] },
-    });
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+    }
 
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return NextResponse.json({ error: "Email already taken" }, { status: 400 });
-      }
-      if (existingUser.username === username) {
-        return NextResponse.json({ error: "Username already taken" }, { status: 400 });
-      }
-      return NextResponse.json({ error: "Roll number already registered" }, { status: 400 });
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return NextResponse.json({ error: "Username already taken" }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         collegeEmail: email,
-        rollNumber: rollNumber || null,
+        phone: phone || null,
         department: department || null,
         batchYear: batchYear ? parseInt(batchYear) : null,
       },

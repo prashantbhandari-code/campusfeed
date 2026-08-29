@@ -67,6 +67,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google' || account?.provider === 'github') {
         const email = user.email || '';
+        const name = user.name || '';
         
         // Only allow @kiit.ac.in emails
         if (!email.endsWith('@kiit.ac.in')) {
@@ -74,54 +75,38 @@ export const authOptions: NextAuthOptions = {
           return `/login?error=not-kiit`;
         }
 
-        // Check if user exists
+        // Check if user exists in DB
         const existingUser = await prisma.user.findUnique({
           where: { email },
         });
 
         if (!existingUser) {
-          // Auto-create account from Google profile
-          const name = user.name || 'Student';
-          const username = email.split('@')[0].replace(/[^a-z0-9_]/g, '');
-          
-          // Check if username is taken
-          const existingUsername = await prisma.user.findUnique({
-            where: { username },
-          });
-          
-          const finalUsername = existingUsername ? `${username}_${Date.now().toString(36)}` : username;
-          
-          const newUser = await prisma.user.create({
-            data: {
-              name,
-              username: finalUsername,
-              email,
-              password: '', // No password for OAuth users
-              avatar: user.image,
-              collegeEmail: email,
-              verified: true, // OAuth users are auto-verified
-            },
-          });
-          
-          // Update the user object with the new user's ID
-          user.id = newUser.id;
-          (user as any).username = newUser.username;
-          (user as any).collegeEmail = newUser.collegeEmail;
-        } else {
-          // Update existing user's avatar if it changed
-          if (user.image && existingUser.avatar !== user.image) {
-            await prisma.user.update({
-              where: { id: existingUser.id },
-              data: { avatar: user.image },
-            });
-          }
-          user.id = existingUser.id;
-          (user as any).username = existingUser.username;
-          (user as any).department = existingUser.department;
-          (user as any).batchYear = existingUser.batchYear;
-          (user as any).rollNumber = existingUser.rollNumber;
-          (user as any).collegeEmail = existingUser.collegeEmail;
+          // User does NOT exist → redirect to complete profile (8-field form)
+          const encodedName = encodeURIComponent(name);
+          const encodedEmail = encodeURIComponent(email);
+          return `/auth/complete-profile?name=${encodedName}&email=${encodedEmail}`;
         }
+
+        // User EXISTS → check if they have a password set
+        if (!existingUser.password || existingUser.password === '') {
+          // No password → redirect to set password
+          const encodedEmail = encodeURIComponent(email);
+          return `/auth/set-password?email=${encodedEmail}`;
+        }
+
+        // User exists + has password → update avatar and allow login
+        if (user.image && existingUser.avatar !== user.image) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { avatar: user.image },
+          });
+        }
+        user.id = existingUser.id;
+        (user as any).username = existingUser.username;
+        (user as any).department = existingUser.department;
+        (user as any).batchYear = existingUser.batchYear;
+        (user as any).rollNumber = existingUser.rollNumber;
+        (user as any).collegeEmail = existingUser.collegeEmail;
       }
       return true;
     },

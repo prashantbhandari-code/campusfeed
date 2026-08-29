@@ -17,6 +17,7 @@ model User {
   bio           String?
   collegeEmail  String?   @unique
   rollNumber    String?   @unique
+  phone         String?
   department    String?
   batchYear     Int?
   coverPhoto    String?
