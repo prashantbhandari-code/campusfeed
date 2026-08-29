@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiLogout, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";
+import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiLogout, HiAcademicCap, HiSun, HiMoon, HiCog } from "react-icons/hi";
 import { useTheme } from "@/components/ThemeProvider";
 
 export default function Sidebar() {
@@ -13,6 +13,7 @@ export default function Sidebar() {
   const user = session?.user as any;
 
   const menuItems = [
+    { href: "/settings", icon: HiCog, label: "Settings" },
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Explore" },
     { href: "/messages", icon: HiChat, label: "Messages" },

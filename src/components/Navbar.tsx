@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { HiBell, HiLogout, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";
+import { HiBell, HiCog, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";
 import { useSocketEvent } from "@/lib/useSocket";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -63,13 +63,15 @@ export default function Navbar() {
             )}
           </Link>
 
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="text-gray-500 dark:text-gray-400 hover:text-red-400 p-2 rounded-xl"
-            title="Sign Out"
+          <Link
+            href="/settings"
+            className={`p-2 rounded-xl transition-all ${
+              pathname === "/settings" ? "text-primary-400" : "text-gray-500 dark:text-gray-400"
+            }`}
+            title="Settings"
           >
-            <HiLogout className="text-xl" />
-          </button>
+            <HiCog className="text-xl" />
+          </Link>
         </div>
       </div>
     </nav>
