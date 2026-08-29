@@ -59,7 +59,7 @@ export const POST = withRateLimit(async (req: Request) => {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     const { data, error } = await supabase.storage
-      .from("uploads")
+      .from("campusconnect")
       .upload(filePath, buffer, {
         contentType: file.type,
         upsert: false,
@@ -72,7 +72,7 @@ export const POST = withRateLimit(async (req: Request) => {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from("uploads")
+      .from("campusconnect")
       .getPublicUrl(data.path);
 
     return NextResponse.json({
