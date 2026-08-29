@@ -3,6 +3,7 @@ import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
+import KeepAlive from "@/components/KeepAlive";
 
 export const metadata: Metadata = {
   title: {
@@ -87,6 +88,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <KeepAlive />
         <AuthProvider>
           <Toaster
             position="top-right"
