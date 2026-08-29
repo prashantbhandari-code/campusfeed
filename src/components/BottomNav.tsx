@@ -65,7 +65,6 @@ export default function BottomNav() {
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Search" },
     { href: "/groups", icon: HiOutlineUserGroup, label: "Groups" },
-    { href: "/notifications", icon: HiBell, label: "Alerts" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
   ];
 
@@ -93,7 +92,7 @@ export default function BottomNav() {
           <MessagesIcon conversations={conversations} />
         </div>
 
-        {navItems.slice(3).map((item) => {
+        {navItems.slice(2).map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
