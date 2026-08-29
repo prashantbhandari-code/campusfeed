@@ -32,7 +32,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-dark-900">
       <Navbar />
-      <div className="flex pt-16 md:pt-16">
+      <div className="flex pt-14 md:pt-0">
         {/* Desktop sidebar */}
         <Sidebar />
         {/* Main content — offset by sidebar width on desktop, bottom nav height on mobile */}
