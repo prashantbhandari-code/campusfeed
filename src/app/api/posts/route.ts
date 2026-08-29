@@ -4,8 +4,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { withRateLimit } from "@/lib/rateLimit";
 
-export async function GET(req: Request) {
+// Simple HTML sanitizer — strip tags
+function sanitize(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
+export const GET = withRateLimit(async (req: Request) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -38,6 +44,7 @@ export async function GET(req: Request) {
         comments: {
           include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
           orderBy: { createdAt: "desc" },
+          take: 3, // Only load first 3 comments, load more on demand
         },
         likes: { select: { userId: true } },
         saves: { select: { userId: true } },
@@ -49,6 +56,7 @@ export async function GET(req: Request) {
 
     const postsWithMeta = posts.map((post) => ({
       ...post,
+      content: post.content ? sanitize(post.content) : null,
       isLiked: post.likes.some((l) => l.userId === (session.user as any).id),
       likesCount: post.likes.length,
       commentsCount: post.comments.length,
@@ -61,9 +69,9 @@ export async function GET(req: Request) {
     console.error("Get posts error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+}, { windowMs: 60000, maxRequests: 120 }); // 120 reads per minute
 
-export async function POST(req: Request) {
+export const POST = withRateLimit(async (req: Request) => {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -72,13 +80,26 @@ export async function POST(req: Request) {
 
     const { content, images } = await req.json();
 
-    if (!content && (!images || images.length === 0)) {
+    // Sanitize content
+    const sanitizedContent = content ? sanitize(content) : null;
+
+    if (!sanitizedContent && (!images || images.length === 0)) {
       return NextResponse.json({ error: "Post must have content or images" }, { status: 400 });
+    }
+
+    // Limit content length
+    if (sanitizedContent && sanitizedContent.length > 5000) {
+      return NextResponse.json({ error: "Content too long (max 5000 characters)" }, { status: 400 });
+    }
+
+    // Limit images
+    if (images && images.length > 10) {
+      return NextResponse.json({ error: "Too many images (max 10)" }, { status: 400 });
     }
 
     const post = await prisma.post.create({
       data: {
-        content: content || null,
+        content: sanitizedContent || null,
         images: JSON.stringify(images || []),
         authorId: (session.user as any).id,
       },
@@ -102,4 +123,4 @@ export async function POST(req: Request) {
     console.error("Create post error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+}, { windowMs: 60000, maxRequests: 10 }); // 10 posts per minute

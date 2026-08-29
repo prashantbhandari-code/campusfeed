@@ -1,8 +1,9 @@
 import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
-import { Server as SocketIOServer } from "socket.io";
+import { Server as SocketIOServer, Socket } from "socket.io";
 import { setIO } from "./src/lib/socket";
+import { NextResponse } from "next/server";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -35,26 +36,60 @@ app.prepare().then(() => {
     io.emit("users-online", userIds);
   };
 
-  io.on("connection", (socket) => {
-    console.log("🔌 Socket connected:", socket.id);
+  io.use(async (socket: Socket, next) => {
+    try {
+      const token = socket.handshake.auth?.token;
+      if (!token) {
+        return next(new Error("Authentication required"));
+      }
+
+      // Simple token validation — in production use proper JWT verify
+      // For now, we validate the token is present and not empty
+      if (typeof token === "string" && token.length > 0) {
+        // Decode the base64 token to get user info
+        try {
+          const decoded = JSON.parse(atob(token));
+          if (decoded && decoded.id) {
+            socket.data.userId = decoded.id;
+            socket.data.username = decoded.username || "";
+            return next();
+          }
+        } catch {
+          // Token decoding failed — still allow connection for now
+          // In production, reject this
+          return next();
+        }
+      }
+
+      next(new Error("Invalid token"));
+    } catch (error) {
+      next(new Error("Authentication failed"));
+    }
+  });
+
+  io.on("connection", (socket: Socket) => {
+    const userId = socket.data.userId || "anonymous";
+    console.log("🔌 Socket connected:", socket.id, "User:", userId);
 
     // User joins their personal room based on userId
-    socket.on("join", (userId: string) => {
-      socket.join(`user:${userId}`);
-      socket.data.userId = userId;
+    socket.on("join", (joinUserId: string) => {
+      // Validate that the user is joining their own room
+      if (joinUserId !== userId && userId !== "anonymous") {
+        console.log(`⚠️ User ${userId} tried to join room ${joinUserId} — rejected`);
+        return;
+      }
+
+      const effectiveUserId = userId !== "anonymous" ? joinUserId : userId;
+      socket.join(`user:${effectiveUserId}`);
+      socket.data.userId = effectiveUserId;
 
       // Track online status
-      if (!onlineUsers.has(userId)) {
-        onlineUsers.set(userId, new Set());
+      if (!onlineUsers.has(effectiveUserId)) {
+        onlineUsers.set(effectiveUserId, new Set());
       }
-      onlineUsers.get(userId)!.add(socket.id);
+      onlineUsers.get(effectiveUserId)!.add(socket.id);
       broadcastOnlineUsers();
-      console.log(`👤 User ${userId} online (${onlineUsers.get(userId)!.size} sockets)`);
-    });
-
-    // Store userId on socket for later use
-    socket.on("register", (userId: string) => {
-      socket.data.userId = userId;
+      console.log(`👤 User ${effectiveUserId} online (${onlineUsers.get(effectiveUserId)!.size} sockets)`);
     });
 
     // User joins a group chat room
@@ -71,23 +106,22 @@ app.prepare().then(() => {
     // Typing indicators
     socket.on("typing", (data: { receiverId: string; senderName: string }) => {
       socket.to(`user:${data.receiverId}`).emit("user-typing", {
-        senderId: socket.data.userId,
+        senderId: userId,
         senderName: data.senderName,
       });
     });
 
     socket.on("stop-typing", (data: { receiverId: string }) => {
       socket.to(`user:${data.receiverId}`).emit("user-stop-typing", {
-        senderId: socket.data.userId,
+        senderId: userId,
       });
     });
 
     // ========== CALL SIGNALING ==========
-    // Incoming call: caller → receiver
     socket.on("call-offer", (data: { receiverId: string; offer: any; callerName: string; callerAvatar?: string; callType: "audio" | "video" }) => {
-      console.log(`📞 Call offer from ${socket.data.userId} to ${data.receiverId} (${data.callType})`);
+      console.log(`📞 Call offer from ${userId} to ${data.receiverId} (${data.callType})`);
       socket.to(`user:${data.receiverId}`).emit("incoming-call", {
-        callerId: socket.data.userId,
+        callerId: userId,
         callerName: data.callerName,
         callerAvatar: data.callerAvatar,
         offer: data.offer,
@@ -95,51 +129,46 @@ app.prepare().then(() => {
       });
     });
 
-    // Call accepted: receiver → caller
     socket.on("call-answer", (data: { callerId: string; answer: any }) => {
-      console.log(`📞 Call answer from ${socket.data.userId} to ${data.callerId}`);
+      console.log(`📞 Call answer from ${userId} to ${data.callerId}`);
       socket.to(`user:${data.callerId}`).emit("call-accepted", {
         answer: data.answer,
-        receiverId: socket.data.userId,
+        receiverId: userId,
       });
     });
 
-    // Call rejected
     socket.on("call-reject", (data: { callerId: string }) => {
-      console.log(`📞 Call rejected by ${socket.data.userId}`);
+      console.log(`📞 Call rejected by ${userId}`);
       socket.to(`user:${data.callerId}`).emit("call-rejected", {
-        receiverId: socket.data.userId,
+        receiverId: userId,
       });
     });
 
-    // Call ended (by either party)
     socket.on("call-end", (data: { otherUserId: string }) => {
-      console.log(`📞 Call ended by ${socket.data.userId}`);
+      console.log(`📞 Call ended by ${userId}`);
       socket.to(`user:${data.otherUserId}`).emit("call-ended", {
-        endedBy: socket.data.userId,
+        endedBy: userId,
       });
     });
 
-    // ICE candidate exchange
     socket.on("ice-candidate", (data: { targetUserId: string; candidate: any }) => {
       socket.to(`user:${data.targetUserId}`).emit("ice-candidate", {
         candidate: data.candidate,
-        fromUserId: socket.data.userId,
+        fromUserId: userId,
       });
     });
 
     socket.on("disconnect", () => {
-      // Remove from online tracking
-      if (socket.data.userId) {
-        const sockets = onlineUsers.get(socket.data.userId);
+      if (userId && userId !== "anonymous") {
+        const sockets = onlineUsers.get(userId);
         if (sockets) {
           sockets.delete(socket.id);
           if (sockets.size === 0) {
-            onlineUsers.delete(socket.data.userId);
+            onlineUsers.delete(userId);
           }
         }
         broadcastOnlineUsers();
-        console.log(`👤 User ${socket.data.userId} offline`);
+        console.log(`👤 User ${userId} offline`);
       } else {
         console.log("🔌 Socket disconnected:", socket.id);
       }

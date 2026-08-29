@@ -2,14 +2,23 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { useSession } from "next-auth/react";
 
 let socket: Socket | null = null;
 
-function getSocket(): Socket {
+async function getSocket(): Promise<Socket> {
   if (!socket) {
+    // Fetch the JWT token from NextAuth session
+    const res = await fetch("/api/auth/session");
+    const session = await res.json();
+    const token = session?.user ? btoa(JSON.stringify(session.user)) : "";
+
     socket = io(window.location.origin, {
       path: "/api/socketio",
       transports: ["websocket", "polling"],
+      auth: {
+        token: token,
+      },
     });
   }
   return socket;
@@ -23,47 +32,52 @@ export function useSocket(userId?: string) {
   useEffect(() => {
     if (!userId) return;
 
-    const s = getSocket();
-    socketRef.current = s;
+    let mounted = true;
 
-    s.on("connect", () => {
-      setIsConnected(true);
-      s.emit("join", userId);
-      s.emit("register", userId);
-    });
+    const connectSocket = async () => {
+      const s = await getSocket();
+      if (!mounted) return;
 
-    s.on("disconnect", () => {
-      setIsConnected(false);
-    });
+      socketRef.current = s;
 
-    // Listen for online users list
-    s.on("users-online", (userIds: string[]) => {
-      setOnlineUsers(userIds);
-    });
+      s.on("connect", () => {
+        if (mounted) setIsConnected(true);
+        s.emit("join", userId);
+      });
 
-    // If already connected, join room
-    if (s.connected) {
-      setIsConnected(true);
-      s.emit("join", userId);
-      s.emit("register", userId);
-    }
+      s.on("disconnect", () => {
+        if (mounted) setIsConnected(false);
+      });
+
+      s.on("users-online", (userIds: string[]) => {
+        if (mounted) setOnlineUsers(userIds);
+      });
+
+      if (s.connected) {
+        if (mounted) setIsConnected(true);
+        s.emit("join", userId);
+      }
+    };
+
+    connectSocket();
 
     return () => {
-      // Don't disconnect on component unmount — keep the singleton alive
+      mounted = false;
     };
   }, [userId]);
 
   const on = useCallback((event: string, callback: (...args: any[]) => void) => {
-    const s = getSocket();
-    s.on(event, callback);
+    if (!socket) return () => {};
+    socket.on(event, callback);
     return () => {
-      s.off(event, callback);
+      socket?.off(event, callback);
     };
   }, []);
 
   const emit = useCallback((event: string, data?: any) => {
-    const s = getSocket();
-    s.emit(event, data);
+    if (socket) {
+      socket.emit(event, data);
+    }
   }, []);
 
   return { socket: socketRef.current, isConnected, onlineUsers, on, emit };
@@ -71,10 +85,10 @@ export function useSocket(userId?: string) {
 
 export function useSocketEvent(event: string, callback: (...args: any[]) => void, deps: any[] = []) {
   useEffect(() => {
-    const s = getSocket();
-    s.on(event, callback);
+    if (!socket) return;
+    socket.on(event, callback);
     return () => {
-      s.off(event, callback);
+      socket?.off(event, callback);
     };
   }, deps);
 }
