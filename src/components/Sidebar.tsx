@@ -13,13 +13,13 @@ export default function Sidebar() {
   const user = session?.user as any;
 
   const menuItems = [
-    { href: "/settings", icon: HiCog, label: "Settings" },
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Explore" },
     { href: "/messages", icon: HiChat, label: "Messages" },
     { href: "/notifications", icon: HiBell, label: "Notifications" },
     { href: "/create", icon: HiPlusCircle, label: "Create Post" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
+    { href: "/settings", icon: HiCog, label: "Settings" },
   ];
 
   return (
@@ -48,20 +48,14 @@ export default function Sidebar() {
         })}
       </div>
 
-      {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all w-full"
-      >
-        {theme === "dark" ? (
-          <HiSun className="text-xl" />
-        ) : (
-          <HiMoon className="text-xl" />
-        )}
-        <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-      </button>
-
-      <div className="border-t border-gray-200 dark:border-white/5 pt-4">
+      <div className="border-t border-gray-200 dark:border-white/5 pt-2 mt-2 space-y-1">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all w-full"
+        >
+          {theme === "dark" ? <HiSun className="text-xl" /> : <HiMoon className="text-xl" />}
+          <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+        </button>
         <button
           onClick={() => window.location.href = "/api/auth/signout?callbackUrl=/login"}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-all w-full"
