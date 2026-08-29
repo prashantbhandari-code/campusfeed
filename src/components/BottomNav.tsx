@@ -4,66 +4,19 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { HiHome, HiBell, HiUser, HiOutlineUserGroup, HiPencilSquare, HiArrowsPointingOut } from "react-icons/hi2"
+import { HiHome, HiUser, HiOutlineUserGroup } from "react-icons/hi2";
 import { HiSearch } from "react-icons/hi";
-
-function MessagesIcon({ conversations }: { conversations: any[] }) {
-  const router = useRouter();
-  const recentAvatars = conversations.slice(0, 2).map((c) => c.otherUser);
-
-  return (
-    <button
-      onClick={() => router.push("/messages")}
-      className="flex flex-col items-center gap-0.5 px-3 py-1.5"
-    >
-      <div className="relative">
-        {/* Paper plane icon */}
-        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 2L11 13" />
-          <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-        </svg>
-        {/* Stacked avatars */}
-        {recentAvatars.length > 0 && (
-          <div className="absolute -top-1 -right-3 flex -space-x-1.5">
-            {recentAvatars.slice(0, 2).map((u: any, i: number) => (
-              <div
-                key={u.id}
-                className="w-4 h-4 rounded-full border-2 border-white dark:border-dark-900 bg-dark-600 overflow-hidden"
-                style={{ zIndex: 2 - i }}
-              >
-                {u.avatar ? (
-                  <img src={u.avatar} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-primary-600 flex items-center justify-center text-[6px] text-white font-bold">
-                    {u.name?.charAt(0)}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      <span className="text-[10px] font-medium">Messages</span>
-    </button>
-  );
-}
 
 export default function BottomNav() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const user = session?.user as any;
-  const [conversations, setConversations] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetch("/api/messages")
-      .then((r) => r.json())
-      .then((d) => setConversations(d))
-      .catch(() => {});
-  }, []);
+  const router = useRouter();
 
   const navItems = [
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Search" },
+    { href: "/messages", icon: HiOutlineUserGroup, label: "Messages", isMessages: true },
     { href: "/groups", icon: HiOutlineUserGroup, label: "Groups" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
   ];
@@ -71,29 +24,29 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-gray-200 dark:border-white/10 safe-area-bottom bg-white dark:bg-dark-900/90">
       <div className="flex items-center justify-around h-16 px-2">
-        {navItems.slice(0, 2).map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
-                isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
-              }`}
-            >
-              <item.icon className={`text-xl ${isActive ? "text-primary-400" : ""}`} />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
+          
+          if (item.isMessages) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => router.push(item.href)}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
+                  isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
+                }`}
+              >
+                <div className="relative">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 2L11 13" />
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                  </svg>
+                </div>
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </button>
+            );
+          }
 
-        {/* Messages with stacked avatars */}
-        <div className={pathname === "/messages" || pathname.startsWith("/messages/") ? "text-primary-400" : "text-gray-500 dark:text-gray-500"}>
-          <MessagesIcon conversations={conversations} />
-        </div>
-
-        {navItems.slice(2).map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
