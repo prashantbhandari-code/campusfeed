@@ -30,13 +30,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (!session) return null;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-900">
+    <div className="h-screen bg-white dark:bg-dark-900 flex flex-col">
       <Navbar />
-      <div className="flex pt-14 md:pt-0">
+      <div className="flex-1 flex pt-14 md:pt-0 overflow-hidden">
         {/* Desktop sidebar */}
         <Sidebar />
         {/* Main content — offset by sidebar width on desktop, bottom nav height on mobile */}
-        <main className="flex-1 lg:ml-64 min-h-[calc(100vh-4rem)] h-full pb-20 lg:pb-0">
+        <main className="flex-1 lg:ml-64 min-h-0 flex-1 ">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
