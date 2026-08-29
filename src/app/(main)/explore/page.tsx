@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiSearch, HiHeart } from "react-icons/hi";
 import { parseImages } from "@/lib/utils";
+import { useSocket } from "@/lib/useSocket";
 
 export default function ExplorePage() {
   const router = useRouter();
+  const { onlineUsers } = useSocket();
   const [query, setQuery] = useState("");
   const [users, setUsers] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
@@ -108,7 +110,7 @@ export default function ExplorePage() {
                 onClick={() => router.push(`/profile/${u.username}`)}
                 className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all"
               >
-                <UserAvatar user={u} size="lg" />
+                <UserAvatar user={u} size="lg" isOnline={onlineUsers.includes(u.id)} />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold">{u.name}</p>
                   <div className="flex items-center gap-2">

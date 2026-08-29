@@ -17,6 +17,7 @@ function getSocket(): Socket {
 
 export function useSocket(userId?: string) {
   const [isConnected, setIsConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -33,6 +34,11 @@ export function useSocket(userId?: string) {
 
     s.on("disconnect", () => {
       setIsConnected(false);
+    });
+
+    // Listen for online users list
+    s.on("users-online", (userIds: string[]) => {
+      setOnlineUsers(userIds);
     });
 
     // If already connected, join room
@@ -60,7 +66,7 @@ export function useSocket(userId?: string) {
     s.emit(event, data);
   }, []);
 
-  return { socket: socketRef.current, isConnected, on, emit };
+  return { socket: socketRef.current, isConnected, onlineUsers, on, emit };
 }
 
 export function useSocketEvent(event: string, callback: (...args: any[]) => void, deps: any[] = []) {

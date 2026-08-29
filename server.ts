@@ -27,6 +27,14 @@ app.prepare().then(() => {
 
   setIO(io);
 
+  // Track online users: userId -> Set of socketIds
+  const onlineUsers = new Map<string, Set<string>>();
+
+  const broadcastOnlineUsers = () => {
+    const userIds = Array.from(onlineUsers.keys());
+    io.emit("users-online", userIds);
+  };
+
   io.on("connection", (socket) => {
     console.log("🔌 Socket connected:", socket.id);
 
@@ -34,7 +42,14 @@ app.prepare().then(() => {
     socket.on("join", (userId: string) => {
       socket.join(`user:${userId}`);
       socket.data.userId = userId;
-      console.log(`👤 User ${userId} joined their room`);
+
+      // Track online status
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set());
+      }
+      onlineUsers.get(userId)!.add(socket.id);
+      broadcastOnlineUsers();
+      console.log(`👤 User ${userId} online (${onlineUsers.get(userId)!.size} sockets)`);
     });
 
     // Store userId on socket for later use
@@ -114,8 +129,20 @@ app.prepare().then(() => {
     });
 
     socket.on("disconnect", () => {
-      // Notify all ongoing calls that this user disconnected
-      console.log("🔌 Socket disconnected:", socket.id);
+      // Remove from online tracking
+      if (socket.data.userId) {
+        const sockets = onlineUsers.get(socket.data.userId);
+        if (sockets) {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            onlineUsers.delete(socket.data.userId);
+          }
+        }
+        broadcastOnlineUsers();
+        console.log(`👤 User ${socket.data.userId} offline`);
+      } else {
+        console.log("🔌 Socket disconnected:", socket.id);
+      }
     });
   });
 

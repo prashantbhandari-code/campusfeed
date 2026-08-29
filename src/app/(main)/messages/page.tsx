@@ -5,11 +5,13 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { formatDate } from "@/lib/utils";
+import { useSocket } from "@/lib/useSocket";
 
 export default function MessagesPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const user = session?.user as any;
+  const { onlineUsers } = useSocket(user?.id);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +59,7 @@ export default function MessagesPage() {
               onClick={() => router.push(`/messages/${conv.otherUser.id}`)}
               className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all active:scale-[0.98]"
             >
-              <UserAvatar user={conv.otherUser} size="lg" />
+              <UserAvatar user={conv.otherUser} size="lg" isOnline={onlineUsers.includes(conv.otherUser.id)} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold truncate">{conv.otherUser.name}</p>

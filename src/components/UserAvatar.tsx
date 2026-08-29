@@ -8,6 +8,7 @@ interface UserAvatarProps {
   size?: "sm" | "md" | "lg" | "xl";
   showStory?: boolean;
   hasStory?: boolean;
+  isOnline?: boolean;
 }
 
 const sizeClasses = {
@@ -24,7 +25,14 @@ const ringSize = {
   xl: "w-24 h-24",
 };
 
-export default function UserAvatar({ user, size = "md", showStory = false, hasStory = false }: UserAvatarProps) {
+const onlineDotSize = {
+  sm: "w-2.5 h-2.5 border",
+  md: "w-3 h-3 border-2",
+  lg: "w-3.5 h-3.5 border-2",
+  xl: "w-4 h-4 border-2",
+};
+
+export default function UserAvatar({ user, size = "md", showStory = false, hasStory = false, isOnline }: UserAvatarProps) {
   const initials = getInitials(user.name);
   const colorClass = generateAvatarColor(user.name);
 
@@ -52,5 +60,12 @@ export default function UserAvatar({ user, size = "md", showStory = false, hasSt
     );
   }
 
-  return avatar;
+  return (
+    <div className="relative inline-block">
+      {avatar}
+      {isOnline && (
+        <span className={`absolute bottom-0 right-0 ${onlineDotSize[size]} bg-green-400 border-dark-900 rounded-full`} />
+      )}
+    </div>
+  );
 }

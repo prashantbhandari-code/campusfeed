@@ -28,7 +28,7 @@ export default function ChatPage() {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasTypedRef = useRef(false);
 
-  const { isConnected, emit } = useSocket(user?.id);
+  const { isConnected, onlineUsers, emit } = useSocket(user?.id);
 
   const handleTyping = () => {
     if (!hasTypedRef.current) {
@@ -132,7 +132,7 @@ export default function ChatPage() {
               <p className="font-semibold">{otherUser.name}</p>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-gray-500">@{otherUser.username}</p>
-                <span className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-400" : "bg-gray-500"}`} />
+                <span className={`w-2 h-2 rounded-full ${onlineUsers.includes(userId) ? "bg-green-400" : "bg-gray-500"}`} />
               </div>
             </div>
             <div className="flex items-center gap-2">
