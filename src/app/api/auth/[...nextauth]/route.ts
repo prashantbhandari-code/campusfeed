@@ -1,15 +1,19 @@
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
-  const { default: NextAuth } = await import("next-auth");
+import NextAuth from "next-auth";
+
+// Dynamically import authOptions to avoid build-time DB connections
+async function getHandler() {
   const { authOptions } = await import("@/lib/auth");
-  const handler = NextAuth(authOptions);
-  return handler(req, new Response());
+  return NextAuth(authOptions);
 }
 
-export async function POST(req: Request) {
-  const { default: NextAuth } = await import("next-auth");
-  const { authOptions } = await import("@/lib/auth");
-  const handler = NextAuth(authOptions);
-  return handler(req, new Response());
+export async function GET(req: Request, context: any) {
+  const handler = await getHandler();
+  return handler(req, context);
+}
+
+export async function POST(req: Request, context: any) {
+  const handler = await getHandler();
+  return handler(req, context);
 }
