@@ -93,11 +93,11 @@ export default function StoryBar() {
           <div className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => fileRef.current?.click()}>
             <div className="relative">
               <UserAvatar user={user} size="lg" />
-              <div className="absolute -bottom-1 -right-1 bg-primary-600 rounded-full p-1 border-2 border-dark-900">
+              <div className="absolute -bottom-1 -right-1 bg-primary-600 rounded-full p-1 border-2 border-white dark:border-dark-900">
                 <HiPlus className="text-xs" />
               </div>
             </div>
-            <span className="text-xs text-gray-400 w-14 text-center truncate">Your Story</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 w-14 text-center truncate">Your Story</span>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="hidden" />
           </div>
 
@@ -109,11 +109,11 @@ export default function StoryBar() {
               onClick={() => openStory(group.stories[0])}
             >
               <div className="story-gradient rounded-full p-[2px]">
-                <div className="bg-dark-900 rounded-full p-[2px]">
+                <div className="bg-white dark:bg-dark-900 rounded-full p-[2px]">
                   <UserAvatar user={group.author} size="lg" />
                 </div>
               </div>
-              <span className="text-xs text-gray-400 w-14 text-center truncate">{group.author.name.split(" ")[0]}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-14 text-center truncate">{group.author.name.split(" ")[0]}</span>
             </div>
           ))}
         </div>

@@ -52,8 +52,8 @@ export default function UserAvatar({ user, size = "md", showStory = false, hasSt
 
   if (showStory) {
     return (
-      <div className={`${hasStory ? "story-gradient" : "bg-dark-500"} ${ringSize[size]} rounded-full p-0.5 flex items-center justify-center`}>
-        <div className="bg-dark-900 rounded-full p-0.5">
+      <div className={`${hasStory ? "story-gradient" : "bg-gray-300 dark:bg-dark-500"} ${ringSize[size]} rounded-full p-0.5 flex items-center justify-center`}>
+        <div className="bg-white dark:bg-dark-900 rounded-full p-0.5">
           {avatar}
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function UserAvatar({ user, size = "md", showStory = false, hasSt
     <div className="relative inline-block">
       {avatar}
       {isOnline && (
-        <span className={`absolute bottom-0 right-0 ${onlineDotSize[size]} bg-green-400 border-dark-900 rounded-full`} />
+        <span className={`absolute bottom-0 right-0 ${onlineDotSize[size]} bg-green-400 border-white dark:border-dark-900 rounded-full`} />
       )}
     </div>
   );

@@ -124,19 +124,19 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
         >
           <UserAvatar user={post.author} size="md" />
           <div>
-            <p className="font-semibold text-sm hover:text-primary-400 transition-colors">{post.author.name}</p>
+            <p className="font-semibold text-sm text-gray-900 dark:text-white hover:text-primary-400 transition-colors">{post.author.name}</p>
             {post.author.department && (
               <p className="text-[10px] text-campus-400">{post.author.department}</p>
             )}
           </div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-white p-2 rounded-lg hover:bg-white/5"><HiDotsHorizontal className="text-xl" /></button>
+          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"><HiDotsHorizontal className="text-xl" /></button>
           {showMenu && (
-            <div className="absolute right-0 top-10 bg-dark-700 border border-white/10 rounded-xl shadow-xl py-2 min-w-[160px] z-50">
-              {user?.id === post.authorId && <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-300 hover:bg-white/5"><HiOutlinePencil className="w-4 h-4" /> Edit</button>}
-              {user?.id === post.authorId && <button onClick={() => { handleDelete(); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/5"><HiOutlineTrash className="w-4 h-4" /> Delete</button>}
-              {user?.id !== post.authorId && <button onClick={handleBlock} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/5"><HiOutlineBan className="w-4 h-4" /> Block</button>}
+            <div className="absolute right-0 top-10 bg-white dark:bg-dark-700 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl py-2 min-w-[160px] z-50">
+              {user?.id === post.authorId && <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"><HiOutlinePencil className="w-4 h-4" /> Edit</button>}
+              {user?.id === post.authorId && <button onClick={() => { handleDelete(); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-white/5"><HiOutlineTrash className="w-4 h-4" /> Delete</button>}
+              {user?.id !== post.authorId && <button onClick={handleBlock} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-white/5"><HiOutlineBan className="w-4 h-4" /> Block</button>}
             </div>
           )}
         </div>
@@ -145,7 +145,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       {/* Images — full width */}
       {images.length > 0 && (
         <div
-          className="relative bg-dark-800 cursor-pointer"
+          className="relative bg-gray-100 dark:bg-dark-800 cursor-pointer"
           onClick={handleDoubleTap}
         >
           {images.length === 1 ? (
@@ -178,14 +178,14 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
       {/* Content */}
       {isEditing ? (
         <div className="px-4 py-3">
-          <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-dark-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none" rows={3} maxLength={5000} />
+          <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none" rows={3} maxLength={5000} />
           <div className="flex justify-end gap-2 mt-2">
-            <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-sm text-gray-400 hover:text-white">Cancel</button>
+            <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">Cancel</button>
             <button onClick={handleEdit} className="px-3 py-1 text-sm bg-primary-600 hover:bg-primary-700 rounded-lg text-white">Save</button>
           </div>
         </div>
       ) : post.content ? (
-        <p className="px-4 py-3 text-sm text-gray-200 whitespace-pre-wrap">{post.content}</p>
+        <p className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
       ) : null}
 
       {/* Actions Bar — Instagram style */}
@@ -195,28 +195,28 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             {isLiked ? (
               <HiHeart className={`text-2xl text-red-500 ${heartAnimation ? "animate-heart" : ""}`} />
             ) : (
-              <HiOutlineHeart className="text-2xl text-gray-200 hover:text-gray-400" />
+              <HiOutlineHeart className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
             )}
           </button>
           <button onClick={() => setShowComments(!showComments)} className="transition-all">
-            <HiOutlineChat className="text-2xl text-gray-200 hover:text-gray-400 -scale-x-100" />
+            <HiOutlineChat className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400 -scale-x-100" />
           </button>
           <button className="transition-all">
-            <HiOutlineShare className="text-2xl text-gray-200 hover:text-gray-400" />
+            <HiOutlineShare className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
           </button>
         </div>
         <button onClick={handleSave} className="transition-all">
           {isSaved ? (
-            <HiBookmark className="text-2xl text-gray-200" />
+            <HiBookmark className="text-2xl text-gray-700 dark:text-gray-200" />
           ) : (
-            <HiBookmark className="text-2xl text-gray-200 hover:text-gray-400" />
+            <HiBookmark className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
           )}
         </button>
       </div>
 
       {/* Likes count */}
       {likesCount > 0 && (
-        <p className="px-4 pb-1 text-sm font-semibold">{likesCount} likes</p>
+        <p className="px-4 pb-1 text-sm font-semibold text-gray-900 dark:text-white">{likesCount} likes</p>
       )}
 
       {/* Comments Section */}
@@ -227,10 +227,10 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               <UserAvatar user={comment.author} size="sm" />
               <div className="flex-1">
                 <p className="text-sm">
-                  <span className="font-semibold mr-1">{comment.author.name}</span>
+                  <span className="font-semibold mr-1 text-gray-900 dark:text-white">{comment.author.name}</span>
                   {comment.content}
                 </p>
-                <p className="text-[10px] text-gray-500 mt-0.5">{formatDate(comment.createdAt)}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(comment.createdAt)}</p>
               </div>
             </div>
           ))}
@@ -242,7 +242,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 bg-transparent text-sm focus:outline-none placeholder-gray-500"
+              className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
             />
             {commentText.trim() && (
               <button type="submit" className="text-primary-400 text-sm font-semibold">
