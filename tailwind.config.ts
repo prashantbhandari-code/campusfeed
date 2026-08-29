@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -39,7 +40,19 @@ const config: Config = {
           700: '#1a1a1a',
           600: '#222222',
           500: '#2a2a2a',
-        }
+        },
+        light: {
+          50: '#ffffff',
+          100: '#f9fafb',
+          200: '#f3f4f6',
+          300: '#e5e7eb',
+          400: '#d1d5db',
+          500: '#9ca3af',
+          600: '#6b7280',
+          700: '#4b5563',
+          800: '#374151',
+          900: '#111827',
+        },
       },
       animation: {
         'story-ring': 'storyRing 2s linear infinite',

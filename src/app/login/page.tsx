@@ -65,17 +65,17 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md animate-slide-up">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <HiAcademicCap className="text-4xl text-campus-400" />
             <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
           </div>
-          <p className="text-gray-400 mb-3">Sign in to your campus</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-3">Sign in to your campus</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-campus-600/20 border border-campus-500/30 rounded-full">
             <HiCheckCircle className="text-campus-400 text-sm" />
-            <span className="text-sm text-campus-300 font-medium">KIIT Students Only 🔒</span>
+            <span className="text-sm text-campus-700 dark:text-campus-300 font-medium">KIIT Students Only 🔒</span>
           </div>
         </div>
 
@@ -83,14 +83,14 @@ function LoginForm() {
         {justVerified && (
           <div className="mb-4 p-3 bg-green-600/20 border border-green-500/30 rounded-xl flex items-center gap-2">
             <HiCheckCircle className="text-green-400 flex-shrink-0" />
-            <span className="text-sm text-green-300">Email verified! You can now sign in.</span>
+            <span className="text-sm text-green-700 dark:text-green-300">Email verified! You can now sign in.</span>
           </div>
         )}
 
         {justSetPassword && (
           <div className="mb-4 p-3 bg-green-600/20 border border-green-500/30 rounded-xl flex items-center gap-2">
             <HiCheckCircle className="text-green-400 flex-shrink-0" />
-            <span className="text-sm text-green-300">Password set! You can now login with email & password.</span>
+            <span className="text-sm text-green-700 dark:text-green-300">Password set! You can now login with email & password.</span>
           </div>
         )}
 
@@ -98,7 +98,7 @@ function LoginForm() {
         {errorMessage && (
           <div className="mb-4 p-3 bg-red-600/20 border border-red-500/30 rounded-xl flex items-center gap-2">
             <HiExclamationCircle className="text-red-400 flex-shrink-0" />
-            <span className="text-sm text-red-300">{errorMessage}</span>
+            <span className="text-sm text-red-700 dark:text-red-300">{errorMessage}</span>
           </div>
         )}
 
@@ -106,7 +106,7 @@ function LoginForm() {
           {/* Google Sign-In Button */}
           <button
             onClick={() => signIn("google", { callbackUrl: "/feed" })}
-            className="w-full py-3 bg-white hover:bg-gray-100 text-gray-800 rounded-xl font-semibold transition-all flex items-center justify-center gap-3"
+            className="w-full py-3 bg-white dark:bg-white hover:bg-gray-100 text-gray-800 rounded-xl font-semibold transition-all flex items-center justify-center gap-3 border border-gray-200 dark:border-transparent"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -119,32 +119,32 @@ function LoginForm() {
 
           {/* Divider */}
           <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-gray-500">or continue with email</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
+            <span className="text-xs text-gray-400 dark:text-gray-500">or continue with email</span>
+            <div className="flex-1 h-px bg-gray-200 dark:bg-white/10" />
           </div>
 
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">KIIT Email</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">KIIT Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 placeholder="yourname@kiit.ac.in"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                 placeholder="••••••••"
                 required
               />
@@ -153,7 +153,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-primary-600 hover:bg-primary-700 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto"></div>
@@ -164,9 +164,9 @@ function LoginForm() {
           </form>
         </div>
 
-        <p className="text-center mt-6 text-gray-400">
+        <p className="text-center mt-6 text-gray-500 dark:text-gray-400">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-primary-400 hover:text-primary-300 font-semibold">
+          <Link href="/register" className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 font-semibold">
             Join CampusConnect
           </Link>
         </p>
@@ -178,7 +178,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
       </div>
     }>

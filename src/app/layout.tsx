@@ -4,6 +4,7 @@ import AuthProvider from "@/components/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import KeepAlive from "@/components/KeepAlive";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -59,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <Script
           id="json-ld"
@@ -87,21 +88,23 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
-        <KeepAlive />
-        <AuthProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: '#1a1a1a',
-                color: '#fff',
-                border: '1px solid #333',
-              },
-            }}
-          />
-          {children}
-        </AuthProvider>
+      <body className="bg-white dark:bg-dark-900 text-gray-900 dark:text-white">
+        <ThemeProvider>
+          <KeepAlive />
+          <AuthProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: '#1a1a1a',
+                  color: '#fff',
+                  border: '1px solid #333',
+                },
+              }}
+            />
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

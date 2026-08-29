@@ -28,7 +28,7 @@ function MessagesIcon({ conversations }: { conversations: any[] }) {
             {recentAvatars.slice(0, 2).map((u: any, i: number) => (
               <div
                 key={u.id}
-                className="w-4 h-4 rounded-full border border-dark-900 bg-dark-600 overflow-hidden"
+                className="w-4 h-4 rounded-full border-2 border-white dark:border-dark-900 bg-dark-600 overflow-hidden"
                 style={{ zIndex: 2 - i }}
               >
                 {u.avatar ? (
@@ -70,7 +70,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-white/10 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-gray-200 dark:border-white/10 safe-area-bottom bg-white dark:bg-dark-900/90">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.slice(0, 3).map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -79,7 +79,7 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
-                isActive ? "text-primary-400" : "text-gray-500"
+                isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
               }`}
             >
               <item.icon className={`text-xl ${isActive ? "text-primary-400" : ""}`} />
@@ -89,7 +89,7 @@ export default function BottomNav() {
         })}
 
         {/* Messages with stacked avatars */}
-        <div className={pathname === "/messages" || pathname.startsWith("/messages/") ? "text-primary-400" : "text-gray-500"}>
+        <div className={pathname === "/messages" || pathname.startsWith("/messages/") ? "text-primary-400" : "text-gray-500 dark:text-gray-500"}>
           <MessagesIcon conversations={conversations} />
         </div>
 
@@ -100,7 +100,7 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
-                isActive ? "text-primary-400" : "text-gray-500"
+                isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
               }`}
             >
               <item.icon className={`text-xl ${isActive ? "text-primary-400" : ""}`} />
