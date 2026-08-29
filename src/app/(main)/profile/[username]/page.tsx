@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [doesFollowYou, setDoesFollowYou] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "grid">("posts");
@@ -51,6 +52,7 @@ export default function ProfilePage() {
         const followCheck = await fetch(`/api/users/${userData.id}/follow`);
         const followData = await followCheck.json();
         setIsFollowing(followData.isFollowing);
+        setDoesFollowYou(followData.doesFollowYou);
       }
     } catch {} finally {
       setLoading(false);
@@ -62,6 +64,7 @@ export default function ProfilePage() {
       const res = await fetch(`/api/users/${profile.id}/follow`, { method: "POST" });
       const data = await res.json();
       setIsFollowing(data.isFollowing);
+      setDoesFollowYou(data.doesFollowYou);
       setFollowersCount((prev) => data.isFollowing ? prev + 1 : prev - 1);
     } catch {}
   };
@@ -199,10 +202,12 @@ export default function ProfilePage() {
                     className={`px-6 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                       isFollowing
                         ? "bg-dark-600 hover:bg-dark-500"
+                        : doesFollowYou
+                        ? "bg-green-600 hover:bg-green-700"
                         : "bg-primary-600 hover:bg-primary-700"
                     }`}
                   >
-                    {isFollowing ? "Following" : "Follow"}
+                    {isFollowing ? "Following" : doesFollowYou ? "Follow Back" : "Follow"}
                   </button>
                   <button
                     onClick={() => router.push(`/messages/${profile.id}`)}
@@ -217,7 +222,12 @@ export default function ProfilePage() {
 
           {/* Name & Username */}
           <h1 className="text-2xl font-bold text-center sm:text-left">{profile.name}</h1>
-          <p className="text-gray-500 mb-3 text-center sm:text-left">@{profile.username}</p>
+          <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
+              <p className="text-gray-500">@{profile.username}</p>
+              {!isSelf && doesFollowYou && (
+                <span className="text-xs bg-primary-600/20 text-primary-400 px-2 py-0.5 rounded-full border border-primary-500/30">Follows you</span>
+              )}
+            </div>
 
           {/* Student Info Badges */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-3">

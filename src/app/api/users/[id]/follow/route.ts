@@ -23,7 +23,12 @@ export async function GET(
       where: { followerId_followingId: { followerId, followingId } },
     });
 
-    return NextResponse.json({ isFollowing: !!follow });
+    // Check if they follow us back
+    const theyFollowUs = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: followingId, followingId: followerId } },
+    });
+
+    return NextResponse.json({ isFollowing: !!follow, doesFollowYou: !!theyFollowUs });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -52,7 +57,11 @@ export async function POST(
 
     if (existing) {
       await prisma.follow.delete({ where: { id: existing.id } });
-      return NextResponse.json({ isFollowing: false });
+      // Check mutual follow after unfollow
+    const theyStillFollowUs = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: followingId, followingId: followerId } },
+    });
+    return NextResponse.json({ isFollowing: false, doesFollowYou: !!theyStillFollowUs });
     }
 
     await prisma.follow.create({ data: { followerId, followingId } });
@@ -84,7 +93,7 @@ export async function POST(
       createdAt: new Date(),
     });
 
-    return NextResponse.json({ isFollowing: true });
+    return NextResponse.json({ isFollowing: true, doesFollowYou: true });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

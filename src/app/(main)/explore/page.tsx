@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiSearch, HiHeart } from "react-icons/hi";
@@ -15,6 +16,9 @@ export default function ExplorePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"people" | "posts">("people");
+  const { data: session } = useSession();
+  const currentUser = session?.user as any;
+  const [followStates, setFollowStates] = useState<Record<string, { isFollowing: boolean; doesFollowYou: boolean }>>({});
 
   useEffect(() => {
     searchUsers();
@@ -27,6 +31,20 @@ export default function ExplorePage() {
       const res = await fetch(`/api/users?q=${query}`);
       const data = await res.json();
       setUsers(data);
+      // Fetch follow status for each user
+      if (currentUser?.id) {
+        const statuses: Record<string, { isFollowing: boolean; doesFollowYou: boolean }> = {};
+        for (const u of data) {
+          if (u.id !== currentUser.id) {
+            try {
+              const res = await fetch(`/api/users/${u.id}/follow`);
+              const d = await res.json();
+              statuses[u.id] = { isFollowing: d.isFollowing, doesFollowYou: d.doesFollowYou };
+            } catch {}
+          }
+        }
+        setFollowStates(statuses);
+      }
     } catch {} finally {
       setLoading(false);
     }
@@ -37,6 +55,18 @@ export default function ExplorePage() {
       const res = await fetch("/api/posts");
       const data = await res.json();
       setPosts(data);
+    } catch {}
+  };
+
+  const handleFollow = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/api/users/${userId}/follow`, { method: "POST" });
+      const data = await res.json();
+      setFollowStates(prev => ({
+        ...prev,
+        [userId]: { isFollowing: data.isFollowing, doesFollowYou: data.doesFollowYou }
+      }));
     } catch {}
   };
 
@@ -128,6 +158,20 @@ export default function ExplorePage() {
                   <p>{u._count?.followers || 0} {u._count?.followers === 1 ? "follower" : "followers"}</p>
                   <p>{u._count?.posts || 0} {u._count?.posts === 1 ? "post" : "posts"}</p>
                 </div>
+                {currentUser?.id && u.id !== currentUser.id && (
+                  <button
+                    onClick={(e) => handleFollow(u.id, e)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${
+                      followStates[u.id]?.isFollowing
+                        ? "bg-gray-600 hover:bg-gray-500 text-white"
+                        : followStates[u.id]?.doesFollowYou
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-primary-600 hover:bg-primary-700 text-white"
+                    }`}
+                  >
+                    {followStates[u.id]?.isFollowing ? "Following" : followStates[u.id]?.doesFollowYou ? "Follow Back" : "Follow"}
+                  </button>
+                )}
               </div>
             ))}
           </div>
