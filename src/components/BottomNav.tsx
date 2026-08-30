@@ -22,7 +22,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-gray-200 dark:border-white/10 safe-area-bottom bg-white dark:bg-dark-900/90">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-gray-200 dark:border-white/10 safe-area-bottom bg-white/95 dark:bg-dark-900/95 backdrop-blur-xl">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -33,7 +33,7 @@ export default function BottomNav() {
                 key={item.href}
                 onClick={() => router.push(item.href)}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
-                  isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
+                  isActive ? "text-primary-500 dark:text-primary-400" : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 <div className="relative">
@@ -52,10 +52,10 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[48px] ${
-                isActive ? "text-primary-400" : "text-gray-500 dark:text-gray-500"
+                isActive ? "text-primary-500 dark:text-primary-400" : "text-gray-400 dark:text-gray-500"
               }`}
             >
-              <item.icon className={`text-xl ${isActive ? "text-primary-400" : ""}`} />
+              <item.icon className={`text-xl ${isActive ? "text-primary-500 dark:text-primary-400" : ""}`} />
               <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           );

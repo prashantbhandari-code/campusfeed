@@ -33,7 +33,7 @@ export default function Navbar() {
   // Desktop: no top navbar (sidebar handles everything)
   // Mobile: logo + theme toggle + bell + sign out
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200 dark:border-white/10 bg-white dark:bg-dark-900/90 md:hidden">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 dark:border-white/[0.08] bg-white/95 dark:bg-dark-900/95 backdrop-blur-xl md:hidden">
       <div className="px-4 h-14 flex items-center justify-between">
         <Link href="/feed" className="flex items-center gap-2 text-xl font-bold text-gradient">
           <HiAcademicCap className="text-xl" />
@@ -52,12 +52,12 @@ export default function Navbar() {
           <Link
             href="/notifications"
             className={`relative p-2 rounded-xl transition-all ${
-              pathname === "/notifications" ? "text-primary-400" : "text-gray-500 dark:text-gray-400"
+              pathname === "/notifications" ? "text-primary-500 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"
             }`}
           >
             <HiBell className="text-xl" />
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 flex items-center justify-center font-bold shadow-sm">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
@@ -66,7 +66,7 @@ export default function Navbar() {
           <Link
             href="/settings"
             className={`p-2 rounded-xl transition-all ${
-              pathname === "/settings" ? "text-primary-400" : "text-gray-500 dark:text-gray-400"
+              pathname === "/settings" ? "text-primary-500 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"
             }`}
             title="Settings"
           >

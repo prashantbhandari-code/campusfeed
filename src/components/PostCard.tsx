@@ -115,9 +115,9 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   };
 
   return (
-    <div className="mb-4 bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm dark:shadow-none">
+    <div className="mb-6 bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 dark:border-white/[0.06]">
         <div
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => router.push(`/profile/${post.author.username}`)}
@@ -185,12 +185,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </div>
       ) : post.content ? (
-        <p className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
+        <p className="px-4 py-3 text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
       ) : null}
 
       {/* Actions Bar — Instagram style */}
-      <div className="px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-5">
           <button onClick={handleLike} className="transition-all">
             {isLiked ? (
               <HiHeart className={`text-2xl text-red-500 ${heartAnimation ? "animate-heart" : ""}`} />
@@ -216,12 +216,12 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
 
       {/* Likes count */}
       {likesCount > 0 && (
-        <p className="px-4 pb-1 text-sm font-semibold text-gray-900 dark:text-white">{likesCount} likes</p>
+        <p className="px-4 pb-1 text-sm font-semibold text-gray-900 dark:text-white tracking-tight">{likesCount} {likesCount === 1 ? "like" : "likes"}</p>
       )}
 
       {/* Comments Section */}
       {showComments && (
-        <div className="px-4 pb-4 space-y-3">
+        <div className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-white/[0.06] pt-3">
           {comments.slice(0, 5).map((comment: any) => (
             <div key={comment.id} className="flex gap-3">
               <UserAvatar user={comment.author} size="sm" />
@@ -242,7 +242,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Add a comment..."
-              className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white focus:outline-none placeholder-gray-400 dark:placeholder-gray-500"
+              className="flex-1 bg-gray-100 dark:bg-dark-700 rounded-full px-4 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500/50 placeholder-gray-400 dark:placeholder-gray-500"
             />
             {commentText.trim() && (
               <button type="submit" className="text-primary-400 text-sm font-semibold">

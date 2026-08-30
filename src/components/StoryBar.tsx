@@ -116,7 +116,7 @@ export default function StoryBar() {
 
   return (
     <>
-      <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none">
+      <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* My Story */}
           <div className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer" onClick={() => fileRef.current?.click()}>
@@ -126,7 +126,7 @@ export default function StoryBar() {
                 <HiPlus className="text-xs" />
               </div>
             </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400 w-14 text-center truncate">Your Story</span>
+            <span className="text-[11px] text-gray-600 dark:text-gray-400 w-16 text-center truncate mt-1">Your Story</span>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="hidden" />
           </div>
 
@@ -137,7 +137,7 @@ export default function StoryBar() {
               className="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer"
               onClick={() => openStory(group.stories[0])}
             >
-              <div className="story-gradient rounded-full p-[2px]">
+              <div className="bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 rounded-full p-[2px]">
                 <div className="bg-white dark:bg-dark-900 rounded-full p-[2px]">
                   <UserAvatar user={group.author} size="lg" />
                 </div>

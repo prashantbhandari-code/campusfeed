@@ -23,12 +23,12 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-gray-200 dark:border-white/5 bg-white dark:bg-dark-900 z-40">
-      <div className="flex items-center gap-2 px-4 py-6 mb-4">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-gray-200 dark:border-white/[0.06] bg-white dark:bg-dark-900 z-40">
+      <div className="flex items-center gap-3 px-4 py-6 mb-6">
         <HiAcademicCap className="text-2xl text-campus-400" />
         <span className="text-xl font-bold text-gradient">CampusConnect</span>
       </div>
-      <div className="flex-1 space-y-1">
+      <div className="flex-1 space-y-0.5">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -37,8 +37,8 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                 isActive
-                  ? "bg-primary-600/20 text-primary-400 font-semibold"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-primary-600/10 text-primary-500 dark:text-primary-400 font-semibold border-l-2 border-primary-500 -ml-[2px] pl-[18px]"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               <item.icon className="text-xl" />
@@ -48,7 +48,7 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-white/5 pt-2 mt-2 space-y-1">
+      <div className="border-t border-gray-200 dark:border-white/[0.06] pt-3 mt-3 space-y-0.5">
         <button
           onClick={toggleTheme}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all w-full"
