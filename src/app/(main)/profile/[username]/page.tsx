@@ -39,7 +39,8 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const usersRes = await fetch(`/api/users?q=${username}`);
+      const isOwn = username === currentUser?.username;
+      const usersRes = await fetch(isOwn ? `/api/users?userId=${currentUser?.id}` : `/api/users?q=${username}`);
       const users = await usersRes.json();
       const userData = users[0];
       if (!userData) { setLoading(false); return; }
