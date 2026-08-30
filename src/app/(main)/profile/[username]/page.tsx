@@ -7,7 +7,7 @@ import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";
 import EditProfile from "@/components/EditProfile";
 import FollowersModal from "@/components/FollowersModal";
-import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout } from "react-icons/hi";
+import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout, HiOutlinePlus } from "react-icons/hi";
 import { signOut } from "next-auth/react";
 import { parseImages } from "@/lib/utils";
 import toast from "react-hot-toast";
