@@ -29,7 +29,7 @@ export default function Sidebar() {
         <HiAcademicCap className="text-2xl text-campus-400" />
         <span className="text-xl font-bold text-gradient">CampusConnect</span>
       </div>
-      <div className="flex-1 space-y-0.5">
+      <div className="space-y-0.5">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
