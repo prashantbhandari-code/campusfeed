@@ -11,8 +11,16 @@ export async function GET(req: Request) {
     const query = searchParams.get("q") || "";
     const userId = searchParams.get("userId");
 
-    let where: any = {};
-    if (userId) {
+    const session = await getServerSession(authOptions);
+  const currentUserId = (session?.user as any)?.id;
+
+  let where: any = {};
+    // Exclude current user from results
+  if (currentUserId) {
+    where.id = { not: currentUserId };
+  }
+
+  if (userId) {
       where.id = userId;
     } else if (query) {
       where.OR = [
