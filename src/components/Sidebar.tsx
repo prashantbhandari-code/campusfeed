@@ -3,14 +3,12 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiLogout, HiAcademicCap, HiSun, HiMoon, HiCog, HiOutlineCalendar } from "react-icons/hi";
-import { useTheme } from "@/components/ThemeProvider";
+import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiAcademicCap, HiCog, HiOutlineCalendar } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
-  const user = session?.user as any;
+    const user = session?.user as any;
 
   const menuItems = [
     { href: "/feed", icon: HiHome, label: "Home" },
@@ -49,22 +47,6 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-white/[0.06] pt-3 mt-3 space-y-0.5">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all w-full"
-        >
-          {theme === "dark" ? <HiSun className="text-xl" /> : <HiMoon className="text-xl" />}
-          <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-        </button>
-        <button
-          onClick={() => window.location.href = "/api/auth/signout?callbackUrl=/login"}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-all w-full"
-        >
-          <HiLogout className="text-xl" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </aside>
+      </aside>
   );
 }
