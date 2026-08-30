@@ -41,6 +41,8 @@ model User {
   groupPosts    GroupPost[]
   createdEvents Event[]
   pushSubscriptions PushSubscription[]
+  storyLikes     StoryLike[]
+  storyComments  StoryComment[]
 
   blockedUsers   BlockedUser[] @relation("Blocker")
   blockedBy      BlockedUser[] @relation("Blocked")
@@ -134,6 +136,9 @@ model Story {
   @@index([authorId])
   @@index([expiresAt])
   @@index([createdAt])
+
+  likes    StoryLike[]
+  comments StoryComment[]
 
   @@map("stories")
 }
@@ -315,4 +320,31 @@ model PushSubscription {
 
   @@index([userId])
   @@index([endpoint])
+}
+
+model StoryLike {
+  id        String   @id @default(uuid())
+  userId    String
+  storyId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([storyId])
+}
+
+model StoryComment {
+  id        String   @id @default(uuid())
+  userId    String
+  storyId   String
+  content   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([userId])
 }
