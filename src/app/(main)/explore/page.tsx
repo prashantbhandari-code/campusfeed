@@ -118,7 +118,7 @@ export default function ExplorePage() {
         loading ? (
           <div className="space-y-3 px-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="glass rounded-xl p-4 animate-pulse flex items-center gap-3">
+              <div key={i} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-xl p-4 animate-pulse flex items-center gap-3">
                 <div className="w-12 h-12 bg-gray-200 dark:bg-dark-600 rounded-full" />
                 <div className="flex-1">
                   <div className="h-4 bg-gray-200 dark:bg-dark-600 rounded w-1/3 mb-2" />
@@ -138,7 +138,7 @@ export default function ExplorePage() {
               <div
                 key={u.id}
                 onClick={() => router.push(`/profile/${u.username}`)}
-                className="glass rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all"
+                className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-all"
               >
                 <UserAvatar user={u} size="lg" isOnline={onlineUsers.includes(u.id)} />
                 <div className="flex-1 min-w-0">

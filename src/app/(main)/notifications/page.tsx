@@ -15,6 +15,32 @@ export default function NotificationsPage() {
     markAllRead();
   }, []);
 
+  
+  // Group consecutive notifications from same user of same type
+  const deduplicateNotifications = (notifs: any[]) => {
+    const grouped: any[] = [];
+    let i = 0;
+    while (i < notifs.length) {
+      const current = notifs[i];
+      let count = 1;
+      // Look ahead for consecutive same-user, same-type notifications
+      while (
+        i + count < notifs.length &&
+        notifs[i + count].fromUserId === current.fromUserId &&
+        notifs[i + count].type === current.type
+      ) {
+        count++;
+      }
+      if (count > 1) {
+        grouped.push({ ...current, count });
+      } else {
+        grouped.push(current);
+      }
+      i += count;
+    }
+    return grouped;
+  };
+
   const fetchNotifications = async () => {
     try {
       const res = await fetch("/api/notifications");
@@ -46,7 +72,7 @@ export default function NotificationsPage() {
       case "like": return "liked your post";
       case "comment": return "commented on your post";
       case "follow": return "started following you";
-      case "message": return "sent you a message";
+      case "message": return notif.count && notif.count > 1 ? `sent you ${notif.count} messages` : "sent you a message";
       default: return "interacted with you";
     }
   };
@@ -75,7 +101,7 @@ export default function NotificationsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {notifications.map((notif) => (
+          {deduplicateNotifications(notifications).map((notif) => (
             <div
               key={notif.id}
               className={`bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-xl p-4 flex items-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.03] ${

@@ -233,7 +233,7 @@ export default function GroupDetailPage() {
           <div className="px-4 py-4 space-y-4">
             {/* Create Post */}
             {group.isMember && (
-              <div className="glass rounded-2xl p-4">
+              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4">
                 <div className="flex gap-3">
                   <UserAvatar user={user} size="sm" />
                   <div className="flex-1">
