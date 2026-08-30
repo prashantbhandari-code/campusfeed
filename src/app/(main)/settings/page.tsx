@@ -113,14 +113,14 @@ export default function SettingsPage() {
 
       {MENU_SECTIONS.map((section) => (
         <div key={section.title} className="mb-4">
-          <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1 mb-2">{section.title}</h3>
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-1 mb-2">{section.title}</h3>
           <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] divide-y divide-gray-100 dark:divide-white/[0.04]">
             {section.items.map((item) => (
               <Link key={item.label} href={item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-all">
                 <item.icon className="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-gray-900 dark:text-white">{item.label}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{item.description}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-400 truncate">{item.description}</p>
                 </div>
                 <HiOutlineChevronRight className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
               </Link>
@@ -132,7 +132,7 @@ export default function SettingsPage() {
 
       {/* Push Notifications */}
       <div className="mb-4">
-        <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1 mb-2">Push Notifications</h3>
+        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-1 mb-2">Push Notifications</h3>
         <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
           <PushNotificationToggle />
         </div>
