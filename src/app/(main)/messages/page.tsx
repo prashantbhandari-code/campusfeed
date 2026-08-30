@@ -36,7 +36,7 @@ export default function MessagesPage() {
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.06]">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{user?.name?.split(" ")[0]}</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Messages</h2>
           <div className="flex items-center gap-3">
             <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Expand">
               <HiArrowsPointingOut className="w-5 h-5" />
