@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HiHome, HiUser, HiOutlineUserGroup } from "react-icons/hi2";
-import { HiSearch } from "react-icons/hi";
+import { HiSearch, HiCalendar } from "react-icons/hi";
 
 export default function BottomNav() {
   const { data: session } = useSession();
@@ -17,7 +17,7 @@ export default function BottomNav() {
     { href: "/feed", icon: HiHome, label: "Home" },
     { href: "/explore", icon: HiSearch, label: "Search" },
     { href: "/messages", icon: HiOutlineUserGroup, label: "Messages", isMessages: true },
-    { href: "/groups", icon: HiOutlineUserGroup, label: "Groups" },
+    { href: "/events", icon: HiCalendar, label: "Events" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
   ];
 

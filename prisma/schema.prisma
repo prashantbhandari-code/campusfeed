@@ -39,6 +39,7 @@ model User {
   groups        Group[]
   groupMembers  GroupMember[]
   groupPosts    GroupPost[]
+  createdEvents Event[]
 
   blockedUsers   BlockedUser[] @relation("Blocker")
   blockedBy      BlockedUser[] @relation("Blocked")
@@ -281,4 +282,22 @@ model GroupPost {
   @@index([groupId, createdAt])
 
   @@map("group_posts")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime?
+  imageUrl    String?
+  type        String   @default("meetup") // meetup, fest, workshop, seminar
+  createdBy   String
+  createdAt   DateTime @default(now())
+  
+  creator User @relation(fields: [createdBy], references: [id])
+  
+  @@index([startTime])
+  @@index([createdBy])
 }
