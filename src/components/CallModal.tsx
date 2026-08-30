@@ -87,6 +87,31 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     }
   }, [callType, otherUser, currentUser, isIncoming, offer, emit, playRing, endCall, setupPC]);
   
+  const answerIncomingCall = useCallback(async () => {
+    setErrorMsg(null);
+    setCallState("requesting-permission");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === "video" });
+      localStreamRef.current = stream;
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      pcRef.current = pc;
+      stream.getTracks().forEach(t => pc.addTrack(t, stream));
+      setupPC(pc);
+      // Set the remote offer
+      if (offer) {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        emit("call-answer", { callerId: otherUser.id, answer });
+        setCallState("connecting");
+      }
+    } catch (e: any) {
+      console.error("Answer call error:", e);
+      setErrorMsg("Could not answer call: " + (e.message || "Unknown error"));
+    }
+  }, [callType, otherUser, offer, emit, setupPC]);
+
   useSocketEvent("call-accepted", async (d: { answer: RTCSessionDescriptionInit }) => { stopRing(); setCallState("connecting"); if (pcRef.current) await pcRef.current.setRemoteDescription(new RTCSessionDescription(d.answer)); }, []);
   useSocketEvent("ice-candidate", async (d: { candidate: RTCIceCandidateInit }) => { if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(d.candidate)); }, []);
   useSocketEvent("call-rejected", () => { stopRing(); setCallState("ended"); setTimeout(onClose, 1500); }, []);
@@ -101,7 +126,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     }
     return () => { stopRing(); if (ringTimeout) clearTimeout(ringTimeout); };
   }, [isOpen]);
-  useEffect(() => () => { if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop()); if (pcRef.current) pcRef.current.close(); if (durationRef.current) clearInterval(durationRef.current); stopRing(); startedRef.current = false; }, []);
+  useEffect(() => { return () => { if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; } if (pcRef.current) { pcRef.current.close(); pcRef.current = null; } if (durationRef.current) { clearInterval(durationRef.current); durationRef.current = null; } stopRing(); }; }, [isOpen]);
   const toggleMute = () => { if (localStreamRef.current) { localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMuted; }); setIsMuted(!isMuted); } };
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };
   const fmt = (s: number) => Math.floor(s/60).toString().padStart(2,"0") + ":" + (s%60).toString().padStart(2,"0");
