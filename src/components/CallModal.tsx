@@ -112,7 +112,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-md mx-4">
         {callType === "video" && (
-          <div className="relative rounded-2xl overflow-hidden bg-dark-900 aspect-[3/4]">
+          <div className="relative rounded-2xl overflow-hidden bg-gray-900 dark:bg-dark-900 aspect-[3/4]">
             <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
             <div className="absolute top-4 right-4 w-32 h-24 rounded-xl overflow-hidden border-2 border-white/20">
               <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
@@ -126,7 +126,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
           </div>
         )}
         {callType === "audio" && (
-          <div className="rounded-2xl bg-dark-800 p-8 text-center">
+          <div className="rounded-2xl bg-gray-100 dark:bg-dark-800 p-8 text-center">
             <div className="w-24 h-24 rounded-full bg-primary-600/20 flex items-center justify-center mx-auto mb-4"><div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold">{otherUser.name?.charAt(0)}</div></div>
             <h3 className="text-xl font-bold text-white mb-1">{otherUser.name}</h3>
             <p className="text-gray-400 text-sm mb-2">@{otherUser.username}</p>

@@ -145,7 +145,7 @@ export default function GroupDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500" />
       </div>
     );
@@ -156,9 +156,9 @@ export default function GroupDetailPage() {
   const emoji = GROUP_EMOJIS[group.department || ""] || "👥";
 
   return (
-    <div className="min-h-screen bg-dark-900 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 md:pb-0">
       {/* Header */}
-      <div className="sticky top-16 z-10 bg-dark-900/95 backdrop-blur-sm border-b border-white/5">
+      <div className="sticky top-16 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm border-b border-white/5">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1">
             <HiArrowLeft className="text-xl" />
@@ -173,7 +173,7 @@ export default function GroupDetailPage() {
             onClick={group.isMember ? handleLeave : handleJoin}
             className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-all ${
               group.isMember
-                ? "bg-dark-700 text-gray-400 hover:bg-red-600/20 hover:text-red-400"
+                ? "bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-600/20 hover:text-red-500 dark:hover:text-red-400"
                 : "bg-primary-600 hover:bg-primary-700 text-white"
             }`}
           >
@@ -241,7 +241,7 @@ export default function GroupDetailPage() {
                       value={newPost}
                       onChange={(e) => setNewPost(e.target.value)}
                       placeholder={`Post in ${group.name}...`}
-                      className="w-full bg-dark-700 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[60px]"
+                      className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[60px]"
                       rows={2}
                     />
                     <div className="flex justify-end mt-2">
@@ -314,7 +314,7 @@ export default function GroupDetailPage() {
                   </span>
                 )}
                 {member.user.department && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-dark-700 text-gray-400">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">
                     {member.user.department}
                   </span>
                 )}

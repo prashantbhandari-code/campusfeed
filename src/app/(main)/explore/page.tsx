@@ -119,10 +119,10 @@ export default function ExplorePage() {
           <div className="space-y-3 px-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="glass rounded-xl p-4 animate-pulse flex items-center gap-3">
-                <div className="w-12 h-12 bg-dark-600 rounded-full" />
+                <div className="w-12 h-12 bg-gray-200 dark:bg-dark-600 rounded-full" />
                 <div className="flex-1">
-                  <div className="h-4 bg-dark-600 rounded w-1/3 mb-2" />
-                  <div className="h-3 bg-dark-600 rounded w-1/4" />
+                  <div className="h-4 bg-gray-200 dark:bg-dark-600 rounded w-1/3 mb-2" />
+                  <div className="h-3 bg-gray-200 dark:bg-dark-600 rounded w-1/4" />
                 </div>
               </div>
             ))}

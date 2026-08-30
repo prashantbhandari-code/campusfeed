@@ -82,15 +82,15 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] bg-black/50 dark:bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg glass rounded-2xl overflow-hidden animate-slide-up"
+        className="w-full max-w-lg bg-white dark:bg-dark-800/90 backdrop-blur-xl rounded-2xl overflow-hidden animate-slide-up shadow-xl dark:shadow-2xl border border-gray-200 dark:border-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-white/10">
           <h2 className="text-lg font-bold">Edit Profile</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
             <HiX className="text-xl" />
           </button>
         </div>
@@ -108,7 +108,7 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
-                className="absolute -bottom-1 -right-1 bg-primary-600 hover:bg-primary-700 rounded-full p-2 border-2 border-dark-900 transition-colors"
+                className="absolute -bottom-1 -right-1 bg-primary-600 hover:bg-primary-700 rounded-full p-2 border-2 border-white dark:border-dark-900 transition-colors"
               >
                 <HiCamera className="text-sm" />
               </button>
@@ -134,7 +134,7 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors placeholder:text-gray-400 dark:placeholder:text-gray-500"
               placeholder="Your name"
             />
           </div>
@@ -145,7 +145,7 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors resize-none"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               placeholder="Tell us about yourself..."
               rows={3}
               maxLength={200}
@@ -200,10 +200,10 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/10 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:bg-white/5 transition-all"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
           >
             Cancel
           </button>

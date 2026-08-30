@@ -214,7 +214,7 @@ export default function StoryBar() {
                       ))}
                     </div>
                   )}
-                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-white/10">
                     <input ref={commentInputRef} type="text" value={comment} onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleComment()}
                       placeholder="Add a comment..." className="flex-1 bg-white/10 rounded-full px-3 py-1.5 text-xs text-white placeholder-gray-400 outline-none" />
                     <button onClick={handleComment} disabled={!comment.trim()} className="text-primary-400 disabled:text-gray-500 font-semibold text-xs">Post</button>

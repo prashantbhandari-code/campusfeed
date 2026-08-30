@@ -104,12 +104,12 @@ export default function ProfilePage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="glass rounded-2xl overflow-hidden animate-pulse">
-          <div className="h-40 bg-dark-600" />
+          <div className="h-40 bg-gray-200 dark:bg-dark-600" />
           <div className="p-6">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 bg-dark-700 rounded-full -mt-12 border-4 border-dark-900" />
+              <div className="w-24 h-24 bg-gray-200 dark:bg-dark-700 rounded-full -mt-12 border-4 border-white dark:border-dark-900" />
               <div className="flex-1">
-                <div className="h-6 bg-dark-600 rounded w-1/3 mb-3" />
+                <div className="h-6 bg-gray-200 dark:bg-dark-600 rounded w-1/3 mb-3" />
                 <div className="h-4 bg-dark-600 rounded w-1/4" />
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function ProfilePage() {
               </span>
             )}
             {profile.rollNumber && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-dark-600 text-gray-400 border border-white/10">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-dark-600 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10">
                 #{profile.rollNumber}
               </span>
             )}
@@ -286,7 +286,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/10">
+      <div className="flex border-b border-gray-200 dark:border-white/10">
         <button
           onClick={() => setActiveTab("posts")}
           className={`flex-1 py-3 text-sm font-semibold transition-all ${

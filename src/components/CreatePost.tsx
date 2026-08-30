@@ -73,7 +73,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What's on your mind?"
-            className="w-full bg-dark-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[80px]"
+            className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[80px]"
             rows={3}
           />
 
@@ -81,7 +81,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           {images.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mt-3">
               {images.map((img, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-dark-700">
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-700">
                   <img src={img} alt="" className="w-full h-full object-cover" />
                   <button
                     onClick={() => setImages(images.filter((_, idx) => idx !== i))}
