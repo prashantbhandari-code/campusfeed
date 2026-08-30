@@ -93,7 +93,11 @@ export async function POST(
       createdAt: new Date(),
     });
 
-    return NextResponse.json({ isFollowing: true, doesFollowYou: true });
+        // Check if they follow us back
+    const theyFollowUs = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: followingId, followingId: followerId } },
+    });
+    return NextResponse.json({ isFollowing: true, doesFollowYou: !!theyFollowUs });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
