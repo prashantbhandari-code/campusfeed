@@ -30,6 +30,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const durationRef = useRef<NodeJS.Timeout | null>(null);
   const ringRef = useRef<NodeJS.Timeout | null>(null);
   const startedRef = useRef(false);
+  const callStateRef = useRef(callState);
 
   const stopRing = useCallback(() => { if (ringRef.current) { clearInterval(ringRef.current); ringRef.current = null; } }, []);
   const playRing = useCallback(() => {
@@ -65,11 +66,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     setErrorMsg(null);
     setCallState("requesting-permission");
     try {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-      pcRef.current = pc;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === "video" });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      // Only create PC after permission is granted
+      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      pcRef.current = pc;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
       setupPC(pc);
       const sdp = await pc.createOffer();
@@ -84,22 +86,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       else setErrorMsg("Could not start call: " + (e.message || "Unknown error"));
     }
   }, [callType, otherUser, currentUser, isIncoming, offer, emit, playRing, endCall, setupPC]);
-  const acceptIncoming = useCallback(async () => {
-    stopRing(); setCallState("connecting");
-    try {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-      pcRef.current = pc;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === "video" });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      stream.getTracks().forEach(t => pc.addTrack(t, stream));
-      setupPC(pc);
-      if (offer) { await pc.setRemoteDescription(new RTCSessionDescription(offer)); const ans = await pc.createAnswer(); await pc.setLocalDescription(ans); emit("call-answer", { callerId: otherUser.id, answer: ans }); }
-    } catch (e: any) {
-      console.error("Accept error:", e);
-      setErrorMsg("Could not join call: " + (e.message || "Unknown error"));
-    }
-  }, [callType, otherUser, offer, emit, stopRing, endCall, setupPC]);
+  
   useSocketEvent("call-accepted", async (d: { answer: RTCSessionDescriptionInit }) => { stopRing(); setCallState("connecting"); if (pcRef.current) await pcRef.current.setRemoteDescription(new RTCSessionDescription(d.answer)); }, []);
   useSocketEvent("ice-candidate", async (d: { candidate: RTCIceCandidateInit }) => { if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(d.candidate)); }, []);
   useSocketEvent("call-rejected", () => { stopRing(); setCallState("ended"); setTimeout(onClose, 1500); }, []);
@@ -110,7 +97,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     if (!isIncoming) {
       requestPermissionAndCall();
       // Auto-end after 30 seconds if no answer
-      ringTimeout = setTimeout(() => { if (callState === "ringing") { setErrorMsg("No answer. Call timed out."); endCall(); } }, 60000);
+      ringTimeout = setTimeout(() => { if (callStateRef.current === "ringing") { setErrorMsg("No answer. Call timed out."); endCall(); } }, 60000);
     }
     return () => { stopRing(); if (ringTimeout) clearTimeout(ringTimeout); };
   }, [isOpen]);
@@ -119,6 +106,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };
   const fmt = (s: number) => Math.floor(s/60).toString().padStart(2,"0") + ":" + (s%60).toString().padStart(2,"0");
   if (!isOpen) return null;
+  callStateRef.current = callState;
   const stateText = errorMsg ? errorMsg : callState === "requesting-permission" ? "Requesting camera & microphone permission..." : callState === "ringing" ? (isIncoming ? "Incoming call..." : "Ringing...") : callState === "connecting" ? "Connecting..." : callState === "connected" ? fmt(callDuration) : "Call ended";
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
