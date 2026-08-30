@@ -148,7 +148,7 @@ export default function GroupsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 md:pb-0">
       {/* Header */}
-      <div className="sticky top-16 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.06]">
+      <div className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Groups</h1>
