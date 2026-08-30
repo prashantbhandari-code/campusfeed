@@ -9,6 +9,7 @@ import EditProfile from "@/components/EditProfile";
 import FollowersModal from "@/components/FollowersModal";
 import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout, HiOutlinePlus } from "react-icons/hi";
 import { signOut } from "next-auth/react";
+import Link from "next/link";
 import { parseImages } from "@/lib/utils";
 import toast from "react-hot-toast";
 
@@ -190,6 +191,13 @@ export default function ProfilePage() {
                   >
                     Edit Profile
                   </button>
+                  <Link
+                    href="/create"
+                    className="px-4 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5"
+                  >
+                    <HiOutlinePlus className="text-sm" />
+                    Post
+                  </Link>
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
                     className="px-3 py-1.5 border border-red-500/30 text-red-400 rounded-lg text-sm font-semibold hover:bg-red-500/10 transition-all"
