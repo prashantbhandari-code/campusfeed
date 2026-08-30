@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HiHome, HiSearch, HiBell, HiChat, HiPlusCircle, HiUser, HiAcademicCap, HiCog, HiOutlineCalendar } from "react-icons/hi";
+import { HiHome, HiSearch, HiBell, HiChat, HiUser, HiAcademicCap, HiCog, HiOutlineCalendar } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
@@ -16,7 +16,6 @@ export default function Sidebar() {
     { href: "/messages", icon: HiChat, label: "Messages" },
     { href: "/notifications", icon: HiBell, label: "Notifications" },
     { href: "/events", icon: HiOutlineCalendar, label: "Events" },
-    { href: "/create", icon: HiPlusCircle, label: "Create Post" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
     { href: "/settings", icon: HiCog, label: "Settings" },
   ];
