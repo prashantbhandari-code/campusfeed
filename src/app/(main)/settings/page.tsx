@@ -128,6 +128,14 @@ export default function SettingsPage() {
         </div>
       ))}
 
+
+      {/* Push Notifications */}
+      <div className="mb-4">
+        <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1 mb-2">Push Notifications</h3>
+        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
+          <PushNotificationToggle />
+        </div>
+      </div>
       <div className="mb-4">
         <button onClick={() => { signOut({ callbackUrl: "/login" }); toast.success("Signed out"); }} className="w-full flex items-center justify-center gap-2 p-4 bg-white dark:bg-dark-800 border border-red-200 dark:border-red-500/20 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shadow-sm dark:shadow-none">
           <HiOutlineArrowRightOnRectangle className="text-lg text-red-500" />
