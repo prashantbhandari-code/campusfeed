@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ import {
 } from "react-icons/hi2";
 import { useTheme } from "@/components/ThemeProvider";
 import toast from "react-hot-toast";
+import { usePushNotifications } from "@/lib/usePushNotifications";
 
 const MENU_SECTIONS = [
   {
@@ -50,6 +52,35 @@ const MENU_SECTIONS = [
     ],
   },
 ];
+
+
+function PushNotificationToggle() {
+  const { isSubscribed, loading, subscribe, unsubscribe, checkSubscription } = usePushNotifications();
+  
+  React.useEffect(() => { checkSubscription(); }, [checkSubscription]);
+  
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-900 dark:text-white">Enable Push Notifications</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {isSubscribed ? "You will receive push notifications" : "Notifications are disabled"}
+        </p>
+      </div>
+      <button
+        onClick={() => isSubscribed ? unsubscribe() : subscribe()}
+        disabled={loading}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          isSubscribed ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
+        } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+      >
+        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          isSubscribed ? "translate-x-6" : "translate-x-1"
+        }`} />
+      </button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { data: session } = useSession();

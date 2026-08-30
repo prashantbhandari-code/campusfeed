@@ -108,7 +108,18 @@ export default function RootLayout({
             </CallProvider>
           </AuthProvider>
         </ThemeProvider>
-      </body>
+      <script dangerouslySetInnerHTML={{ __html: `
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('Service Worker registered:', reg.scope);
+          }).catch(function(err) {
+            console.log('Service Worker registration failed:', err);
+          });
+        });
+      }
+    ` }} />
+</body>
     </html>
   );
 }

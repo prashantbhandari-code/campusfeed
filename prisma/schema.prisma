@@ -40,6 +40,7 @@ model User {
   groupMembers  GroupMember[]
   groupPosts    GroupPost[]
   createdEvents Event[]
+  pushSubscriptions PushSubscription[]
 
   blockedUsers   BlockedUser[] @relation("Blocker")
   blockedBy      BlockedUser[] @relation("Blocked")
@@ -300,4 +301,18 @@ model Event {
   
   @@index([startTime])
   @@index([createdBy])
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  endpoint     String
+  p256dh       String
+  auth         String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([endpoint])
 }

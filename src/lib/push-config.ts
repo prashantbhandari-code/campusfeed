@@ -1,0 +1,5 @@
+// Push Notification VAPID Configuration
+// Generate your own keys: https://web-push-codelab.glitch.me/
+export const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+export const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+export const VAPID_SUBJECT = "mailto:admin@campusconnect.app";
