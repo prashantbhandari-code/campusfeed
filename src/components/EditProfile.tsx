@@ -129,23 +129,23 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
               placeholder="Your name"
             />
           </div>
 
           {/* Bio */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Bio</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bio</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors resize-none"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors resize-none"
               placeholder="Tell us about yourself..."
               rows={3}
               maxLength={200}
@@ -155,11 +155,11 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
 
           {/* Department */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Department / Branch</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department / Branch</label>
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-200"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-gray-200"
             >
               <option value="">Select your branch</option>
               {DEPARTMENTS.map((d) => (
@@ -170,11 +170,11 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
 
           {/* Batch Year */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Batch Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Batch Year</label>
             <select
               value={batchYear}
               onChange={(e) => setBatchYear(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-200"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-gray-200"
             >
               <option value="">Select your batch</option>
               <option value="2025">2025</option>
@@ -188,12 +188,12 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
 
           {/* Roll Number */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Roll Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Roll Number</label>
             <input
               type="text"
               value={rollNumber}
               onChange={(e) => setRollNumber(e.target.value)}
-              className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
               placeholder="e.g., 2305011000XX"
             />
           </div>
