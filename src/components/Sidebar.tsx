@@ -25,10 +25,10 @@ export default function Sidebar() {
 
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-gray-200 dark:border-white/[0.06] bg-white dark:bg-dark-900 z-40">
-      <div className="flex items-center gap-3 px-4 py-6 mb-6">
+      <Link href="/feed" className="flex items-center gap-3 px-4 py-6 mb-6 hover:opacity-80 transition-opacity">
         <HiAcademicCap className="text-2xl text-campus-400" />
         <span className="text-xl font-bold text-gradient">CampusConnect</span>
-      </div>
+      </Link>
       <div className="space-y-0.5">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
