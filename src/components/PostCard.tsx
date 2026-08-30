@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Lightbox from "./Lightbox";
 import UserAvatar from "./UserAvatar";
 import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineShare, HiBookmark, HiDotsHorizontal, HiOutlineTrash, HiOutlinePencil, HiOutlineBan } from "react-icons/hi";
 import { formatDate, parseImages } from "@/lib/utils";
@@ -23,6 +24,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
   const [comments, setComments] = useState(post.comments || []);
   const [commentText, setCommentText] = useState("");
   const [showComments, setShowComments] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [heartAnimation, setHeartAnimation] = useState(false);
   const [doubleTapHeart, setDoubleTapHeart] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -114,6 +117,8 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     setShowMenu(false);
   };
 
+  const parsedImages = (() => { try { return JSON.parse(post.images || "[]"); } catch { return []; } })();
+
   return (
     <div className="mb-6 bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
       {/* Header */}
@@ -156,7 +161,7 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
             <div className="grid grid-cols-2 gap-0.5">
               {images.slice(0, 4).map((img, i) => (
                 <div key={i} className="relative aspect-square">
-                  <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={img} alt="" className="w-full h-auto rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => { setLightboxImages(parsedImages); setLightboxIndex(i); }} />
                   {i === 3 && images.length > 4 && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <span className="text-white text-2xl font-bold">+{images.length - 4}</span>

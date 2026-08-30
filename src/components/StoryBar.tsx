@@ -20,6 +20,10 @@ export default function StoryBar() {
   const [showComments, setShowComments] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { fetchStories(); }, []);
@@ -34,6 +38,42 @@ export default function StoryBar() {
       });
       setStories(valid);
     } catch {}
+  };
+
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      setCameraStream(stream);
+      setShowCamera(true);
+      setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, 100);
+    } catch { toast.error("Camera access denied"); }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const formData = new FormData();
+      formData.append("file", blob, "story.jpg");
+      try {
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const { url } = await uploadRes.json();
+        await fetch("/api/stories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [url] }) });
+        fetchStories();
+        toast.success("Story posted!");
+        closeCamera();
+      } catch { toast.error("Failed to post story"); }
+    }, "image/jpeg", 0.9);
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    setCameraStream(null);
+    setShowCamera(false);
   };
 
   const handleCreateStory = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +160,7 @@ export default function StoryBar() {
       <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* My Story */}
-          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => fileRef.current?.click()}>
+          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => { const m = confirm("Use camera?"); if (m) openCamera(); else fileRef.current?.click(); }}>
             <div className="relative">
               <UserAvatar user={user} size="lg" />
               <div className="absolute -bottom-0.5 -right-0.5 bg-primary-600 rounded-full p-0.5 border-2 border-white dark:border-dark-900">
@@ -129,6 +169,7 @@ export default function StoryBar() {
             </div>
             <span className="text-[11px] text-gray-600 dark:text-gray-400 w-16 text-center truncate">Your Story</span>
             <input ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="hidden" />
+            <input ref={cameraRef} type="file" accept="image/*" capture="user" onChange={handleCreateStory} className="hidden" />
           </div>
           {Object.values(groupedStories).map((group: any) => (
             <div key={group.author.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => openStory(group.stories[0])}>
@@ -142,6 +183,24 @@ export default function StoryBar() {
           ))}
         </div>
       </div>
+
+      {/* Camera Modal */}
+      {showCamera && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md rounded-2xl overflow-hidden bg-black">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-[70vh] object-cover" />
+            <div className="flex items-center justify-center gap-6 p-4">
+              <button onClick={closeCamera} className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+                <HiX className="w-6 h-6 text-white" />
+              </button>
+              <button onClick={capturePhoto} className="p-4 rounded-full bg-white hover:bg-gray-200 transition-colors border-4 border-red-500">
+                <div className="w-10 h-10 rounded-full bg-red-500" />
+              </button>
+              <div className="w-12" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Story Viewer Modal */}
       {viewingStory && (

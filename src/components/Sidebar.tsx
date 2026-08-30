@@ -1,14 +1,18 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+import { useTheme } from "@/components/ThemeProvider";
 import { HiHome, HiSearch, HiBell, HiChat, HiUser, HiAcademicCap, HiCog, HiOutlineCalendar } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
     const user = session?.user as any;
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const menuItems = [
     { href: "/feed", icon: HiHome, label: "Home" },
@@ -19,6 +23,20 @@ export default function Sidebar() {
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
     { href: "/settings", icon: HiCog, label: "Settings" },
   ];
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch("/api/messages");
+        const data = await res.json();
+        const count = data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
+        setUnreadCount(count);
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-gray-200 dark:border-white/[0.06] bg-white dark:bg-dark-900 z-40">

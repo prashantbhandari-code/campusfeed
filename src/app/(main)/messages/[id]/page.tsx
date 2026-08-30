@@ -16,6 +16,7 @@ export default function ChatPage() {
   const userId = params.id as string;
   const user = session?.user as any;
   const [messages, setMessages] = useState<any[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [otherUser, setOtherUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -248,7 +249,17 @@ export default function ChatPage() {
             {otherUser?.name} is typing...
           </div>
         )}
-        <div ref={messagesEndRef} />
+        {isTyping && (
+              <div className="flex items-center gap-2 px-4 py-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"0ms"}} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"150ms"}} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"300ms"}} />
+                </div>
+                <span className="text-xs text-gray-400">typing...</span>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
       </div>
 
       {/* File preview */}
