@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone } from "react-icons/hi2";
+import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath } from "react-icons/hi2";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
@@ -17,7 +17,7 @@ interface CallModalProps {
 
 export default function CallModal({ isOpen, onClose, otherUser, currentUser, callType: initialCallType, isIncoming = false, offer }: CallModalProps) {
   const { emit } = useSocket(currentUser?.id);
-  const [callState, setCallState] = useState<string>("ringing");
+  const [callState, setCallState] = useState<string>(isIncoming ? "ringing" : "requesting-permission");
   const [callType] = useState(initialCallType);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -29,6 +29,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const durationRef = useRef<NodeJS.Timeout | null>(null);
   const ringRef = useRef<NodeJS.Timeout | null>(null);
+  const startedRef = useRef(false);
 
   const stopRing = useCallback(() => { if (ringRef.current) { clearInterval(ringRef.current); ringRef.current = null; } }, []);
   const playRing = useCallback(() => {
@@ -60,7 +61,9 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       // Don't end on 'disconnected' — allow for brief interruptions and reconnection
     };
   }, [otherUser.id, emit, endCall, stopRing]);
-  const startOutgoing = useCallback(async () => {
+  const requestPermissionAndCall = useCallback(async () => {
+    setErrorMsg(null);
+    setCallState("requesting-permission");
     try {
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       pcRef.current = pc;
@@ -75,12 +78,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       setCallState("ringing"); playRing();
     } catch (e: any) {
       console.error("Call error:", e);
-      if (e.name === "NotAllowedError") setErrorMsg("Camera/mic permission denied. Allow access and retry.");
-      else if (e.name === "NotFoundError") setErrorMsg("No camera or microphone found.");
-      else if (e.name === "NotReadableError") setErrorMsg("Camera/mic in use by another app.");
+      if (e.name === "NotAllowedError") setErrorMsg("Camera/microphone permission denied. Allow access and try again.");
+      else if (e.name === "NotFoundError") setErrorMsg("No camera or microphone found on this device.");
+      else if (e.name === "NotReadableError") setErrorMsg("Camera/microphone is in use by another app.");
       else setErrorMsg("Could not start call: " + (e.message || "Unknown error"));
     }
-  }, [callType, otherUser, currentUser, emit, playRing, endCall, setupPC]);
+  }, [callType, otherUser, currentUser, isIncoming, offer, emit, playRing, endCall, setupPC]);
   const acceptIncoming = useCallback(async () => {
     stopRing(); setCallState("connecting");
     try {
@@ -105,18 +108,18 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     if (!isOpen) return;
     let ringTimeout: NodeJS.Timeout | null = null;
     if (!isIncoming) {
-      startOutgoing();
+      requestPermissionAndCall();
       // Auto-end after 30 seconds if no answer
       ringTimeout = setTimeout(() => { if (callState === "ringing") { setErrorMsg("No answer. Call timed out."); endCall(); } }, 60000);
     }
     return () => { stopRing(); if (ringTimeout) clearTimeout(ringTimeout); };
   }, [isOpen]);
-  useEffect(() => () => { if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop()); if (pcRef.current) pcRef.current.close(); if (durationRef.current) clearInterval(durationRef.current); stopRing(); }, []);
+  useEffect(() => () => { if (localStreamRef.current) localStreamRef.current.getTracks().forEach(t => t.stop()); if (pcRef.current) pcRef.current.close(); if (durationRef.current) clearInterval(durationRef.current); stopRing(); startedRef.current = false; }, []);
   const toggleMute = () => { if (localStreamRef.current) { localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMuted; }); setIsMuted(!isMuted); } };
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };
   const fmt = (s: number) => Math.floor(s/60).toString().padStart(2,"0") + ":" + (s%60).toString().padStart(2,"0");
   if (!isOpen) return null;
-  const stateText = errorMsg ? errorMsg : callState === "ringing" ? (isIncoming ? "Incoming call..." : "Ringing...") : callState === "connecting" ? "Connecting..." : callState === "connected" ? fmt(callDuration) : "Call ended";
+  const stateText = errorMsg ? errorMsg : callState === "requesting-permission" ? "Requesting camera & microphone permission..." : callState === "ringing" ? (isIncoming ? "Incoming call..." : "Ringing...") : callState === "connecting" ? "Connecting..." : callState === "connected" ? fmt(callDuration) : "Call ended";
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-md mx-4">
@@ -139,12 +142,22 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
             <div className="w-24 h-24 rounded-full bg-primary-600/20 flex items-center justify-center mx-auto mb-4"><div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold">{otherUser.name?.charAt(0)}</div></div>
             <h3 className="text-xl font-bold text-white mb-1">{otherUser.name}</h3>
             <p className="text-gray-400 text-sm mb-2">@{otherUser.username}</p>
-            <p className="text-gray-500 text-sm">{stateText}</p>
+            <p className={errorMsg ? "text-red-400 text-sm" : "text-gray-500 text-sm"}>{stateText}</p>
+            {callState === "requesting-permission" && !errorMsg && (
+              <div className="flex justify-center mt-4">
+                <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
             {callState === "ringing" && !errorMsg && <div className="flex justify-center gap-1 mt-4">{[0,1,2].map(i => <div key={i} className="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: i*200+"ms" }} />)}</div>}
+            {errorMsg && callState !== "connected" && callState !== "ended" && (
+              <button onClick={requestPermissionAndCall} className="mt-4 px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center gap-2 mx-auto text-sm font-medium transition-all">
+                <HiArrowPath className="w-4 h-4" /> Try Again
+              </button>
+            )}
           </div>
         )}
         <div className="flex justify-center gap-4 mt-6">
-          {isIncoming && callState === "ringing" && <button onClick={acceptIncoming} className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
+          {isIncoming && callState === "ringing" && <button onClick={requestPermissionAndCall} className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
           {(callState === "connected" || callState === "connecting") && <button onClick={toggleMute} className={isMuted ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isMuted ? <HiMicrophone className="text-xl" /> : <HiMicrophone className="text-xl" />}</button>}
           {(callState === "connected" || callState === "connecting") && callType === "video" && <button onClick={toggleVideo} className={isVideoOff ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isVideoOff ? <HiVideoCameraSlash className="text-xl" /> : <HiVideoCamera className="text-xl" />}</button>}
           {callState !== "ended" && <button onClick={endCall} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center"><HiPhoneXMark className="text-2xl text-white" /></button>}

@@ -184,26 +184,8 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={async () => {
-                try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                  stream.getTracks().forEach(t => t.stop());
-                  setOutgoingCallType("audio");
-                  setShowOutgoingCall(true);
-                } catch (e) {
-                  alert("Microphone permission is required for calls. Please allow microphone access in your browser settings and try again.");
-                }
-              }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-green-500/20 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>
-              <button onClick={async () => {
-                try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                  stream.getTracks().forEach(t => t.stop());
-                  setOutgoingCallType("video");
-                  setShowOutgoingCall(true);
-                } catch (e) {
-                  alert("Camera and microphone permissions are required for video calls. Please allow access in your browser settings and try again.");
-                }
-              }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-blue-500/20 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all" title="Video call"><HiVideoCamera className="text-lg" /></button>
+              <button onClick={() => { setOutgoingCallType("audio"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-green-500/20 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>
+              <button onClick={() => { setOutgoingCallType("video"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-blue-500/20 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all" title="Video call"><HiVideoCamera className="text-lg" /></button>
             </div>
           </>
         )}
