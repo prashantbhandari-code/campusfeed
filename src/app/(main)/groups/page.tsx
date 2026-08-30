@@ -148,7 +148,7 @@ export default function GroupsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 md:pb-0">
       {/* Header */}
-      <div className="sticky top-16 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-white/5">
+      <div className="sticky top-16 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Groups</h1>
@@ -168,7 +168,7 @@ export default function GroupsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search groups..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-primary-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500"
             />
           </div>
 
@@ -198,7 +198,7 @@ export default function GroupsPage() {
       <div className="max-w-2xl mx-auto px-4 py-4">
         {/* Create Group Modal */}
         {showCreate && (
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/10 rounded-2xl p-4 mb-4 animate-slide-up">
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-5 mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Create New Group</h3>
             <input
               type="text"
@@ -264,7 +264,7 @@ export default function GroupsPage() {
                 <Link
                   key={group.id}
                   href={`/groups/${group.id}`}
-                  className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors block shadow-sm dark:shadow-none"
+                  className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all block"
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-2xl flex-shrink-0">
                     {group.avatar ? (

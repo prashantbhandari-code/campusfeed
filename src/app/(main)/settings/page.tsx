@@ -59,7 +59,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+        <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all">
           <HiOutlineArrowLeft className="text-xl text-gray-600 dark:text-gray-400" />
         </button>
         <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/10 rounded-2xl mb-4 shadow-sm dark:shadow-none">
+      <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl mb-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all">
         <div className="flex items-center gap-3">
           {theme === "dark" ? <HiOutlineSun className="text-xl text-yellow-500" /> : <HiOutlineMoon className="text-xl text-blue-500" />}
           <div className="text-left">
@@ -82,9 +82,9 @@ export default function SettingsPage() {
       {MENU_SECTIONS.map((section) => (
         <div key={section.title} className="mb-4">
           <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-1 mb-2">{section.title}</h3>
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm dark:shadow-none divide-y divide-gray-100 dark:divide-white/5">
+          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] divide-y divide-gray-100 dark:divide-white/[0.04]">
             {section.items.map((item) => (
-              <Link key={item.label} href={item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+              <Link key={item.label} href={item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-all">
                 <item.icon className="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-gray-900 dark:text-white">{item.label}</p>

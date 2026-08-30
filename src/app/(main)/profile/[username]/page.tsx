@@ -175,7 +175,7 @@ export default function ProfilePage() {
               {isSelf && (
                 <button
                   onClick={() => setShowEditProfile(true)}
-                  className="absolute -bottom-1 -right-1 bg-primary-600 hover:bg-primary-700 rounded-full p-1.5 border-2 border-dark-900 transition-colors"
+                  className="absolute -bottom-1 -right-1 bg-primary-600 hover:bg-primary-700 rounded-full p-1.5 border-2 border-white dark:border-dark-900 transition-colors shadow-lg"
                 >
                   <HiCamera className="text-xs text-white" />
                 </button>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowEditProfile(true)}
-                    className="px-5 py-1.5 border border-white/20 rounded-lg text-sm font-semibold hover:bg-white/5 transition-all"
+                    className="px-5 py-1.5 border border-gray-300 dark:border-white/20 rounded-lg text-sm font-semibold hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-gray-700 dark:text-white"
                   >
                     Edit Profile
                   </button>
@@ -204,7 +204,7 @@ export default function ProfilePage() {
                     onClick={handleFollow}
                     className={`px-6 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                       isFollowing
-                        ? "bg-dark-600 hover:bg-dark-500"
+                        ? "bg-gray-200 dark:bg-dark-600 hover:bg-gray-300 dark:hover:bg-dark-500 text-gray-700 dark:text-white"
                         : doesFollowYou
                         ? "bg-green-600 hover:bg-green-700"
                         : "bg-primary-600 hover:bg-primary-700"

@@ -33,9 +33,9 @@ export default function MessagesPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-4 md:py-8">
       {/* Instagram-style card */}
-      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm dark:shadow-none">
+      <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-white/10">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.06]">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{user?.name?.split(" ")[0]}</h2>
           <div className="flex items-center gap-3">
             <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Expand">
@@ -79,11 +79,11 @@ export default function MessagesPage() {
                 <div
                   key={conv.otherUser.id}
                   onClick={() => router.push(`/messages/${conv.otherUser.id}`)}
-                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-all active:bg-gray-100 dark:active:bg-white/10"
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.04] cursor-pointer transition-all active:bg-gray-100 dark:active:bg-white/[0.08]"
                 >
                   {/* Avatar with online dot */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-600">
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-600 ring-2 ring-gray-100 dark:ring-white/[0.06]">
                       {conv.otherUser.avatar ? (
                         <img src={conv.otherUser.avatar} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -93,7 +93,7 @@ export default function MessagesPage() {
                       )}
                     </div>
                     {isOnline && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-dark-800" />
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-dark-800 shadow-sm" />
                     )}
                   </div>
 
@@ -121,7 +121,7 @@ export default function MessagesPage() {
       {/* Compose button */}
       <button
         onClick={() => router.push("/explore")}
-        className="fixed bottom-24 right-6 md:hidden w-14 h-14 bg-primary-600 hover:bg-primary-700 rounded-full flex items-center justify-center shadow-lg shadow-primary-600/30 transition-all active:scale-95 z-40"
+        className="fixed bottom-24 right-6 md:hidden w-14 h-14 bg-primary-600 hover:bg-primary-700 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(37,99,235,0.4)] transition-all active:scale-95 z-40"
         title="New message"
       >
         <HiPencilSquare className="text-xl text-white" />

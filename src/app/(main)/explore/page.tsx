@@ -88,17 +88,17 @@ export default function ExplorePage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search people..."
-            className="w-full pl-12 pr-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+            className="w-full pl-12 pr-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 transition-all text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
       </form>
 
       {/* Tabs */}
-      <div className="flex border-b border-white/10 mb-4 px-4">
+      <div className="flex border-b border-gray-200 dark:border-white/10 mb-4 px-4">
         <button
           onClick={() => setActiveTab("people")}
           className={`flex-1 py-3 text-sm font-semibold transition-all ${
-            activeTab === "people" ? "text-white border-b-2 border-white" : "text-gray-500"
+            activeTab === "people" ? "text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white" : "text-gray-400 dark:text-gray-500"
           }`}
         >
           👥 People
@@ -106,7 +106,7 @@ export default function ExplorePage() {
         <button
           onClick={() => setActiveTab("posts")}
           className={`flex-1 py-3 text-sm font-semibold transition-all ${
-            activeTab === "posts" ? "text-white border-b-2 border-white" : "text-gray-500"
+            activeTab === "posts" ? "text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white" : "text-gray-400 dark:text-gray-500"
           }`}
         >
           📸 Posts
