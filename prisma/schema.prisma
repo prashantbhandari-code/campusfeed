@@ -39,6 +39,8 @@ model User {
   groups        Group[]
   groupMembers  GroupMember[]
   groupPosts    GroupPost[]
+  createdSections Section[]
+  sectionPosts  SectionPost[]
   createdEvents Event[]
   pushSubscriptions PushSubscription[]
   storyLikes     StoryLike[]
@@ -247,6 +249,7 @@ model Group {
   createdBy User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members   GroupMember[]
   posts     GroupPost[]
+  sections  Section[]
 
   @@index([type])
   @@index([department])
@@ -288,6 +291,45 @@ model GroupPost {
   @@index([groupId, createdAt])
 
   @@map("group_posts")
+}
+
+model Section {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  icon        String?
+  color       String?
+  groupId     String
+  order       Int      @default(0)
+  createdById String
+  createdAt   DateTime @default(now())
+
+  group     Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  posts     SectionPost[]
+
+  @@index([groupId])
+  @@index([groupId, order])
+
+  @@map("sections")
+}
+
+model SectionPost {
+  id        String   @id @default(uuid())
+  content   String?
+  images    String   @default("[]")
+  sectionId String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  section Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@index([authorId])
+  @@index([sectionId, createdAt])
+
+  @@map("section_posts")
 }
 
 model Event {
