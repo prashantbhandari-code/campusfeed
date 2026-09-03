@@ -21,6 +21,7 @@ export default function Sidebar() {
     { href: "/notifications", icon: HiBell, label: "Notifications" },
     { href: "/events", icon: HiOutlineCalendar, label: "Events" },
     { href: "/lms", icon: HiAcademicCap, label: "Learning" },
+    { href: "/academic", icon: HiAcademicCap, label: "Academic" },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile" },
     { href: "/settings", icon: HiCog, label: "Settings" },
   ];
