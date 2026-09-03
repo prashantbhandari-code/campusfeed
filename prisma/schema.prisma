@@ -39,7 +39,14 @@ model User {
   groups        Group[]
   groupMembers  GroupMember[]
   groupPosts    GroupPost[]
+courses         Course[]
   createdSections Section[]
+  assignments     Assignment[]
+  submissions     Submission[]
+  quizzes         Quiz[]
+  quizAttempts    QuizAttempt[]
+  courseMaterials  CourseMaterial[]
+  grades          Grade[]
   sectionPosts  SectionPost[]
   createdEvents Event[]
   pushSubscriptions PushSubscription[]
@@ -389,4 +396,177 @@ model StoryComment {
 
   @@index([storyId])
   @@index([userId])
+}
+
+
+model Course {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  department  String?
+  semester    Int?
+  credits     Int      @default(3)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator   User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  modules   CourseModule[]
+  materials CourseMaterial[]
+
+  @@index([createdBy])
+  @@index([department])
+  @@index([semester])
+  @@map("courses")
+}
+
+model CourseModule {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  order       Int      @default(0)
+  courseId     String
+  createdAt   DateTime @default(now())
+
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assignments Assignment[]
+  quizzes     Quiz[]
+
+  @@index([courseId])
+  @@index([courseId, order])
+  @@map("course_modules")
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  moduleId    String
+  dueDate     DateTime?
+  maxScore    Int      @default(100)
+  allowLate   Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@index([moduleId])
+  @@index([createdBy])
+  @@map("assignments")
+}
+
+model Submission {
+  id          String   @id @default(uuid())
+  assignmentId String
+  studentId   String
+  content     String?
+  fileUrl     String?
+  fileName    String?
+  score       Int?
+  feedback    String?
+  status      String   @default("submitted")
+  submittedAt DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+model Quiz {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  moduleId    String
+  timeLimit   Int      @default(30)
+  maxAttempts Int      @default(1)
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  module    CourseModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  creator   User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([moduleId])
+  @@index([createdBy])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id        String   @id @default(uuid())
+  quizId    String
+  question  String
+  type      String   @default("multiple_choice")
+  options   String   @default("[]")
+  answer    String
+  points    Int      @default(1)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  quiz     Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  quizId    String
+  studentId String
+  answers   String   @default("[]")
+  score     Int      @default(0)
+  completed Boolean  @default(false)
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+
+  quiz    Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@index([studentId])
+  @@map("quiz_attempts")
+}
+
+model CourseMaterial {
+  id        String   @id @default(uuid())
+  courseId   String
+  title     String
+  fileUrl   String
+  fileName  String
+  fileType  String?
+  uploadedBy String
+  createdAt DateTime @default(now())
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploader User   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([uploadedBy])
+  @@map("course_materials")
+}
+
+model Grade {
+  id        String   @id @default(uuid())
+  courseId   String
+  studentId String
+  assignmentId String?
+  quizId    String?
+  score     Int
+  maxScore  Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([studentId])
+  @@index([courseId, studentId])
+  @@map("grades")
 }

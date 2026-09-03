@@ -1,0 +1,44 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import prisma from '@/lib/prisma';
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = (session?.user as any).id;
+
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: params.id },
+    include: {
+      questions: { orderBy: { order: 'asc' } },
+      attempts: { where: { studentId: userId }, orderBy: { startedAt: 'desc' } },
+    },
+  });
+  if (!quiz) return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
+  const attemptsUsed = quiz.attempts.length;
+  return NextResponse.json({ quiz, canAttempt: attemptsUsed < quiz.maxAttempts, attemptsUsed });
+}
+
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions);
+  if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userId = (session?.user as any).id;
+
+  const body = await req.json();
+  const { answers } = body;
+  const quiz = await prisma.quiz.findUnique({ where: { id: params.id }, include: { questions: true } });
+  if (!quiz) return NextResponse.json({ error: 'Quiz not found' }, { status: 404 });
+
+  let score = 0;
+  const gradedAnswers = quiz.questions.map((q, i) => {
+    const userAnswer = answers?.[i] || '';
+    const correct = userAnswer === q.answer;
+    if (correct) score += q.points;
+    return { questionId: q.id, userAnswer, correct, points: correct ? q.points : 0 };
+  });
+  const attempt = await prisma.quizAttempt.create({
+    data: { quizId: params.id, studentId: userId, answers: JSON.stringify(gradedAnswers), score, completed: true, endedAt: new Date() },
+  });
+  return NextResponse.json({ attempt, score, total: quiz.questions.reduce((a, q) => a + q.points, 0) });
+}
