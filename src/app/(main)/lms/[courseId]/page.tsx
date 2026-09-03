@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { HiPlus, HiBookOpen, HiDocumentText, HiAcademicCap, HiArrowLeft, HiCheckCircle } from "react-icons/hi2";
@@ -15,8 +15,8 @@ interface Course {
   materials: { id: string; title: string; fileName: string; fileType?: string; createdAt: string }[];
 }
 
-export default function CourseDetail({ params }: { params: Promise<{ courseId: string }> }) {
-  const { courseId } = use(params);
+export default function CourseDetail({ params }: { params: { courseId: string } }) {
+  const courseId = params.courseId;
   const { data: session } = useSession();
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);

@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect, use, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { HiArrowLeft, HiClock, HiCheckCircle, HiXCircle } from "react-icons/hi2";
 
-export default function QuizPage({ params }: { params: Promise<{ courseId: string; quizId: string }> }) {
-  const { courseId, quizId } = use(params);
+export default function QuizPage({ params }: { params: { courseId: string; quizId: string } }) {
+  const { courseId, quizId } = params;
   const router = useRouter();
   const [quiz, setQuiz] = useState<any>(null);
   const [answers, setAnswers] = useState<string[]>([]);

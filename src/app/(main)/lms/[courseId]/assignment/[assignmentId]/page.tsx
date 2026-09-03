@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { HiArrowLeft, HiDocumentText, HiCheckCircle } from "react-icons/hi2";
 import { format } from "date-fns";
 
-export default function AssignmentPage({ params }: { params: Promise<{ courseId: string; assignmentId: string }> }) {
-  const { courseId, assignmentId } = use(params);
+export default function AssignmentPage({ params }: { params: { courseId: string; assignmentId: string } }) {
+  const { courseId, assignmentId } = params;
   const { data: session } = useSession();
   const router = useRouter();
   const [assignment, setAssignment] = useState<any>(null);
