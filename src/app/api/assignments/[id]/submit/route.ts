@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const userId = (session?.user as any).id;
     const body = await req.json();
@@ -26,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const submission = await prisma.submission.findUnique({ where: { assignmentId_studentId: { assignmentId: params.id, studentId: (session?.user as any).id } }, include: { assignment: true } });
     return NextResponse.json(submission || null);

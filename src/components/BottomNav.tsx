@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HiHome, HiUser, HiOutlineUserGroup } from "react-icons/hi2";

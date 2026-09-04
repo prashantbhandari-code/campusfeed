@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { useSocketEvent } from "@/lib/useSocket";
 import CallModal from "./CallModal";
 

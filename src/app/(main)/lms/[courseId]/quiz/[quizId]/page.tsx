@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import { HiArrowLeft, HiClock, HiCheckCircle, HiXCircle } from "react-icons/hi2";
 

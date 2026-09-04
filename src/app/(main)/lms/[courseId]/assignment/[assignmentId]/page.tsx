@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import { HiArrowLeft, HiDocumentText, HiCheckCircle } from "react-icons/hi2";
 import { format } from "date-fns";

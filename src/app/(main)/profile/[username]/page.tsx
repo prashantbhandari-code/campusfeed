@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOutAppwrite as signOut } from "@/lib/appwrite-session";
 import { useParams, useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";
 import EditProfile from "@/components/EditProfile";
 import FollowersModal from "@/components/FollowersModal";
 import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout, HiOutlinePlus } from "react-icons/hi";
-import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { parseImages } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -200,7 +199,7 @@ export default function ProfilePage() {
                     Post
                   </Link>
                   <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={() => { signOut(); toast.success("Signed out"); }}
                     className="px-3 py-1.5 border border-red-500/30 text-red-400 rounded-lg text-sm font-semibold hover:bg-red-500/10 transition-all"
                     title="Sign out"
                   >

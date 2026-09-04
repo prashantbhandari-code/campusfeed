@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import UserAvatar from "./UserAvatar";
 import { HiPlus, HiHeart, HiPaperAirplane, HiX } from "react-icons/hi";
 import toast from "react-hot-toast";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import PostCard from "@/components/PostCard";
 import StoryBar from "@/components/StoryBar";
 import UserAvatar from "@/components/UserAvatar";

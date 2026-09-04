@@ -1,11 +1,12 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle } from "react-icons/hi";
+import { account } from "@/lib/appwrite";
+import { ID } from "appwrite";
 
 const DEPARTMENTS = [
   "CSE", "CSE (Data Science)", "CSE (AI & ML)", "CSE (IoT)", "CSE (Cyber Security)",
@@ -37,26 +38,73 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
+      // 1. Create Appwrite account
+      const appwriteUser = await account.create(
+        ID.unique(),
+        email,
+        password,
+        name
+      );
+
+      // 2. Create user profile in our database
+      const res = await fetch("/api/auth/register-appwrite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, username, email, password, confirmPassword, phone, department, batchYear }),
+        body: JSON.stringify({
+          appwriteId: appwriteUser.$id,
+          name,
+          username,
+          email,
+          phone,
+          department,
+          batchYear: parseInt(batchYear) || null,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        // Rollback: delete the Appwrite account if DB creation fails
+        try {
+          await account.deleteSession("current");
+        } catch {
+          // Ignore rollback errors
+        }
         toast.error(data.error || "Registration failed");
         return;
       }
 
+      // 3. Create Appwrite session
+      await account.createEmailPasswordSession(email, password);
+
       setRegisteredEmail(email);
       setRegistered(true);
-      toast.success("Account created! You can now login.");
-    } catch {
-      toast.error("Something went wrong");
+      toast.success("Account created! Redirecting...");
+      
+      // Auto redirect after brief success display
+      setTimeout(() => router.push("/feed"), 1500);
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("already")) {
+        toast.error("An account with this email already exists");
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      const { OAuthProvider } = await import("appwrite");
+      account.createOAuth2Session(
+        OAuthProvider.Google,
+        window.location.origin + "/auth/complete-profile",
+        window.location.origin + "/register?error=google-failed"
+      );
+    } catch {
+      toast.error("Google sign-up failed");
     }
   };
 
@@ -92,7 +140,7 @@ export default function RegisterPage() {
           <div className="glass rounded-2xl p-8 space-y-5">
             {/* Google Sign-Up Button */}
             <button
-              onClick={() => signIn("google", { callbackUrl: "/feed" })}
+              onClick={handleGoogleSignUp}
               className="w-full py-3 bg-white hover:bg-gray-100 text-gray-800 rounded-xl font-semibold transition-all flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -111,9 +159,8 @@ export default function RegisterPage() {
               <div className="flex-1 h-px bg-white/10" />
             </div>
 
-            {/* Registration Form — 8 Fields */}
+            {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 1. Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">1. Name</label>
                 <input
@@ -126,7 +173,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* 2. Username */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">2. Username</label>
                 <input
@@ -139,7 +185,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* 3. Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">3. Email</label>
                 <div className="relative">
@@ -165,7 +210,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* 4. Phone */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">4. Phone</label>
                 <input
@@ -178,7 +222,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* 5. Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">5. Password</label>
                 <input
@@ -192,7 +235,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              {/* 6. Confirm Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">6. Confirm Password</label>
                 <div className="relative">
@@ -218,7 +260,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* 7. Branch / Department */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">7. Branch</label>
                 <select
@@ -234,7 +275,6 @@ export default function RegisterPage() {
                 </select>
               </div>
 
-              {/* 8. Batch */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">8. Batch</label>
                 <select

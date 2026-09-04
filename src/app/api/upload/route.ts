@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import { withRateLimit } from "@/lib/rateLimit";
 
 const APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1";
@@ -17,7 +16,7 @@ const ALLOWED_TYPES = {
 
 export const POST = withRateLimit(async (req: Request) => {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

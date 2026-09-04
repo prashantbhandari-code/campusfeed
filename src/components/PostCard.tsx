@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import Lightbox from "./Lightbox";
 import UserAvatar from "./UserAvatar";

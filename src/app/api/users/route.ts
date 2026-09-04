@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: Request) {
@@ -11,7 +10,7 @@ export async function GET(req: Request) {
     const query = searchParams.get("q") || "";
     const userId = searchParams.get("userId");
 
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
   const currentUserId = (session?.user as any)?.id;
 
   let where: any = {};

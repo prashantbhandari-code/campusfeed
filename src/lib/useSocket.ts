@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import { useSession } from "next-auth/react";
-
+import { useSession } from "@/lib/appwrite-session";
 let socket: Socket | null = null;
 
 async function getSocket(): Promise<Socket> {

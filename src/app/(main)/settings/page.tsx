@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOutAppwrite as signOut } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -139,7 +139,7 @@ export default function SettingsPage() {
       </div>
       <div className="mb-4">
         
-      <button onClick={() => { signOut({ callbackUrl: "/login" }); toast.success("Signed out"); }} className="w-full flex items-center justify-center gap-2 p-4 bg-white dark:bg-dark-800 border border-red-200 dark:border-red-500/20 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shadow-sm dark:shadow-none">
+      <button onClick={() => { signOut(); toast.success("Signed out"); }} className="w-full flex items-center justify-center gap-2 p-4 bg-white dark:bg-dark-800 border border-red-200 dark:border-red-500/20 rounded-2xl hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shadow-sm dark:shadow-none">
           <HiOutlineArrowRightOnRectangle className="text-lg text-red-500" />
           <span className="font-medium text-red-500">Log Out</span>
         </button>

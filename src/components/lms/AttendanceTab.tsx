@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/appwrite-session";
 import { HiCheckCircle, HiExclamationTriangle, HiClock, HiCheckBadge, HiPencilSquare, HiUserGroup, HiChevronDown } from "react-icons/hi2";
 import { format } from "date-fns";
 import UserAvatar from "@/components/UserAvatar";

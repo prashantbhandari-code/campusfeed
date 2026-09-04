@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const body = await req.json();
     if (!body.title || !body.moduleId) return NextResponse.json({ error: 'Title and module required' }, { status: 400 });

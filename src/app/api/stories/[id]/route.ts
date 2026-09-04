@@ -1,14 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 
 // GET story with likes and comments
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     const userId = (session?.user as any)?.id;
     const story = await prisma.story.findUnique({
       where: { id: params.id },
@@ -35,7 +34,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // POST like/unlike or add comment
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getAppwriteSession(req);
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = (session.user as any).id;
     const body = await req.json();

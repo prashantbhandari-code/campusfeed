@@ -1,12 +1,12 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { useSearchParams } from "next/navigation";
+import { account } from "@/lib/appwrite";
 
 function LoginForm() {
   const router = useRouter();
@@ -23,10 +23,6 @@ function LoginForm() {
     switch (err) {
       case "not-kiit":
         return "Only @kiit.ac.in college emails are allowed. Please use your KIIT email.";
-      case "OAuthAccountNotLinked":
-        return "This email is already registered with a password. Please use email & password to login.";
-      case "check-details":
-        return "Account could not be created. Please check your details and try again.";
       case "CredentialsSignin":
         return "Invalid email or password. Please try again.";
       default:
@@ -41,26 +37,46 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      // Create Appwrite email/password session
+      await account.createEmailPasswordSession(email, password);
+
+      // Fetch user profile from our DB
+      const res = await fetch("/api/auth/me", {
+        headers: {
+          "x-appwrite-user-id": (await account.get()).$id,
+        },
       });
 
-      if (result?.error) {
-        if (result.error.includes("verify")) {
-          toast.error("Please verify your email first. Check your inbox!");
-        } else {
-          toast.error("Invalid email or password");
-        }
-      } else {
+      if (res.ok) {
         toast.success("Welcome back to CampusConnect!");
         router.push("/feed");
+      } else {
+        // User doesn't exist in our DB yet — need to complete profile
+        toast.error("Please complete your profile first");
+        router.push("/auth/complete-profile?email=" + encodeURIComponent(email));
       }
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("Invalid credentials") || msg.includes("user_invalid")) {
+        toast.error("Invalid email or password");
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { OAuthProvider } = await import("appwrite");
+      account.createOAuth2Session(
+        OAuthProvider.Google,
+        window.location.origin + "/feed",
+        window.location.origin + "/login?error=google-failed"
+      );
+    } catch {
+      toast.error("Google sign-in failed");
     }
   };
 
@@ -105,7 +121,7 @@ function LoginForm() {
         <div className="glass rounded-2xl p-8 space-y-5">
           {/* Google Sign-In Button */}
           <button
-            onClick={() => signIn("google", { callbackUrl: "/feed" })}
+            onClick={handleGoogleLogin}
             className="w-full py-3 bg-white dark:bg-white hover:bg-gray-100 text-gray-800 rounded-xl font-semibold transition-all flex items-center justify-center gap-3 border border-gray-200 dark:border-transparent"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
