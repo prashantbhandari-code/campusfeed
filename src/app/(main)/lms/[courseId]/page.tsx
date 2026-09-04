@@ -20,7 +20,7 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
   const { data: session } = useSession();
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
-  const [tab, setTab] = useState<"modules"|"materials"|"grades">("modules");
+  const [tab, setTab] = useState<"modules"|"attendance"|"forum"|"resources"|"grades">("modules");
   const [showModule, setShowModule] = useState(false);
   const [moduleName, setModuleName] = useState("");
   const [showAssignment, setShowAssignment] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
       </div>
 
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-        {(["modules","materials","grades"] as const).map(t => (
+        {(["modules","attendance","forum","resources","grades"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${tab === t ? "bg-white dark:bg-gray-700 shadow dark:text-white" : "text-gray-500 dark:text-gray-400"}`}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>
         ))}
       </div>
@@ -110,7 +110,7 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
           {course.modules.length === 0 && <p className="text-center text-gray-400 py-10">No modules yet. Add one to get started.</p>}
         </div>
       )}
-      {tab === "materials" && (
+      {tab === "attendance" && (<div className="space-y-4"><div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-white/[0.06] text-center"><p className="text-gray-500 dark:text-gray-400">Attendance tracking coming soon</p></div></div>)} {tab === "forum" && (<div className="space-y-4"><div className="bg-white dark:bg-dark-800 rounded-xl p-6 border border-gray-200 dark:border-white/[0.06] text-center"><p className="text-gray-500 dark:text-gray-400">Discussion forum coming soon</p></div></div>)} {tab === "resources" && (
         <div className="space-y-4">
           {course.materials.length > 0 ? course.materials.map(m => (
             <div key={m.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between">

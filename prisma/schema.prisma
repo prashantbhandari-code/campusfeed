@@ -22,6 +22,7 @@ model User {
   batchYear     Int?
   coverPhoto    String?
   verified      Boolean   @default(false)
+  role          String    @default("student") // student, teacher, admin
   createdAt     DateTime  @default(now())
 
   posts         Post[]
@@ -48,6 +49,10 @@ courses         Course[]
   courseMaterials  CourseMaterial[]
   grades          Grade[]
   sectionPosts  SectionPost[]
+  enrollments   CourseEnrollment[]
+  attendances   Attendance[]
+  forumPosts    ForumPost[]
+  forumReplies  ForumReply[]
   createdEvents Event[]
   pushSubscriptions PushSubscription[]
   storyLikes     StoryLike[]
@@ -412,8 +417,11 @@ model Course {
   updatedAt   DateTime @updatedAt
 
   creator   User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  modules   CourseModule[]
-  materials CourseMaterial[]
+  modules    CourseModule[]
+  materials  CourseMaterial[]
+  enrollments CourseEnrollment[]
+  attendances Attendance[]
+  forumPosts  ForumPost[]
 
   @@index([createdBy])
   @@index([department])
@@ -569,4 +577,80 @@ model Grade {
   @@index([studentId])
   @@index([courseId, studentId])
   @@map("grades")
+}
+
+model CourseEnrollment {
+  id        String   @id @default(uuid())
+  courseId   String
+  studentId String
+  role      String   @default("student") // student, teaching_assistant
+  status    String   @default("active")  // active, dropped, completed
+  enrolledAt DateTime @default(now())
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([courseId])
+  @@index([studentId])
+  @@map("course_enrollments")
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  courseId   String
+  studentId String
+  date      DateTime @default(now())
+  status    String   @default("present") // present, absent, late, excused
+  markedBy  String?
+  qrCode    String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId, date])
+  @@index([courseId])
+  @@index([studentId])
+  @@index([courseId, date])
+  @@map("attendances")
+}
+
+model ForumPost {
+  id        String   @id @default(uuid())
+  courseId   String
+  authorId  String
+  title     String
+  content   String
+  pinned    Boolean  @default(false)
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author  User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  replies ForumReply[]
+
+  @@index([courseId])
+  @@index([authorId])
+  @@index([courseId, createdAt])
+  @@map("forum_posts")
+}
+
+model ForumReply {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([postId, createdAt])
+  @@map("forum_replies")
 }
