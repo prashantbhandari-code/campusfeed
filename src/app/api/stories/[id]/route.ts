@@ -65,3 +65,23 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// DELETE story (owner only)
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const session = await getAppwriteSession(req);
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const story = await prisma.story.findUnique({ where: { id: params.id } });
+    if (!story) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (story.authorId !== (session.user as any).id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    await prisma.storyComment.deleteMany({ where: { storyId: params.id } });
+    await prisma.storyLike.deleteMany({ where: { storyId: params.id } });
+    await prisma.story.delete({ where: { id: params.id } });
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
