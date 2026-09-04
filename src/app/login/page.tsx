@@ -37,31 +37,40 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Create Appwrite email/password session
-      await account.createEmailPasswordSession(email, password);
+      // Step 1: Try Appwrite login directly
+      try {
+        await account.createEmailPasswordSession(email, password);
+        const awUser = await account.get();
+        const meRes = await fetch("/api/auth/me", {
+          headers: { "x-appwrite-user-id": awUser.$id },
+        });
+        if (meRes.ok) {
+          toast.success("Welcome back to CampusConnect!");
+          router.push("/feed");
+          return;
+        }
+        toast.error("Please complete your profile first");
+        router.push("/auth/complete-profile?email=" + encodeURIComponent(email));
+        return;
+      } catch {
+        // Appwrite login failed - user may not have an Appwrite account yet
+      }
 
-      // Fetch user profile from our DB
-      const res = await fetch("/api/auth/me", {
-        headers: {
-          "x-appwrite-user-id": (await account.get()).$id,
-        },
+      // Step 2: Fallback - verify in PostgreSQL and create Appwrite account
+      const migrateRes = await fetch("/api/auth/migrate-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (res.ok) {
+      if (migrateRes.ok) {
         toast.success("Welcome back to CampusConnect!");
         router.push("/feed");
       } else {
-        // User doesn't exist in our DB yet — need to complete profile
-        toast.error("Please complete your profile first");
-        router.push("/auth/complete-profile?email=" + encodeURIComponent(email));
-      }
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("Invalid credentials") || msg.includes("user_invalid")) {
         toast.error("Invalid email or password");
-      } else {
-        toast.error("Something went wrong. Please try again.");
       }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
