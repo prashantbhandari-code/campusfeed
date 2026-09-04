@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { HiPlus, HiAcademicCap, HiBookOpen, HiClock, HiCalendar } from "react-icons/hi2";
+import { HiPlus, HiAcademicCap, HiBookOpen, HiCalendar, HiCheckBadge, HiUserGroup } from "react-icons/hi2";
 
 interface Course {
   id: string;
@@ -12,21 +12,48 @@ interface Course {
   department?: string;
   semester?: number;
   credits: number;
+  createdBy: string;
   creator: { id: string; name: string; avatar?: string };
   _count: { modules: number; materials: number };
 }
 
+interface EnrollmentMap { [courseId: string]: { isEnrolled: boolean; count: number } }
+
 export default function LMSDashboard() {
-  const { data: session } = useSession();
+  const { data: session } = useSession() as any;
   const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [enrollments, setEnrollments] = useState<EnrollmentMap>({});
+  const [enrolling, setEnrolling] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ name: "", code: "", description: "", department: "", semester: "", credits: "3" });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/courses").then(r => r.json()).then(d => { setCourses(d); setLoading(false); });
+    fetch("/api/courses").then(r => r.json()).then(async (d) => {
+      setCourses(d);
+      setLoading(false);
+      // Fetch enrollment status for each course
+      const results: EnrollmentMap = {};
+      await Promise.all(d.map(async (c: Course) => {
+        try {
+          const res = await fetch("/api/courses/" + c.id + "/enroll");
+          if (res.ok) { const data = await res.json(); results[c.id] = { isEnrolled: data.isEnrolled, count: data.count }; }
+        } catch {}
+      }));
+      setEnrollments(results);
+    });
   }, []);
+
+  const handleEnroll = async (courseId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEnrolling(courseId);
+    const res = await fetch("/api/courses/" + courseId + "/enroll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "student" }) });
+    if (res.ok) {
+      setEnrollments({ ...enrollments, [courseId]: { isEnrolled: true, count: (enrollments[courseId]?.count || 0) + 1 } });
+    }
+    setEnrolling(null);
+  };
 
   const createCourse = async () => {
     if (!form.name || !form.code) return;
@@ -79,28 +106,43 @@ export default function LMSDashboard() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {courses.map(course => (
-            <div key={course.id} onClick={() => router.push("/lms/" + course.id)} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition-all">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">{course.code}</span>
-                    {course.semester && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">Sem {course.semester}</span>}
+          {courses.map(course => {
+            const enrollment = enrollments[course.id];
+            const isEnrolled = enrollment?.isEnrolled || false;
+            const isCreator = session?.user?.id === course.createdBy;
+            return (
+              <div key={course.id} onClick={() => router.push("/lms/" + course.id)} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer transition-all">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">{course.code}</span>
+                      {course.semester && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">Sem {course.semester}</span>}
+                      {isEnrolled && <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded font-medium flex items-center gap-1"><HiCheckBadge className="w-3 h-3" /> Enrolled</span>}
+                      {isCreator && <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded font-medium">Creator</span>}
+                    </div>
+                    <h3 className="text-lg font-semibold dark:text-white mt-1">{course.name}</h3>
+                    {course.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{course.description}</p>}
                   </div>
-                  <h3 className="text-lg font-semibold dark:text-white mt-1">{course.name}</h3>
-                  {course.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{course.description}</p>}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right text-sm text-gray-400">
+                      <p>{course.credits} credits</p>
+                    </div>
+                    {!isEnrolled && !isCreator && (
+                      <button onClick={(e) => handleEnroll(course.id, e)} disabled={enrolling === course.id} className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap">
+                        {enrolling === course.id ? "Joining..." : "Enroll"}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right text-sm text-gray-400">
-                  <p>{course.credits} credits</p>
+                <div className="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1"><HiBookOpen className="w-3 h-3" /> {course._count.modules} modules</span>
+                  <span className="flex items-center gap-1"><HiCalendar className="w-3 h-3" /> {course._count.materials} materials</span>
+                  {enrollment?.count !== undefined && <span className="flex items-center gap-1"><HiUserGroup className="w-3 h-3" /> {enrollment.count} students</span>}
+                  <span className="flex items-center gap-1">by {course.creator.name}</span>
                 </div>
               </div>
-              <div className="flex gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1"><HiBookOpen className="w-3 h-3" /> {course._count.modules} modules</span>
-                <span className="flex items-center gap-1"><HiCalendar className="w-3 h-3" /> {course._count.materials} materials</span>
-                <span className="flex items-center gap-1">by {course.creator.name}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -2,13 +2,15 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { HiPlus, HiDocumentText, HiAcademicCap, HiArrowLeft, HiCheckCircle } from "react-icons/hi2";
+import { HiPlus, HiDocumentText, HiAcademicCap, HiArrowLeft, HiCheckCircle, HiCheckBadge, HiUserGroup, HiUserMinus } from "react-icons/hi2";
 import { format } from "date-fns";
 import AttendanceTab from "@/components/lms/AttendanceTab";
 import ForumTab from "@/components/lms/ForumTab";
+import UserAvatar from "@/components/UserAvatar";
 
 interface Course {
   id: string; name: string; code: string; description?: string; department?: string; semester?: number; credits: number;
+  createdBy: string;
   creator: { id: string; name: string; avatar?: string };
   modules: { id: string; name: string; description?: string; order: number;
     assignments: { id: string; title: string; dueDate?: string; maxScore: number; _count: { submissions: number } }[];
@@ -17,9 +19,16 @@ interface Course {
   materials: { id: string; title: string; fileName: string; fileType?: string; createdAt: string }[];
 }
 
+interface EnrolledStudent {
+  studentId: string;
+  role: string;
+  enrolledAt: string;
+  student: { id: string; name: string; username?: string; avatar?: string };
+}
+
 export default function CourseDetail({ params }: { params: { courseId: string } }) {
   const courseId = params.courseId;
-  const { data: session } = useSession();
+  const { data: session } = useSession() as any;
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
   const [tab, setTab] = useState<"modules"|"attendance"|"forum"|"resources"|"grades">("modules");
@@ -28,7 +37,46 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
   const [showAssignment, setShowAssignment] = useState<string | null>(null);
   const [assignForm, setAssignForm] = useState({ title: "", description: "", dueDate: "", maxScore: "100" });
 
-  useEffect(() => { fetch("/api/courses/" + courseId).then(r => r.json()).then(setCourse); }, [courseId]);
+  // Enrollment state
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
+  const [enrolling, setEnrolling] = useState(false);
+  const [showStudents, setShowStudents] = useState(false);
+
+  const isCreator = session?.user?.id === course?.createdBy;
+
+  useEffect(() => {
+    fetch("/api/courses/" + courseId).then(r => r.json()).then(setCourse);
+    fetch("/api/courses/" + courseId + "/enroll").then(r => r.json()).then(d => {
+      setIsEnrolled(d.isEnrolled || false);
+      setEnrollmentCount(d.count || 0);
+      setEnrolledStudents(d.enrollments || []);
+    }).catch(() => {});
+  }, [courseId]);
+
+  const handleEnroll = async () => {
+    setEnrolling(true);
+    const res = await fetch("/api/courses/" + courseId + "/enroll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "student" }) });
+    if (res.ok) {
+      setIsEnrolled(true);
+      setEnrollmentCount(c => c + 1);
+      // Re-fetch students
+      const d = await fetch("/api/courses/" + courseId + "/enroll").then(r => r.json());
+      setEnrolledStudents(d.enrollments || []);
+    }
+    setEnrolling(false);
+  };
+
+  const handleUnenroll = async () => {
+    if (!confirm("Are you sure you want to leave this course?")) return;
+    const res = await fetch("/api/courses/" + courseId + "/enroll", { method: "DELETE" });
+    if (res.ok) {
+      setIsEnrolled(false);
+      setEnrollmentCount(c => Math.max(0, c - 1));
+      setEnrolledStudents(students => students.filter(s => s.studentId !== session?.user?.id));
+    }
+  };
 
   const addModule = async () => {
     if (!moduleName) return;
@@ -51,12 +99,66 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       <button onClick={() => router.push("/lms")} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400"><HiArrowLeft className="w-4 h-4" /> Back to Courses</button>
+
+      {/* Course Header with Enrollment */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 mb-2"><span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">{course.code}</span>
-          {course.semester && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">Sem {course.semester}</span>}
-          <span className="text-xs text-gray-400">{course.credits} credits</span></div>
-        <h1 className="text-2xl font-bold dark:text-white">{course.name}</h1>
-        {course.description && <p className="text-gray-500 dark:text-gray-400 mt-2">{course.description}</p>}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">{course.code}</span>
+              {course.semester && <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">Sem {course.semester}</span>}
+              <span className="text-xs text-gray-400">{course.credits} credits</span>
+              {isEnrolled && <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded font-medium flex items-center gap-1"><HiCheckBadge className="w-3 h-3" /> Enrolled</span>}
+              {isCreator && <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded font-medium">Creator</span>}
+            </div>
+            <h1 className="text-2xl font-bold dark:text-white">{course.name}</h1>
+            {course.description && <p className="text-gray-500 dark:text-gray-400 mt-2">{course.description}</p>}
+            <div className="flex items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1"><HiUserGroup className="w-4 h-4" /> {enrollmentCount} student{enrollmentCount !== 1 ? "s" : ""}</span>
+              <button onClick={() => setShowStudents(!showStudents)} className="text-blue-600 hover:text-blue-700 text-sm">{showStudents ? "Hide students" : "View students"}</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isEnrolled && !isCreator && (
+              <button onClick={handleEnroll} disabled={enrolling} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium">
+                {enrolling ? "Joining..." : "Join Course"}
+              </button>
+            )}
+            {isEnrolled && !isCreator && (
+              <button onClick={handleUnenroll} className="flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-sm">
+                <HiUserMinus className="w-4 h-4" /> Leave
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Enrolled Students List */}
+        {showStudents && (
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <h3 className="text-sm font-semibold dark:text-white mb-3">Enrolled Students ({enrolledStudents.length})</h3>
+            {enrolledStudents.length > 0 ? (
+              <div className="space-y-2">
+                {enrolledStudents.map(e => (
+                  <div key={e.studentId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar user={e.student} size="sm" />
+                      <div>
+                        <p className="text-sm font-medium dark:text-white">{e.student.name}</p>
+                        {e.student.username && <p className="text-xs text-gray-400">@{e.student.username}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {e.role === "teacher" && <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded">Teacher</span>}
+                      <span className="text-xs text-gray-400">{format(new Date(e.enrolledAt), "MMM d, yyyy")}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No students enrolled yet</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
@@ -67,7 +169,9 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
 
       {tab === "modules" && (
         <div className="space-y-4">
-          <button onClick={() => setShowModule(true)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"><HiPlus className="w-4 h-4" /> Add Module</button>
+          {(isCreator || isEnrolled) && (
+            <button onClick={() => setShowModule(true)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium"><HiPlus className="w-4 h-4" /> Add Module</button>
+          )}
           {showModule && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 flex gap-2">
               <input value={moduleName} onChange={e => setModuleName(e.target.value)} placeholder="Module name" className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white" />
@@ -79,7 +183,7 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
             <div key={m.id} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold dark:text-white">Module {i + 1}: {m.name}</h3>
-                <button onClick={() => setShowAssignment(m.id)} className="text-xs text-blue-600 hover:text-blue-700">+ Assignment</button>
+                {(isCreator || isEnrolled) && <button onClick={() => setShowAssignment(m.id)} className="text-xs text-blue-600 hover:text-blue-700">+ Assignment</button>}
               </div>
               {showAssignment === m.id && (
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-3 space-y-2">
