@@ -216,7 +216,7 @@ export default function CourseDetail({ params }: { params: { courseId: string } 
           {course.modules.length === 0 && <p className="text-center text-gray-400 py-10">No modules yet. Add one to get started.</p>}
         </div>
       )}
-      {tab === "attendance" && <AttendanceTab courseId={courseId} />}
+      {tab === "attendance" && <AttendanceTab courseId={courseId} createdBy={course.createdBy} />}
       {tab === "forum" && <ForumTab courseId={courseId} />}
       {tab === "resources" && (
         <div className="space-y-4">
