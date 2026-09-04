@@ -164,6 +164,11 @@ function LoginForm() {
                 placeholder="••••••••"
                 required
               />
+              <div className="text-right mt-1">
+                <Link href="/auth/forgot-password" className="text-xs text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button
