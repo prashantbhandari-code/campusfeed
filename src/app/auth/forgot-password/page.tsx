@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { account } from "@/lib/appwrite";
 
 function ForgotPasswordForm() {
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 

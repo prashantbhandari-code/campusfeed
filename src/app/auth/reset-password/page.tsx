@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
-import { account } from "@/lib/appwrite";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -86,19 +85,24 @@ function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      // Step 1: Reset password via Appwrite
-      await account.updateRecovery(userId, secret, password);
+      // The server verifies the recovery secret against Appwrite and updates
+      // both the Appwrite and PostgreSQL passwords. The secret is only valid
+      // for the account Appwrite issued it to — the client's email is ignored.
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, secret, password }),
+      });
 
-      // Step 2: Also update PostgreSQL password
-      try {
-        const awUser = await account.get();
-        await fetch("/api/auth/reset-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: awUser.email, password }),
-        });
-      } catch {
-        // Best-effort: even if PG update fails, Appwrite password is set
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          toast.error("Reset link has expired. Please request a new one.");
+        } else {
+          toast.error(data.error || "Failed to reset password. Please try again.");
+        }
+        setLoading(false);
+        return;
       }
 
       setSuccess(true);

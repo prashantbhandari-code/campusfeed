@@ -5,6 +5,7 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle, HiLockClosed } from "react-icons/hi";
+import { account } from "@/lib/appwrite";
 
 function SetPasswordForm() {
   const router = useRouter();
@@ -36,10 +37,15 @@ function SetPasswordForm() {
     }
 
     try {
+      // Proof of identity: a short-lived JWT minted from the current Appwrite
+      // session. The server verifies it and sets the password for that
+      // identity only — no email trust involved.
+      const jwt = await account.createJWT();
+
       const res = await fetch("/api/auth/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ jwt, password }),
       });
 
       const data = await res.json();

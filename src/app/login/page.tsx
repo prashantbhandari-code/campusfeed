@@ -170,7 +170,7 @@ function LoginForm() {
                 Sign in with Google
               </button>
               <Link
-                href={"/auth/set-password?email=" + encodeURIComponent(noPasswordUser.email)}
+                href={"/auth/forgot-password?email=" + encodeURIComponent(noPasswordUser.email)}
                 className="flex-1 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-semibold transition-all text-center"
               >
                 Set a Password
