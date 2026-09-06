@@ -33,6 +33,7 @@ model User {
   stories       Story[]
   sentMessages     Message[] @relation("Sender")
   receivedMessages Message[] @relation("Receiver")
+  messageReactions MessageReaction[]
   notifications    Notification[] @relation("NotifUser")
   notifFrom        Notification[] @relation("NotifFrom")
 
@@ -167,6 +168,8 @@ model Message {
   fileType   String?
   fileName   String?
   read       Boolean  @default(false)
+  readAt     DateTime?
+  replyToId  String?
   createdAt  DateTime @default(now())
 
   sender   User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
@@ -178,6 +181,7 @@ model Message {
   @@index([senderId, receiverId])
   @@index([receiverId, read])
   @@index([createdAt])
+  reactions  MessageReaction[]
 
   @@map("messages")
 }
@@ -654,4 +658,18 @@ model ForumReply {
   @@index([authorId])
   @@index([postId, createdAt])
   @@map("forum_replies")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
 }

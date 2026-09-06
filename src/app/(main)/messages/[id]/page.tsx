@@ -23,6 +23,8 @@ export default function ChatPage() {
   const [typing, setTyping] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null);
+  const [messageReactions, setMessageReactions] = useState<Record<string, any[]>>({});
   const [recording, setRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -100,6 +102,10 @@ export default function ChatPage() {
     } catch {} finally {
       setLoading(false);
     }
+    // Auto-mark messages as read
+    try {
+      await fetch("/api/messages/" + userId + "/read", { method: "POST" });
+    } catch {}
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -156,6 +162,19 @@ export default function ChatPage() {
       };
       recorder.start();
       setRecording(true);
+    } catch {}
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    try {
+      const res = await fetch("/api/messages/" + messageId + "/reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+      });
+      const reactions = await res.json();
+      setMessageReactions(prev => ({ ...prev, [messageId]: reactions }));
+      setReactionPickerMsgId(null);
     } catch {}
   };
 
@@ -222,14 +241,27 @@ export default function ChatPage() {
                   </div>
                 )}
                 {msg.content && (
-                  <div
-                    className={`mt-1 px-4 py-2 rounded-2xl text-sm ${
-                      isMine
-                        ? "bg-primary-600 text-white rounded-br-md"
-                        : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-gray-200 rounded-bl-md"
-                    }`}
-                  >
-                    {msg.content}
+                  <>
+                    <div
+                      className={`mt-1 px-4 py-2 rounded-2xl text-sm ${
+                        isMine
+                          ? "bg-primary-600 text-white rounded-br-md"
+                          : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-gray-200 rounded-bl-md"
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                    <button onClick={() => setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id)} className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1">😀+</button>
+                  </>
+                )}
+                {/* Reaction picker */}
+                {reactionPickerMsgId === msg.id && (
+                  <div className="flex gap-1 mt-1 bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl p-1.5 shadow-lg">
+                    {["👍","❤️","😂","😮","😢","🔥"].map(emoji => (
+                      <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="text-lg hover:scale-125 transition-transform px-1">
+                        {emoji}
+                      </button>
+                    ))}
                   </div>
                 )}
                 <p className={`text-[10px] text-gray-400 dark:text-gray-500 mt-1 ${isMine ? "text-right" : ""}`}>
