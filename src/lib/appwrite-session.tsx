@@ -41,28 +41,35 @@ export function AppwriteSessionProvider({ children }: { children: React.ReactNod
 
   const fetchSession = useCallback(async () => {
     try {
-      // First check if there's an active Appwrite session
-      const user = await account.get();
-      
-      // Now fetch the full profile from our DB (which has username, avatar, etc.)
-      const res = await fetch("/api/auth/me", {
-        headers: { "x-appwrite-user-id": user.$id },
-      });
-      
+      // First check if there's an active Appwrite session via SDK
+      let awUserId = "";
+      try {
+        const user = await account.get();
+        awUserId = user.$id;
+      } catch {
+        // No SDK session — will try server auth via cc_session cookie
+      }
+
+      // Fetch profile from our DB (tries x-appwrite-user-id header, then cc_session cookie)
+      const headers: Record<string, string> = {};
+      if (awUserId) headers["x-appwrite-user-id"] = awUserId;
+
+      const res = await fetch("/api/auth/me", { headers });
+
       if (res.ok) {
         const profile = await res.json();
         if (mountedRef.current) {
           setSession({
             user: {
-              id: profile.id || user.$id,
-              name: profile.name || user.name,
-              email: profile.email || user.email,
+              id: profile.id || awUserId,
+              name: profile.name || "",
+              email: profile.email || "",
               username: profile.username || "",
               avatar: profile.avatar || "",
               department: profile.department || "",
               batchYear: profile.batchYear || "",
               rollNumber: profile.rollNumber || "",
-              collegeEmail: profile.collegeEmail || user.email,
+              collegeEmail: profile.collegeEmail || "",
             },
           });
           setStatus("authenticated");
@@ -84,7 +91,7 @@ export function AppwriteSessionProvider({ children }: { children: React.ReactNod
   useEffect(() => {
     mountedRef.current = true;
     fetchSession();
-    return () => { mountedRef.current = false; };
+    return () => { mountedRef.current = false; }
   }, [fetchSession]);
 
   const update = useCallback(async () => {
