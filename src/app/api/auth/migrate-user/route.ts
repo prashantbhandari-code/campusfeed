@@ -50,6 +50,23 @@ export async function POST(req: Request) {
       if (createRes.ok) {
         const data = await createRes.json();
         appwriteUserId = data.$id || null;
+      } else {
+        // Account already exists in Appwrite (e.g. user signed in with Google first,
+        // which auto-creates the Appwrite account). Look it up by email and link it.
+        const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "";
+        const searchRes = await fetch(APPWRITE_ENDPOINT + "/users/search?q=" + encodeURIComponent(email), {
+          headers: {
+            "X-Appwrite-Project": APPWRITE_PROJECT_ID,
+            "X-Appwrite-Key": APPWRITE_API_KEY,
+          },
+        });
+        if (searchRes.ok) {
+          const found = await searchRes.json();
+          const match = (found.users || []).find((u: { email?: string }) => u.email === email);
+          if (match) {
+            appwriteUserId = match.$id;
+          }
+        }
       }
     }
 
