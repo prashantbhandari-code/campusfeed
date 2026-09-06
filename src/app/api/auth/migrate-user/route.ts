@@ -78,7 +78,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // 5. Update Appwrite password to match PostgreSQL (in case it was set to a temp password)
+    // 5. Update Appwrite password to match PostgreSQL (best-effort; Appwrite
+    // rejects passwords under 8 chars, which is fine — cc_session still works)
     if (appwriteUserId) {
       const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "";
       await fetch(APPWRITE_ENDPOINT + "/users/" + appwriteUserId + "/password", {
@@ -92,7 +93,10 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    // 6. Create Appwrite session
+    // 6. Create Appwrite session (best-effort). Appwrite requires passwords of
+    // 8+ chars, so legacy accounts with shorter passwords can't have an
+    // Appwrite-side session or synced password. That's fine: server APIs
+    // authenticate via the signed cc_session cookie below, not Appwrite.
     const sessionRes = await fetch(APPWRITE_ENDPOINT + "/account/sessions", {
       method: "POST",
       headers: {
@@ -103,12 +107,14 @@ export async function POST(req: Request) {
     });
 
     if (!sessionRes.ok) {
-      return NextResponse.json({ error: "Session creation failed" }, { status: 500 });
+      console.warn("Appwrite session creation skipped for", email, "—", sessionRes.status);
     }
 
-    // 6. Forward Appwrite session cookie + set a SIGNED cc_session cookie
-    // (HttpOnly + server-signed so it cannot be forged client-side)
-    const setCookie = sessionRes.headers.get("set-cookie");
+    // 7. Forward the Appwrite session cookie when we got one + always set a
+    // SIGNED cc_session cookie (HttpOnly + server-signed so it cannot be
+    // forged client-side). The cc_session cookie is the credential that
+    // matters — all server APIs authenticate with it.
+    const setCookie = sessionRes.ok ? sessionRes.headers.get("set-cookie") : null;
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email },
