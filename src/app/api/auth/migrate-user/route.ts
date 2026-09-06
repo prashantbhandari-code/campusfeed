@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     // 5. Update Appwrite password to match PostgreSQL (in case it was set to a temp password)
     if (appwriteUserId) {
       const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "";
-      await fetch(APPWRITE_ENDPOINT + "/users/" + appwriteUserId, {
+      await fetch(APPWRITE_ENDPOINT + "/users/" + appwriteUserId + "/password", {
         method: "PATCH",
         headers: {
           "X-Appwrite-Project": APPWRITE_PROJECT_ID,
