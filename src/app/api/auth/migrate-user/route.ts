@@ -24,7 +24,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // 2. Verify bcrypt password
+    // 2. Check if user has a password (Google OAuth users have null password)
+    if (!user.password) {
+      return NextResponse.json({ error: "no-password", message: "This account was created with Google. Please use Google sign-in, or set a password first." }, { status: 403 });
+    }
+
+    // 3. Verify bcrypt password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });

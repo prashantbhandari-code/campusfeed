@@ -62,7 +62,7 @@ function SetPasswordForm() {
 
   if (!email) {
     return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
         <div className="glass rounded-2xl p-8 text-center max-w-md">
           <HiExclamationCircle className="text-5xl text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Invalid Link</h2>
@@ -76,7 +76,7 @@ function SetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md animate-slide-up">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
@@ -106,22 +106,22 @@ function SetPasswordForm() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Email</label>
               <input
                 type="email"
                 value={email}
-                className="w-full px-4 py-3 bg-dark-700 border border-green-500/50 rounded-xl text-gray-400 cursor-not-allowed"
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-green-500/50 rounded-xl text-gray-400 cursor-not-allowed"
                 disabled
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">New Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors"
                 placeholder="Minimum 6 characters"
                 minLength={6}
                 required
@@ -129,14 +129,14 @@ function SetPasswordForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Confirm Password</label>
               <div className="relative">
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 bg-dark-700 border rounded-xl focus:outline-none focus:border-primary-500 transition-colors ${
-                    confirmPassword && !passwordsMatch ? "border-red-500" : "border-dark-500"
+                  className={`w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border rounded-xl focus:outline-none focus:border-primary-500 transition-colors ${
+                    confirmPassword && !passwordsMatch ? "border-red-500" : "border-gray-200 dark:border-dark-500"
                   }`}
                   placeholder="Re-enter your password"
                   required
@@ -180,7 +180,7 @@ function SetPasswordForm() {
 export default function SetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500"></div>
       </div>
     }>
