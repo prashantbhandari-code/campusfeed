@@ -86,8 +86,21 @@ function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      // Appwrite's updateRecovery completes the password reset
+      // Step 1: Reset password via Appwrite
       await account.updateRecovery(userId, secret, password);
+
+      // Step 2: Also update PostgreSQL password
+      try {
+        const awUser = await account.get();
+        await fetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: awUser.email, password }),
+        });
+      } catch {
+        // Best-effort: even if PG update fails, Appwrite password is set
+      }
+
       setSuccess(true);
       toast.success("Password reset successfully!");
     } catch (err: any) {
