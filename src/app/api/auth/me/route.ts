@@ -6,31 +6,48 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     const appwriteUserId = req.headers.get("x-appwrite-user-id");
-    
-    if (!appwriteUserId) {
+
+    // Check cc_session cookie as fallback
+    const cookieHeader = req.headers.get("cookie") || "";
+    const ccMatch = cookieHeader.match(/cc_session=([^;]+)/);
+    const ccUserId = ccMatch ? ccMatch[1] : null;
+
+    if (!appwriteUserId && !ccUserId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Look up user in our DB by Appwrite user ID (stored as appwriteId field)
-    let user = await prisma.user.findFirst({
-      where: { appwriteId: appwriteUserId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        avatar: true,
-        department: true,
-        batchYear: true,
-        rollNumber: true,
-        collegeEmail: true,
-      },
-    });
+    // Look up user: try appwriteId first, then cc_session userId
+    let user = null;
+    if (appwriteUserId) {
+      user = await prisma.user.findFirst({
+        where: { appwriteId: appwriteUserId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          avatar: true,
+          department: true,
+          batchYear: true,
+          rollNumber: true,
+          collegeEmail: true,
+        },
+      });
+    }
 
-    // If no user found by appwriteId, try finding by email (for existing users)
+    // Fallback: try cc_session cookie (PostgreSQL user ID)
+    if (!user && ccUserId) {
+      user = await prisma.user.findUnique({
+        where: { id: ccUserId },
+        select: {
+          id: true, name: true, email: true, username: true,
+          avatar: true, department: true, batchYear: true,
+          rollNumber: true, collegeEmail: true,
+        },
+      });
+    }
+
     if (!user) {
-      // We can also try to find by the Appwrite user's email
-      // But for now, return 404 — the user needs to complete profile
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 

@@ -33,6 +33,23 @@ export async function getAppwriteSession(req?: Request): Promise<AppwriteServerS
     const sessionCookie = cookies[`a_session_${projectSuffix}`] ||
                           cookies[`a_session_${APPWRITE_PROJECT_ID}`];
 
+    // Fallback: check our custom cc_session cookie (set after migration)
+    const ccSession = cookies["cc_session"];
+    if (!sessionCookie && ccSession) {
+      // cc_session contains our PostgreSQL user ID
+      const user = await prisma.user.findUnique({
+        where: { id: ccSession },
+        select: {
+          id: true, name: true, email: true, username: true,
+          avatar: true, department: true, batchYear: true,
+          rollNumber: true, collegeEmail: true,
+        },
+      });
+      if (user) {
+        return { user };
+      }
+    }
+
     if (!sessionCookie) {
       return null;
     }
