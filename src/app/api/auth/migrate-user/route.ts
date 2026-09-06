@@ -35,20 +35,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // 3. Create Appwrite account via REST API
-    const createRes = await fetch(APPWRITE_ENDPOINT + "/account", {
-      method: "POST",
-      headers: {
-        "X-Appwrite-Project": APPWRITE_PROJECT_ID,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: "unique()", email, password, name: user.name }),
-    });
-
-    let appwriteUserId: string | null = null;
-    if (createRes.ok) {
-      const data = await createRes.json();
-      appwriteUserId = data.$id || null;
+    // 3. Create or update Appwrite account
+    let appwriteUserId = user.appwriteId;
+    if (!appwriteUserId) {
+      const createRes = await fetch(APPWRITE_ENDPOINT + "/account", {
+        method: "POST",
+        headers: {
+          "X-Appwrite-Project": APPWRITE_PROJECT_ID,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: "unique()", email, password, name: user.name }),
+      });
+      if (createRes.ok) {
+        const data = await createRes.json();
+        appwriteUserId = data.$id || null;
+      }
     }
 
     // 4. Link Appwrite ID to PostgreSQL user
@@ -59,7 +60,21 @@ export async function POST(req: Request) {
       });
     }
 
-    // 5. Create Appwrite session
+    // 5. Update Appwrite password to match PostgreSQL (in case it was set to a temp password)
+    if (appwriteUserId) {
+      const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "";
+      await fetch(APPWRITE_ENDPOINT + "/users/" + appwriteUserId, {
+        method: "PATCH",
+        headers: {
+          "X-Appwrite-Project": APPWRITE_PROJECT_ID,
+          "X-Appwrite-Key": APPWRITE_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: password }),
+      }).catch(() => {});
+    }
+
+    // 6. Create Appwrite session
     const sessionRes = await fetch(APPWRITE_ENDPOINT + "/account/sessions", {
       method: "POST",
       headers: {
