@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { createSessionToken } from "@/lib/session-token";
 
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
@@ -88,7 +89,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Session creation failed" }, { status: 500 });
     }
 
-    // 6. Forward Appwrite session cookie
+    // 6. Forward Appwrite session cookie + set a SIGNED cc_session cookie
+    // (HttpOnly + server-signed so it cannot be forged client-side)
     const setCookie = sessionRes.headers.get("set-cookie");
     const response = NextResponse.json({
       success: true,
@@ -97,8 +99,12 @@ export async function POST(req: Request) {
 
     if (setCookie) {
       const cookieParts = setCookie.split(";")[0];
-      response.headers.set("Set-Cookie", cookieParts + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000");
+      response.headers.append("Set-Cookie", cookieParts + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000");
     }
+    response.headers.append(
+      "Set-Cookie",
+      `cc_session=${createSessionToken(user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+    );
 
     return response;
   } catch (error) {

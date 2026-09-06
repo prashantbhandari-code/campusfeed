@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getUserIdFromCookieHeader } from "@/lib/session-token";
 
 export const dynamic = "force-dynamic";
 
@@ -7,10 +8,8 @@ export async function GET(req: Request) {
   try {
     const appwriteUserId = req.headers.get("x-appwrite-user-id");
 
-    // Check cc_session cookie as fallback
-    const cookieHeader = req.headers.get("cookie") || "";
-    const ccMatch = cookieHeader.match(/cc_session=([^;]+)/);
-    const ccUserId = ccMatch ? ccMatch[1] : null;
+    // Check signed cc_session cookie as fallback (forged raw IDs are rejected)
+    const ccUserId = getUserIdFromCookieHeader(req.headers.get("cookie"));
 
     if (!appwriteUserId && !ccUserId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

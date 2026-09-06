@@ -1,4 +1,5 @@
 import prisma from "./prisma";
+import { getUserIdFromCookieHeader } from "./session-token";
 
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
@@ -33,12 +34,13 @@ export async function getAppwriteSession(req?: Request): Promise<AppwriteServerS
     const sessionCookie = cookies[`a_session_${projectSuffix}`] ||
                           cookies[`a_session_${APPWRITE_PROJECT_ID}`];
 
-    // Fallback: check our custom cc_session cookie (set after migration)
-    const ccSession = cookies["cc_session"];
-    if (!sessionCookie && ccSession) {
+    // Fallback: check our signed cc_session cookie (set server-side after migration).
+    // Value is an HMAC-signed token — a raw/forged user ID is rejected here.
+    const ccUserId = getUserIdFromCookieHeader(cookieHeader);
+    if (!sessionCookie && ccUserId) {
       // cc_session contains our PostgreSQL user ID
       const user = await prisma.user.findUnique({
-        where: { id: ccSession },
+        where: { id: ccUserId },
         select: {
           id: true, name: true, email: true, username: true,
           avatar: true, department: true, batchYear: true,

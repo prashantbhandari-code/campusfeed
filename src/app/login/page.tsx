@@ -66,11 +66,8 @@ function LoginForm() {
       });
 
       if (migrateRes.ok) {
-        const migrateData = await migrateRes.json().catch(() => ({}));
-        // Set a session cookie the server can read
-        if (migrateData.user?.id) {
-          document.cookie = "cc_session=" + migrateData.user.id + "; path=/; max-age=31536000; samesite=lax";
-        }
+        // The server sets a signed, HttpOnly cc_session cookie in the response —
+        // the client must not (and cannot) set it manually.
         toast.success("Welcome back to CampusConnect!");
         router.push("/feed");
       } else {

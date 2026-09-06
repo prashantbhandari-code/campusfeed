@@ -11,13 +11,16 @@ export async function GET(req: Request) {
     const userId = searchParams.get("userId");
 
     const session = await getAppwriteSession(req);
-  const currentUserId = (session?.user as any)?.id;
+    const currentUserId = (session?.user as any)?.id;
+    if (!currentUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  let where: any = {};
+    let where: any = {};
     // Exclude current user from results
-  if (currentUserId) {
-    where.id = { not: currentUserId };
-  }
+    if (currentUserId) {
+      where.id = { not: currentUserId };
+    }
 
   if (userId) {
       where.id = userId;
