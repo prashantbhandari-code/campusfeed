@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { account } from "@/lib/appwrite";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -16,6 +16,20 @@ import { useRouter, useSearchParams } from "next/navigation";
  * for Google users.
  */
 export default function OAuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-campus-500/30 border-t-campus-500 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <OAuthCallbackInner />
+    </Suspense>
+  );
+}
+
+function OAuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
