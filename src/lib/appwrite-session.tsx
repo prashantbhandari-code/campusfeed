@@ -115,7 +115,13 @@ export async function signOutAppwrite() {
   try {
     await account.deleteSession("current");
   } catch {
-    // Ignore errors
+    // Ignore errors — still clear the app cookie below
+  }
+  try {
+    // Clear the signed cc_session cookie (HttpOnly → must be done server-side)
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Ignore network errors — redirect below happens regardless
   }
   window.location.href = "/login";
 }
@@ -127,10 +133,14 @@ export async function signInAppwrite(
 ) {
   if (provider === "google") {
     const { OAuthProvider } = await import("appwrite");
-    account.createOAuth2Session(
+    // Token flow: Appwrite redirects back to our bridge page with userId+secret,
+    // where the signed cc_session cookie gets set for server-side auth.
+    account.createOAuth2Token(
       OAuthProvider.Google,
-      (options?.callbackUrl || "/feed"),
-      "/login"
+      (options?.callbackUrl || "/feed").startsWith("http")
+        ? (options?.callbackUrl || "/feed")
+        : window.location.origin + "/auth/oauth/callback",
+      window.location.origin + "/login?error=google-failed"
     );
     return;
   }

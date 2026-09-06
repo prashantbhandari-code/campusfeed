@@ -42,18 +42,34 @@ function LoginForm() {
       // Step 1: Try Appwrite login directly
       try {
         await account.createEmailPasswordSession(email, password);
-        const awUser = await account.get();
-        const meRes = await fetch("/api/auth/me", {
-          headers: { "x-appwrite-user-id": awUser.$id },
+
+        // Sync the app-server session: verify a short-lived JWT server-side and
+        // set the signed HttpOnly cc_session cookie that all app APIs require.
+        const { jwt } = await account.createJWT();
+        const syncRes = await fetch("/api/auth/session-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jwt }),
         });
-        if (meRes.ok) {
+
+        if (syncRes.ok) {
           toast.success("Welcome back to CampusConnect!");
-          router.push("/feed");
+          // Full-page navigation: the session context resolved as
+          // "unauthenticated" when this page loaded, and a client-side push
+          // would carry that stale state into the (main) layout, which would
+          // bounce us straight back to /login. A reload re-resolves cleanly.
+          window.location.href = "/feed";
           return;
         }
-        toast.error("Please complete your profile first");
-        router.push("/auth/complete-profile?email=" + encodeURIComponent(email));
-        return;
+
+        const syncData = await syncRes.json().catch(() => ({}));
+        if (syncData.redirect) {
+          toast.error("Please complete your profile first");
+          router.push(syncData.redirect);
+          return;
+        }
+        // Otherwise fall through to the migration path — the Appwrite account
+        // may exist without a matching profile.
       } catch {
         // Appwrite login failed - user may not have an Appwrite account yet
       }
@@ -88,9 +104,11 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     try {
       const { OAuthProvider } = await import("appwrite");
-      account.createOAuth2Session(
+      // Token flow: Appwrite redirects back to our bridge page with userId+secret,
+      // where the signed cc_session cookie gets set for server-side auth.
+      account.createOAuth2Token(
         OAuthProvider.Google,
-        window.location.origin + "/feed",
+        window.location.origin + "/auth/oauth/callback",
         window.location.origin + "/login?error=google-failed"
       );
     } catch {

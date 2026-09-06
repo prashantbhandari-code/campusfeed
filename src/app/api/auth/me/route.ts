@@ -4,47 +4,31 @@ import { getUserIdFromCookieHeader } from "@/lib/session-token";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Resolves the current user profile from the signed cc_session cookie.
+ *
+ * The old `x-appwrite-user-id` header path was removed: it accepted any
+ * client-supplied Appwrite ID without verification, so anyone could fetch
+ * another user's profile by setting the header. Identity now comes only from
+ * the server-set signed cookie, which every login path establishes via
+ * /api/auth/session-sync (or /api/auth/migrate-user).
+ */
 export async function GET(req: Request) {
   try {
-    const appwriteUserId = req.headers.get("x-appwrite-user-id");
-
-    // Check signed cc_session cookie as fallback (forged raw IDs are rejected)
     const ccUserId = getUserIdFromCookieHeader(req.headers.get("cookie"));
 
-    if (!appwriteUserId && !ccUserId) {
+    if (!ccUserId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Look up user: try appwriteId first, then cc_session userId
-    let user = null;
-    if (appwriteUserId) {
-      user = await prisma.user.findFirst({
-        where: { appwriteId: appwriteUserId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          username: true,
-          avatar: true,
-          department: true,
-          batchYear: true,
-          rollNumber: true,
-          collegeEmail: true,
-        },
-      });
-    }
-
-    // Fallback: try cc_session cookie (PostgreSQL user ID)
-    if (!user && ccUserId) {
-      user = await prisma.user.findUnique({
-        where: { id: ccUserId },
-        select: {
-          id: true, name: true, email: true, username: true,
-          avatar: true, department: true, batchYear: true,
-          rollNumber: true, collegeEmail: true,
-        },
-      });
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: ccUserId },
+      select: {
+        id: true, name: true, email: true, username: true,
+        avatar: true, department: true, batchYear: true,
+        rollNumber: true, collegeEmail: true,
+      },
+    });
 
     if (!user) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });

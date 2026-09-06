@@ -37,6 +37,7 @@ export async function getAppwriteSession(req?: Request): Promise<AppwriteServerS
     // Fallback: check our signed cc_session cookie (set server-side after migration).
     // Value is an HMAC-signed token — a raw/forged user ID is rejected here.
     const ccUserId = getUserIdFromCookieHeader(cookieHeader);
+
     if (!sessionCookie && ccUserId) {
       // cc_session contains our PostgreSQL user ID
       const user = await prisma.user.findUnique({
@@ -65,6 +66,22 @@ export async function getAppwriteSession(req?: Request): Promise<AppwriteServerS
     });
 
     if (!response.ok) {
+      // The Appwrite cookie exists but is stale/invalid — don't give up if a
+      // valid signed cc_session cookie is also present (e.g. set by a recent
+      // email login while an old Appwrite session lingers).
+      if (ccUserId) {
+        const user = await prisma.user.findUnique({
+          where: { id: ccUserId },
+          select: {
+            id: true, name: true, email: true, username: true,
+            avatar: true, department: true, batchYear: true,
+            rollNumber: true, collegeEmail: true,
+          },
+        });
+        if (user) {
+          return { user };
+        }
+      }
       return null;
     }
 

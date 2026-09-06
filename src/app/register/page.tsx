@@ -77,12 +77,25 @@ export default function RegisterPage() {
       // 3. Create Appwrite session
       await account.createEmailPasswordSession(email, password);
 
+      // 4. Sync the app-server session (signed cc_session cookie) before redirect
+      try {
+        const { jwt } = await account.createJWT();
+        await fetch("/api/auth/session-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jwt }),
+        });
+      } catch {
+        // Best-effort; the feed page retries auth resolution via /api/auth/me
+      }
+
       setRegisteredEmail(email);
       setRegistered(true);
       toast.success("Account created! Redirecting...");
       
-      // Auto redirect after brief success display
-      setTimeout(() => router.push("/feed"), 1500);
+      // Auto redirect after brief success display — full page load so the
+      // session context re-resolves with the freshly synced cookie.
+      setTimeout(() => { window.location.href = "/feed"; }, 1500);
     } catch (err: any) {
       const msg = err?.message || "";
       if (msg.includes("already")) {
@@ -98,9 +111,12 @@ export default function RegisterPage() {
   const handleGoogleSignUp = async () => {
     try {
       const { OAuthProvider } = await import("appwrite");
-      account.createOAuth2Session(
+      // Token flow: Appwrite redirects back to our bridge page with userId+secret,
+      // where the signed cc_session cookie gets set for server-side auth.
+      // The bridge routes to complete-profile automatically for brand-new users.
+      account.createOAuth2Token(
         OAuthProvider.Google,
-        window.location.origin + "/auth/complete-profile",
+        window.location.origin + "/auth/oauth/callback",
         window.location.origin + "/register?error=google-failed"
       );
     } catch {
