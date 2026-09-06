@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createSessionToken } from "@/lib/session-token";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
@@ -19,11 +20,9 @@ const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
  * 1. Client calls POST /account/jwt (Appwrite SDK) right after login.
  * 2. Server verifies the JWT directly against the Appwrite API
  *    (X-Appwrite-JWT header) — the client cannot forge an identity.
- * 3. On success, links the Appwrite ID to the PostgreSQL user (if needed) and
- *    sets the signed HttpOnly cc_session cookie that all app APIs require.
+ * 3. On success, links the Appwrite ID to the PostgreSQL user (if needed) and * sets the signed HttpOnly cc_session cookie that all app APIs require.
  */
-export async function POST(req: Request) {
-  try {
+async function handler(req: Request) {  try {
     const { jwt } = await req.json();
     if (!jwt || typeof jwt !== "string") {
       return NextResponse.json({ error: "jwt required" }, { status: 400 });
@@ -86,3 +85,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// Mints the app session credential — moderate limit, high enough for all
+// login paths (email, register, OAuth callback) firing on one page load
+export const POST = withRateLimit(handler, { windowMs: 60000, maxRequests: 30 });

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSessionToken } from "@/lib/session-token";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
@@ -12,8 +13,7 @@ const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
  * Migration endpoint: For users who existed before the Appwrite migration.
  * Verifies password against PostgreSQL (bcrypt), then creates Appwrite account + session.
  */
-export async function POST(req: Request) {
-  try {
+async function handler(req: Request) {  try {
     const { email, password } = await req.json();
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
@@ -135,3 +135,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// Password-verification endpoint — strict limit against brute force
+export const POST = withRateLimit(handler, { windowMs: 60000, maxRequests: 10 });

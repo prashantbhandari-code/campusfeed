@@ -2,11 +2,12 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   try {
     const { email } = await req.json();
     if (!email || !email.endsWith("@kiit.ac.in")) {
@@ -80,3 +81,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "If an account exists, a recovery email has been sent." });
   }
 }
+
+// Triggers outbound emails — strict limit against mail-bombing/enumeration
+export const POST = withRateLimit(handler, { windowMs: 60000, maxRequests: 5 });

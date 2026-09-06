@@ -2,9 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { withRateLimit } from "@/lib/rateLimit";
 
 // GET /api/auth/verify?token=xxx — verify email
-export async function GET(req: Request) {
+async function handler(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get("token");
@@ -55,3 +56,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }
+
+// Consumes one-time tokens — moderate limit against token brute-forcing
+export const GET = withRateLimit(handler, { windowMs: 60000, maxRequests: 30 });

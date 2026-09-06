@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+import { withRateLimit } from "@/lib/rateLimit";
+
+async function handler(req: Request) {
   const { NextResponse } = await import("next/server");
   const bcrypt = await import("bcryptjs");
   const { default: prisma } = await import("@/lib/prisma");
@@ -64,3 +66,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// Account creation — strict limit against bulk fake-account creation
+export const POST = withRateLimit(handler, { windowMs: 60000, maxRequests: 10 });

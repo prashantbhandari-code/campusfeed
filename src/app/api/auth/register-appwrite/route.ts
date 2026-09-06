@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   try {
     const body = await req.json();
     const { appwriteId, name, username, email, phone, department, batchYear } = body;
@@ -73,3 +74,6 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// Account creation — strict limit against bulk fake-account creation
+export const POST = withRateLimit(handler, { windowMs: 60000, maxRequests: 10 });
