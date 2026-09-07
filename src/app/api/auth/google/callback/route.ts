@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     const error = url.searchParams.get("error");
 
     if (error || !code) {
-      const loginUrl = new URL("/login", url.origin);
+      const loginUrl = new URL("/login", PROD_ORIGIN);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
     if (!tokenRes.ok) {
       console.error("Google token exchange failed:", tokenRes.status);
-      const loginUrl = new URL("/login", url.origin);
+      const loginUrl = new URL("/login", PROD_ORIGIN);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 
     if (!profileRes.ok) {
       console.error("Google profile fetch failed:", profileRes.status);
-      const loginUrl = new URL("/login", url.origin);
+      const loginUrl = new URL("/login", PROD_ORIGIN);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -71,7 +71,7 @@ export async function GET(req: Request) {
     const { email, name, picture, id: googleId } = googleProfile;
 
     if (!email) {
-      const loginUrl = new URL("/login", url.origin);
+      const loginUrl = new URL("/login", PROD_ORIGIN);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
     // 4. Set signed cc_session cookie
     const sessionToken = createSessionToken(user.id);
 
-    const feedUrl = new URL("/feed", url.origin);
+    const feedUrl = new URL("/feed", PROD_ORIGIN);
     const response = NextResponse.redirect(feedUrl);
 
     response.headers.append(
@@ -110,7 +110,7 @@ export async function GET(req: Request) {
     return response;
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    const loginUrl = new URL("/login", new URL(req.url).origin);
+    const loginUrl = new URL("/login", PROD_ORIGIN);
     loginUrl.searchParams.set("error", "google-failed");
     return NextResponse.redirect(loginUrl);
   }
