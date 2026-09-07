@@ -6,7 +6,7 @@ import { createSessionToken } from "@/lib/session-token";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "";
+const PROD_ORIGIN = "https://campusconnect-osm1.onrender.com";
 
 function generateUsername(name: string): string {
   const base = name
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     }
 
     // 1. Exchange auth code for tokens
-    const redirectUri = GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`;
+    const redirectUri = `${PROD_ORIGIN}/api/auth/google/callback`;
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
