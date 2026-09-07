@@ -53,7 +53,7 @@ function OAuthCallbackInner() {
         // 2. Get a short-lived JWT bound to that session
         const { jwt } = await account.createJWT();
 
-        // 3. Server verifies the JWT and sets the signed cc_session cookie
+        // 3. Verify JWT server-side and set the signed cc_session cookie
         const res = await fetch("/api/auth/session-sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -70,7 +70,43 @@ function OAuthCallbackInner() {
         }
 
         if (data.redirect) {
-          // New Google user without a profile yet
+          // New user without a profile yet — try auto-creating the profile
+          // from the Appwrite session data (name, email, phone) so the user
+          // is not asked to re-enter what Google already gave us.
+          try {
+            const profile = await account.get();
+            const profileRes = await fetch("/api/auth/register-appwrite", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                appwriteId: userId,
+                name: profile.name || data.name || "",
+                email: data.email || profile.email || "",
+                phone: profile.phone || "",
+                department: data.department || "",
+                batchYear: String(data.batchYear || ""),
+              }),
+            });
+            if (profileRes.ok) {
+              const profileData = await profileRes.json();
+              // 4. Sync session again so the feed can immediately authenticate
+              try {
+                const { jwt: secondJwt } = await account.createJWT();
+                await fetch("/api/auth/session-sync", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ jwt: secondJwt }),
+                });
+              } catch {
+                // Best-effort; feed retries browser-side
+              }
+              router.replace("/feed");
+              return;
+            }
+          } catch {
+            // If auto-create failed for any reason, fall back to the
+            // manual complete-profile page.
+          }
           router.replace(data.redirect);
           return;
         }

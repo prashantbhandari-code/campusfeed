@@ -41,28 +41,28 @@ async function handler(req: Request) {
       );
     }
 
-    // Create user with a placeholder password (Appwrite handles auth)
-    const placeholderPassword = await bcrypt.hash("appwrite-managed", 10);
+    // Google-managed accounts don't choose a password — use a placeholder
+    // that the user can replace later via 'Set a Password' (forgot-password).
+    const passwordToHash =
+      body.password && body.password.length >= 6
+        ? body.password
+        : "google-managed-auto-" + Math.random().toString(36).slice(2);
+    const hashedPassword = await bcrypt.hash(passwordToHash, 10);
 
     const user = await prisma.user.create({
       data: {
         appwriteId,
-        name,
-        username,
+        name: name || "",
+        username: username || generateUsername(name || email),
         email,
-        password: placeholderPassword,
+        password: hashedPassword,
         phone: phone || null,
         department: department || null,
-        batchYear: batchYear || null,
+        batchYear: batchYear ? parseInt(batchYear) : null,
         collegeEmail: email,
-        verified: true, // Appwrite email/password accounts are auto-verified
+        verified: true, // Google-authenticated users are auto-verified
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-      },
+      select: { id: true, name: true, email: true, username: true },
     });
 
     return NextResponse.json(user, { status: 201 });
@@ -73,6 +73,20 @@ async function handler(req: Request) {
       { status: 500 }
     );
   }
+}
+
+// Auto-generate a readable username from a name when the callback passes
+// only the Appwrite profile (no manual input).
+function generateUsername(fullName: string): string {
+  const base = fullName
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^[^a-z0-9]+/, "")
+    .replace(/[^a-z0-9]+$/, "")
+    .trim();
+  const short = base.slice(0, 16) || "user";
+  const suffix = Math.floor(1000 + Math.random() * 8999);
+  return `${short}_${suffix}`;
 }
 
 // Account creation — strict limit against bulk fake-account creation
