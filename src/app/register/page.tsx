@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     try {
       // Direct registration via server API — no Appwrite SDK involved
-      const res = await fetch("/api/auth/register-appwrite", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
