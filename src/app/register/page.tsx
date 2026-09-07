@@ -108,20 +108,9 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    try {
-      const { OAuthProvider } = await import("appwrite");
-      // Token flow: Appwrite redirects back to our bridge page with userId+secret,
-      // where the signed cc_session cookie gets set for server-side auth.
-      // The bridge routes to complete-profile automatically for brand-new users.
-      account.createOAuth2Token(
-        OAuthProvider.Google,
-        window.location.origin + "/auth/oauth/callback",
-        window.location.origin + "/register?error=google-failed"
-      );
-    } catch {
-      toast.error("Google sign-up failed");
-    }
+  const handleGoogleSignUp = () => {
+    // Direct Google OAuth — bypasses Appwrite entirely
+    window.location.href = "/api/auth/google";
   };
 
   return (
