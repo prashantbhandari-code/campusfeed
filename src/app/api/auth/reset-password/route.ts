@@ -5,24 +5,15 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withRateLimit } from "@/lib/rateLimit";
 
-const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
-const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
-
 /**
- * Password reset — the ONLY way to change a password without being logged in.
- *
- * Proof of identity: the Appwrite recovery userId+secret pair from the emailed
- * reset link. The server verifies it directly against Appwrite (PUT
- * /account/recovery), which both validates the secret AND sets the new
- * password in Appwrite. Only after Appwrite confirms does the server update
- * the PostgreSQL hash. The client's email claim is never trusted on its own.
+ * Password reset — verifies the token from the emailed link,
+ * updates the password in PostgreSQL. No Appwrite dependency.
  */
 async function handler(req: Request) {
   try {
-    const { userId, secret, email, password } = await req.json();
+    const { token, password } = await req.json();
 
-    if (!userId || !secret || !password) {
-      // Deliberately identical message whether fields are missing or invalid
+    if (!token || !password) {
       return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
     }
 
@@ -30,54 +21,45 @@ async function handler(req: Request) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    // 1. Verify the recovery secret AND set the new Appwrite password in one
-    //    server-side call. Appwrite rejects an unknown/expired secret with 401.
-    const recoverRes = await fetch(APPWRITE_ENDPOINT + "/account/recovery", {
-      method: "PUT",
-      headers: {
-        "X-Appwrite-Project": APPWRITE_PROJECT_ID,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId, secret, password }),
+    // 1. Find the token
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
     });
 
-    if (!recoverRes.ok) {
-      const awErr = await recoverRes.text().catch(() => "");
-      console.warn("Password reset rejected — Appwrite recovery failed:", recoverRes.status, awErr.slice(0, 300));
+    if (!resetToken) {
       return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
     }
 
-    // Recovery completed — the new password is now set in Appwrite. The
-    // recovery response has no email, so resolve the account via the admin API.
-    const recovered = await recoverRes.json();
-    const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "";
-    let awEmail: string | undefined;
-    if (APPWRITE_API_KEY) {
-      const userRes = await fetch(`${APPWRITE_ENDPOINT}/users/${recovered.userId}`, {
-        headers: { "X-Appwrite-Project": APPWRITE_PROJECT_ID, "X-Appwrite-Key": APPWRITE_API_KEY },
-      });
-      if (userRes.ok) {
-        awEmail = (await userRes.json())?.email;
-      }
+    // 2. Check if token is expired
+    if (new Date() > resetToken.expiresAt) {
+      return NextResponse.json({ error: "Reset link has expired. Please request a new one." }, { status: 401 });
     }
 
-    if (!awEmail || (email && email.toLowerCase() !== awEmail.toLowerCase())) {
-      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
+    // 3. Check if token was already used
+    if (resetToken.used) {
+      return NextResponse.json({ error: "Reset link has already been used. Please request a new one." }, { status: 401 });
     }
 
-    // 2. Appwrite verified the secret — now update the matching PostgreSQL user
-    const user = await prisma.user.findUnique({ where: { email: awEmail } });
+    // 4. Find the user
+    const user = await prisma.user.findUnique({ where: { id: resetToken.userId } });
     if (!user) {
-      // Appwrite account exists but no PG profile — nothing to update here
       return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
     }
 
+    // 5. Hash the new password and update
     const hashedPassword = await bcrypt.hash(password, 12);
     await prisma.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword, appwriteId: recovered.userId },
+      data: { password: hashedPassword },
     });
 
+    // 6. Mark the token as used
+    await prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { used: true },
+    });
+
+    console.log(`Password reset successful for ${user.email}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Reset password error:", error);

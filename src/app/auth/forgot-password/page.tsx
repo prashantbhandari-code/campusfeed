@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
-import { account } from "@/lib/appwrite";
 
 function ForgotPasswordForm() {
   const searchParams = useSearchParams();
@@ -20,19 +19,19 @@ function ForgotPasswordForm() {
     setLoading(true);
 
     try {
-      // Appwrite sends recovery email with redirect to /auth/reset-password
-      const redirectUrl = window.location.origin + "/auth/reset-password";
-      await account.createRecovery(email, redirectUrl);
+      // Call our server API — no Appwrite SDK involved
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      // Always show success to prevent email enumeration
       setSent(true);
       toast.success("Recovery email sent! Check your inbox.");
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("user_not_found") || msg.includes("not found")) {
-        // Don't reveal whether user exists — show success anyway
-        setSent(true);
-      } else {
-        toast.error("Failed to send recovery email. Please try again.");
-      }
+    } catch {
+      // Even on error, show success to prevent enumeration
+      setSent(true);
     } finally {
       setLoading(false);
     }

@@ -59,6 +59,7 @@ courses         Course[]
   pushSubscriptions PushSubscription[]
   storyLikes     StoryLike[]
   storyComments  StoryComment[]
+  passwordResetTokens PasswordResetToken[]
 
   blockedUsers   BlockedUser[] @relation("Blocker")
   blockedBy      BlockedUser[] @relation("Blocked")
@@ -672,4 +673,18 @@ model MessageReaction {
 
   @@unique([messageId, userId, emoji])
   @@index([messageId])
+}
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
 }

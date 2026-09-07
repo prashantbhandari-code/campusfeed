@@ -8,8 +8,7 @@ import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/h
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId") || "";
-  const secret = searchParams.get("secret") || "";
+  const token = searchParams.get("token") || "";
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,7 +18,7 @@ function ResetPasswordForm() {
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
   const isValid = password.length >= 6 && passwordsMatch;
 
-  if (!userId || !secret) {
+  if (!token) {
     return (
       <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
         <div className="w-full max-w-md animate-slide-up">
@@ -85,13 +84,11 @@ function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      // The server verifies the recovery secret against Appwrite and updates
-      // both the Appwrite and PostgreSQL passwords. The secret is only valid
-      // for the account Appwrite issued it to — the client's email is ignored.
+      // Call our server API — no Appwrite dependency
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, secret, password }),
+        body: JSON.stringify({ token, password }),
       });
 
       if (!res.ok) {
@@ -107,13 +104,8 @@ function ResetPasswordForm() {
 
       setSuccess(true);
       toast.success("Password reset successfully!");
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("expired") || msg.includes("invalid")) {
-        toast.error("Reset link has expired. Please request a new one.");
-      } else {
-        toast.error("Failed to reset password. Please try again.");
-      }
+    } catch {
+      toast.error("Failed to reset password. Please try again.");
     } finally {
       setLoading(false);
     }
