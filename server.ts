@@ -4,6 +4,7 @@ import next from "next";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { setIO } from "./src/lib/socket";
 import { NextResponse } from "next/server";
+import { getUserIdFromCookieHeader } from "./src/lib/session-token";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -36,32 +37,18 @@ app.prepare().then(() => {
     io.emit("users-online", userIds);
   };
 
-  io.use(async (socket: Socket, next) => {
+  // Identity comes from the server-side signed cc_session cookie (same
+  // verification the HTTP APIs use) — never from a client-supplied token.
+  // The old path trusted auth.token = btoa(JSON.stringify(user)), which
+  // let any client impersonate any user and join their private message room.
+  io.use((socket: Socket, next) => {
     try {
-      const token = socket.handshake.auth?.token;
-      if (!token) {
+      const userId = getUserIdFromCookieHeader(socket.handshake.headers.cookie || null);
+      if (!userId) {
         return next(new Error("Authentication required"));
       }
-
-      // Simple token validation — in production use proper JWT verify
-      // For now, we validate the token is present and not empty
-      if (typeof token === "string" && token.length > 0) {
-        // Decode the base64 token to get user info
-        try {
-          const decoded = JSON.parse(atob(token));
-          if (decoded && decoded.id) {
-            socket.data.userId = decoded.id;
-            socket.data.username = decoded.username || "";
-            return next();
-          }
-        } catch {
-          // Token decoding failed — still allow connection for now
-          // In production, reject this
-          return next();
-        }
-      }
-
-      next(new Error("Invalid token"));
+      socket.data.userId = userId;
+      return next();
     } catch (error) {
       next(new Error("Authentication failed"));
     }
@@ -71,25 +58,23 @@ app.prepare().then(() => {
     const userId = socket.data.userId || "anonymous";
     console.log("🔌 Socket connected:", socket.id, "User:", userId);
 
-    // User joins their personal room based on userId
+    // User joins their personal room — only ever their own. userId is the
+    // server-verified identity from the signed cc_session cookie.
     socket.on("join", (joinUserId: string) => {
-      // Validate that the user is joining their own room
-      if (joinUserId !== userId && userId !== "anonymous") {
+      if (!joinUserId || joinUserId !== userId) {
         console.log(`⚠️ User ${userId} tried to join room ${joinUserId} — rejected`);
         return;
       }
 
-      const effectiveUserId = userId !== "anonymous" ? joinUserId : userId;
-      socket.join(`user:${effectiveUserId}`);
-      socket.data.userId = effectiveUserId;
+      socket.join(`user:${joinUserId}`);
 
       // Track online status
-      if (!onlineUsers.has(effectiveUserId)) {
-        onlineUsers.set(effectiveUserId, new Set());
+      if (!onlineUsers.has(userId)) {
+        onlineUsers.set(userId, new Set());
       }
-      onlineUsers.get(effectiveUserId)!.add(socket.id);
+      onlineUsers.get(userId)!.add(socket.id);
       broadcastOnlineUsers();
-      console.log(`👤 User ${effectiveUserId} online (${onlineUsers.get(effectiveUserId)!.size} sockets)`);
+      console.log(`👤 User ${userId} online (${onlineUsers.get(userId)!.size} sockets)`);
     });
 
     // User joins a group chat room

@@ -7,17 +7,12 @@ let socket: Socket | null = null;
 
 async function getSocket(): Promise<Socket> {
   if (!socket) {
-    // Fetch the JWT token from NextAuth session
-    const res = await fetch("/api/auth/session");
-    const session = await res.json();
-    const token = session?.user ? btoa(JSON.stringify(session.user)) : "";
-
+    // Identity is verified server-side from the signed HttpOnly cc_session
+    // cookie, which the browser sends automatically on the same-origin
+    // handshake. Never attach a client-constructed identity here.
     socket = io(window.location.origin, {
       path: "/api/socketio",
       transports: ["websocket", "polling"],
-      auth: {
-        token: token,
-      },
     });
   }
   return socket;
