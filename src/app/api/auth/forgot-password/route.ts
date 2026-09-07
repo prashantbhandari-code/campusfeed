@@ -53,7 +53,7 @@ async function handler(req: Request) {
             "X-Appwrite-Project": APPWRITE_PROJECT_ID,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, redirect: redirectUrl }),
+          body: JSON.stringify({ email, url: redirectUrl }),
         });
 
         if (!recoveryRes.ok) {
@@ -71,7 +71,7 @@ async function handler(req: Request) {
           "X-Appwrite-Project": APPWRITE_PROJECT_ID,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, redirect: redirectUrl }),
+        body: JSON.stringify({ email, url: redirectUrl }),
       });
     }
 
