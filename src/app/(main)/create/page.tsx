@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useSession } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
@@ -15,7 +15,6 @@ export default function CreatePage() {
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
