@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiOutlinePhotograph, HiX } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { useFileUpload } from "@/lib/useFileUpload";
 
 export default function CreatePage() {
   const { data: session } = useSession();
@@ -13,26 +14,20 @@ export default function CreatePage() {
   const user = session?.user as any;
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const { uploadFile, uploading } = useFileUpload();
   const [posting, setPosting] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    setUploading(true);
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const formData = new FormData();
-        formData.append("file", files[i]);
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (data.url) setImages((prev) => [...prev, data.url]);
+    for (let i = 0; i < files.length; i++) {
+      const result = await uploadFile(files[i]);
+      if (result) {
+        setImages((prev) => [...prev, result.url]);
+      } else {
+        toast.error("Upload failed");
       }
-    } catch {
-      toast.error("Upload failed");
-    } finally {
-      setUploading(false);
     }
   };
 

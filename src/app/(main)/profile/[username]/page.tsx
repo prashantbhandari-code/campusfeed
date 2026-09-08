@@ -154,13 +154,7 @@ export default function ProfilePage() {
               <HiCamera className="text-white text-sm" />
             </button>
           )}
-          <input
-            ref={coverFileRef}
-            type="file"
-            accept="image/*"
-            onChange={handleCoverUpload}
-            className="hidden"
-          />
+          <label htmlFor="cover-upload" className="cursor-pointer absolute inset-0 z-10"><input id="cover-upload" ref={coverFileRef} type="file" accept="image/*" onChange={handleCoverUpload} className="sr-only" /></label>
           {uploadingCover && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white" />

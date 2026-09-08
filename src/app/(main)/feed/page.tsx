@@ -21,8 +21,10 @@ export default function FeedPage() {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchPosts(1);
-    fetchSuggestions();
+    const controller = new AbortController();
+    fetchPosts(1, controller.signal);
+    fetchSuggestions(controller.signal);
+    return () => controller.abort();
   }, []);
 
   // Infinite scroll observer
@@ -45,7 +47,7 @@ export default function FeedPage() {
     return () => observerRef.current?.disconnect();
   }, [hasMore, loadingMore, page]);
 
-  const fetchPosts = async (pageNum: number) => {
+  const fetchPosts = async (pageNum: number, signal?: AbortSignal) => {
     try {
       const res = await fetch(`/api/posts?page=${pageNum}`);
       const data = await res.json();
@@ -78,7 +80,7 @@ export default function FeedPage() {
     setRefreshing(false);
   };
 
-  const fetchSuggestions = async () => {
+  const fetchSuggestions = async (signal?: AbortSignal) => {
     try {
       const res = await fetch("/api/users?q=");
       const data = await res.json();

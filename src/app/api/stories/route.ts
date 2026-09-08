@@ -23,8 +23,14 @@ export async function GET(req: Request) {
         expiresAt: { gt: new Date() },
         authorId: { in: [...followingIds, userId] },
       },
-      include: {
+      select: {
+        id: true,
+        images: true,
+        createdAt: true,
+        expiresAt: true,
+        authorId: true,
         author: { select: { id: true, name: true, username: true, avatar: true } },
+        _count: { select: { likes: true, comments: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -56,8 +62,14 @@ export async function POST(req: Request) {
         authorId: (session.user as any).id,
         expiresAt,
       },
-      include: {
+      select: {
+        id: true,
+        images: true,
+        createdAt: true,
+        expiresAt: true,
+        authorId: true,
         author: { select: { id: true, name: true, username: true, avatar: true } },
+        _count: { select: { likes: true, comments: true } },
       },
     });
 

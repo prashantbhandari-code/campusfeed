@@ -112,13 +112,7 @@ export default function EditProfile({ user, onClose, onUpdated }: EditProfilePro
               >
                 <HiCamera className="text-sm" />
               </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
+              <label htmlFor="avatar-upload" className="cursor-pointer absolute inset-0"><input id="avatar-upload" ref={fileRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="sr-only" /></label>
             </div>
             <div>
               <p className="font-semibold">{user.username}</p>

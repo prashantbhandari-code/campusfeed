@@ -5,6 +5,7 @@ import { useSession } from "@/lib/appwrite-session";
 import UserAvatar from "./UserAvatar";
 import { HiPlus, HiHeart, HiPaperAirplane, HiX, HiTrash } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { useFileUpload } from "@/lib/useFileUpload";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -34,16 +35,20 @@ export default function StoryBar() {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const { uploadFile, uploading: isUploading } = useFileUpload();
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => { fetchStories(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchStories(controller.signal);
+    return () => controller.abort();
+  }, []);
 
-  const fetchStories = async () => {
+  const fetchStories = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch("/api/stories");
+      const res = await fetch("/api/stories", { signal });
       const data = await res.json();
       const valid = data.filter((s: any) => {
         if (!s.images) return false;
@@ -64,24 +69,20 @@ export default function StoryBar() {
 
   const capturePhoto = async () => {
     if (!videoRef.current || isUploading) return;
-    setIsUploading(true);
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
     canvas.toBlob(async (blob) => {
-      if (!blob) { setIsUploading(false); return; }
-      const formData = new FormData();
-      formData.append("file", blob, "story.jpg");
-      try {
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        const { url } = await uploadRes.json();
-        await fetch("/api/stories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [url] }) });
+      if (!blob) return;
+      const file = new File([blob], "story.jpg", { type: "image/jpeg" });
+      const result = await uploadFile(file);
+      if (result) {
+        await fetch("/api/stories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [result.url] }) });
         fetchStories();
         toast.success("Story posted!");
         closeCamera();
-      } catch { toast.error("Failed to post story"); }
-      setIsUploading(false);
+      }
     }, "image/jpeg", 0.9);
   };
 
@@ -94,17 +95,12 @@ export default function StoryBar() {
   const handleCreateStory = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const { url } = await uploadRes.json();
-      await fetch("/api/stories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [url] }) });
+    const result = await uploadFile(file);
+    if (result) {
+      await fetch("/api/stories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [result.url] }) });
       fetchStories();
       toast.success("Story posted!");
-    } catch { toast.error("Failed to post story"); }
-    setIsUploading(false);
+    }
     if (fileRef.current) fileRef.current.value = "";
   };
 

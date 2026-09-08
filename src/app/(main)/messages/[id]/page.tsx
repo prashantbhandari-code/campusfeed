@@ -77,14 +77,16 @@ export default function ChatPage() {
   }, [userId]);
 
   useEffect(() => {
-    fetchMessages();
+    const controller = new AbortController();
+    fetchMessages(controller.signal);
+    return () => controller.abort();
   }, [userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (signal?: AbortSignal) => {
     try {
       const res = await fetch(`/api/messages/${userId}`);
       const data = await res.json();
