@@ -97,15 +97,21 @@ export default function CreatePage() {
 
         <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
+            <label
+              htmlFor="file-upload-create-page"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-all cursor-pointer"
             >
               <HiOutlinePhotograph className="text-xl" />
               {uploading ? "Uploading..." : "Add Photos"}
-            </button>
+            </label>
+            <input
+              id="file-upload-create-page"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="sr-only"
+            />
           </div>
 
           <button

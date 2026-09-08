@@ -96,22 +96,21 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
 
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-2">
+              <label
+                htmlFor="file-upload-create"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-green-400 hover:bg-white/5 transition-all text-sm cursor-pointer"
+              >
+                <HiOutlinePhotograph className="text-lg" />
+                {uploading ? "Uploading..." : "Photo"}
+              </label>
               <input
-                ref={fileRef}
+                id="file-upload-create"
                 type="file"
                 accept="image/*"
                 multiple
                 onChange={handleImageUpload}
-                className="hidden"
+                className="sr-only"
               />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-gray-400 hover:text-green-400 hover:bg-white/5 transition-all text-sm"
-              >
-                <HiOutlinePhotograph className="text-lg" />
-                {uploading ? "Uploading..." : "Photo"}
-              </button>
             </div>
 
             <button
