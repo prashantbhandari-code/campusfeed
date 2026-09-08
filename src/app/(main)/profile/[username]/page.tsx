@@ -58,7 +58,7 @@ export default function ProfilePage() {
         setIsFollowing(followData.isFollowing);
         setDoesFollowYou(followData.doesFollowYou);
       }
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };
@@ -70,7 +70,7 @@ export default function ProfilePage() {
       setIsFollowing(data.isFollowing);
       setDoesFollowYou(data.doesFollowYou);
       setFollowersCount((prev) => data.isFollowing ? prev + 1 : prev - 1);
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

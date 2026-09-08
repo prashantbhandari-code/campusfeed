@@ -46,7 +46,7 @@ export default function NotificationsPage() {
       const res = await fetch("/api/notifications");
       const data = await res.json();
       setNotifications(data);
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };
@@ -54,7 +54,7 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     try {
       await fetch("/api/notifications", { method: "PUT" });
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   };
 
   const getIcon = (type: string) => {

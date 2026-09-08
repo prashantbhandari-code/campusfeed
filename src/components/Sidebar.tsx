@@ -32,7 +32,7 @@ export default function Sidebar() {
         const data = await res.json();
         const count = data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
         setUnreadCount(count);
-      } catch {}
+      } catch (error) { console.error("Operation failed:", error); }
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 10000);

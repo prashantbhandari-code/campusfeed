@@ -21,7 +21,7 @@ export default function Navbar() {
         const res = await fetch("/api/notifications");
         const data = await res.json();
         setUnread(data.filter((n: any) => !n.read).length);
-      } catch {}
+      } catch (error) { console.error("Operation failed:", error); }
     };
     fetchNotifications();
   }, []);

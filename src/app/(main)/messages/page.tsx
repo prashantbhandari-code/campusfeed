@@ -25,7 +25,7 @@ export default function MessagesPage() {
       const res = await fetch("/api/messages");
       const data = await res.json();
       setConversations(data);
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };

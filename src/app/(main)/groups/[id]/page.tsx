@@ -53,9 +53,9 @@ export default function GroupDetailPage() {
       setGroup(await res.json());
     } catch { toast.error("Group not found"); router.push("/groups"); } finally { setLoading(false); }
   };
-  const fetchPosts = async () => { try { const r = await fetch("/api/groups/" + groupId + "/posts"); if (r.ok) setPosts(await r.json()); } catch {} };
-  const fetchSections = async () => { try { const r = await fetch("/api/groups/" + groupId + "/sections"); if (r.ok) setSections(await r.json()); } catch {} };
-  const fetchSectionPosts = async (sid: string) => { try { const r = await fetch("/api/sections/" + sid + "/posts"); if (r.ok) setSectionPosts(await r.json()); } catch {} };
+  const fetchPosts = async () => { try { const r = await fetch("/api/groups/" + groupId + "/posts"); if (r.ok) setPosts(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
+  const fetchSections = async () => { try { const r = await fetch("/api/groups/" + groupId + "/sections"); if (r.ok) setSections(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
+  const fetchSectionPosts = async (sid: string) => { try { const r = await fetch("/api/sections/" + sid + "/posts"); if (r.ok) setSectionPosts(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
 
   const handleJoin = async () => { try { await fetch("/api/groups/" + groupId + "/join", { method: "POST" }); fetchGroup(); fetchPosts(); fetchSections(); toast.success("Joined!"); } catch { toast.error("Failed"); } };
   const handleLeave = async () => { try { await fetch("/api/groups/" + groupId + "/join", { method: "DELETE" }); fetchGroup(); toast.success("Left"); } catch { toast.error("Failed"); } };

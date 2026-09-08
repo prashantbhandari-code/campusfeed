@@ -99,13 +99,13 @@ export default function ChatPage() {
           if (users.length > 0) setOtherUser(users[0]);
         }
       }
-    } catch {} finally {
+    } catch (error) { console.error("Message operation failed:", error); } finally {
       setLoading(false);
     }
     // Auto-mark messages as read
     try {
       await fetch("/api/messages/" + userId + "/read", { method: "POST" });
-    } catch {}
+    } catch (error) { console.error("Message operation failed:", error); }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -129,7 +129,7 @@ export default function ChatPage() {
       setNewMessage("");
       setPreviewFile(null);
       stopTyping();
-    } catch {}
+    } catch (error) { console.error("Message operation failed:", error); }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -142,7 +142,7 @@ export default function ChatPage() {
       if (data.url) {
         setPreviewFile({ url: data.url, name: data.fileName, type: data.fileType });
       }
-    } catch {} finally {
+    } catch (error) { console.error("Message operation failed:", error); } finally {
       setUploading(false);
     }
   };
@@ -162,7 +162,7 @@ export default function ChatPage() {
       };
       recorder.start();
       setRecording(true);
-    } catch {}
+    } catch (error) { console.error("Message operation failed:", error); }
   };
 
   const handleReaction = async (messageId: string, emoji: string) => {
@@ -175,7 +175,7 @@ export default function ChatPage() {
       const reactions = await res.json();
       setMessageReactions(prev => ({ ...prev, [messageId]: reactions }));
       setReactionPickerMsgId(null);
-    } catch {}
+    } catch (error) { console.error("Message operation failed:", error); }
   };
 
   const stopRecording = () => {
@@ -311,8 +311,8 @@ export default function ChatPage() {
 
       {/* Input — pinned to bottom */}
       <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 lg:mb-0">
-        <input type="file" ref={fileInputRef} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
-        <input type="file" ref={audioInputRef} className="hidden" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} />
+        <label htmlFor="file-upload-msg" className="cursor-pointer"><input id="file-upload-msg" type="file" ref={fileInputRef} className="sr-only" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
+        <label htmlFor="audio-upload-msg" className="cursor-pointer"><input id="audio-upload-msg" type="file" ref={audioInputRef} className="sr-only" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
 
         <button type="button" onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all flex-shrink-0" title="Attach file">
           <HiPaperClip className="text-xl" />

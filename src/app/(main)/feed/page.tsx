@@ -55,7 +55,7 @@ export default function FeedPage() {
         setPosts((prev) => [...prev, ...data]);
       }
       setHasMore(data.length === 10); // If less than 10, no more posts
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };
@@ -83,7 +83,7 @@ export default function FeedPage() {
       const res = await fetch("/api/users?q=");
       const data = await res.json();
       setSuggestions(data.slice(0, 5));
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   };
 
   return (      <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">

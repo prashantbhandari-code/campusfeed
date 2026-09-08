@@ -39,7 +39,7 @@ export default function LMSDashboard() {
         try {
           const res = await fetch("/api/courses/" + c.id + "/enroll");
           if (res.ok) { const data = await res.json(); results[c.id] = { isEnrolled: data.isEnrolled, count: data.count }; }
-        } catch {}
+        } catch (error) { console.error("Operation failed:", error); }
       }));
       setEnrollments(results);
     });

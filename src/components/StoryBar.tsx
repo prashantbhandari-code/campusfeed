@@ -50,7 +50,7 @@ export default function StoryBar() {
         try { const imgs = JSON.parse(s.images); return Array.isArray(imgs) && imgs.some((i: any) => i && typeof i === "string" && i.length > 0); } catch { return false; }
       });
       setStories(valid);
-    } catch {}
+    } catch (error) { console.error("Story operation failed:", error); }
   };
 
   const openCamera = async () => {
@@ -119,7 +119,7 @@ export default function StoryBar() {
       setIsLiked(data.isLiked);
       setLikeCount(data.likeCount);
       setComments(data.comments || []);
-    } catch {}
+    } catch (error) { console.error("Story operation failed:", error); }
   };
 
   const getStoryImages = (story: any): string[] => {
@@ -175,7 +175,7 @@ export default function StoryBar() {
       const data = await res.json();
       setIsLiked(data.liked);
       setLikeCount((prev) => data.liked ? prev + 1 : prev - 1);
-    } catch {}
+    } catch (error) { console.error("Story operation failed:", error); }
   };
 
   const handleComment = async () => {
@@ -187,7 +187,7 @@ export default function StoryBar() {
         setComments((prev) => [...prev, data]);
         setComment("");
       }
-    } catch {}
+    } catch (error) { console.error("Story operation failed:", error); }
   };
 
   const handleDelete = async () => {
@@ -275,7 +275,7 @@ export default function StoryBar() {
               </div>
             </div>
             <span className="text-[11px] text-gray-600 dark:text-gray-400 w-16 text-center truncate">Your Story</span>
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="hidden" />
+            <label htmlFor="file-upload-story" className="cursor-pointer absolute inset-0"><input id="file-upload-story" ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="sr-only" /></label>
           </div>
           {Object.values(groupedStories).map((group: any) => (
             <div key={group.author.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => openStory(group.stories[0])}>

@@ -33,7 +33,7 @@ export default function EventsPage() {
   useEffect(() => { fetchEvents(); }, []);
 
   const fetchEvents = async () => {
-    try { const res = await fetch("/api/events"); const data = await res.json(); setEvents(Array.isArray(data) ? data : []); } catch {} setLoading(false);
+    try { const res = await fetch("/api/events"); const data = await res.json(); setEvents(Array.isArray(data) ? data : []); } catch (error) { console.error("Operation failed:", error); } setLoading(false);
   };
 
   const handleCreate = async () => {

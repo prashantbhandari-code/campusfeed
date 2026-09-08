@@ -98,7 +98,7 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       setIsSubscribed(!!subscription);
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   }, []);
 
   return { isSubscribed, loading, subscribe, unsubscribe, checkSubscription };

@@ -38,7 +38,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       const ctx = new AudioContext();
       const tone = () => { const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = 440; g.gain.value = 0.3; o.start(); setTimeout(() => o.stop(), 1000); };
       tone(); ringRef.current = setInterval(tone, 2000);
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   }, []);
   const endCall = useCallback(() => {
     stopRing();

@@ -40,12 +40,12 @@ export default function ExplorePage() {
               const res = await fetch(`/api/users/${u.id}/follow`);
               const d = await res.json();
               statuses[u.id] = { isFollowing: d.isFollowing, doesFollowYou: d.doesFollowYou };
-            } catch {}
+            } catch (error) { console.error("Operation failed:", error); }
           }
         }
         setFollowStates(statuses);
       }
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };
@@ -55,7 +55,7 @@ export default function ExplorePage() {
       const res = await fetch("/api/posts");
       const data = await res.json();
       setPosts(data);
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   };
 
   const handleFollow = async (userId: string, e: React.MouseEvent) => {
@@ -67,7 +67,7 @@ export default function ExplorePage() {
         ...prev,
         [userId]: { isFollowing: data.isFollowing, doesFollowYou: data.doesFollowYou }
       }));
-    } catch {}
+    } catch (error) { console.error("Operation failed:", error); }
   };
 
   const handleSearch = (e: React.FormEvent) => {

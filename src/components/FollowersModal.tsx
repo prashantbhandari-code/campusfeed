@@ -35,7 +35,7 @@ export default function FollowersModal({ isOpen, onClose, userId, type, count }:
       }
       const data = await res.json();
       setUsers(data);
-    } catch {} finally {
+    } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
   };
