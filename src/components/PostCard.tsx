@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, memo } from "react";
 import { useSession } from "@/lib/appwrite-session";
 import { useRouter } from "next/navigation";
 import Lightbox from "./Lightbox";
@@ -14,7 +14,7 @@ interface PostCardProps {
   onDelete?: () => void;
 }
 
-export default function PostCard({ post, onDelete }: PostCardProps) {
+function PostCard({ post, onDelete }: PostCardProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLiked, setIsLiked] = useState(post.isLiked);
@@ -260,3 +260,6 @@ export default function PostCard({ post, onDelete }: PostCardProps) {
     </div>
   );
 }
+
+
+export default memo(PostCard);

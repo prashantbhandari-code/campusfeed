@@ -17,25 +17,43 @@ export async function GET(
     const userId = (session.user as any).id;
     const otherUserId = params.id;
 
-    const messages = await prisma.message.findMany({
-      where: {
-        OR: [
-          { senderId: userId, receiverId: otherUserId },
-          { senderId: otherUserId, receiverId: userId },
-        ],
-      },
-      include: {
-        sender: { select: { id: true, name: true, username: true, avatar: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    // Add pagination support
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const skip = (page - 1) * limit;
+    
+    const [messages, total] = await Promise.all([
+      prisma.message.findMany({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: otherUserId },
+            { senderId: otherUserId, receiverId: userId },
+          ],
+        },
+        include: {
+          sender: { select: { id: true, name: true, username: true, avatar: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        skip,
+        take: limit,
+      }),
+      prisma.message.count({
+        where: {
+          OR: [
+            { senderId: userId, receiverId: otherUserId },
+            { senderId: otherUserId, receiverId: userId },
+          ],
+        },
+      }),
+    ]);
 
     await prisma.message.updateMany({
       where: { senderId: otherUserId, receiverId: userId, read: false },
       data: { read: true },
     });
 
-    return NextResponse.json(messages);
+    return NextResponse.json({ messages, total, page, hasMore: skip + messages.length < total });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

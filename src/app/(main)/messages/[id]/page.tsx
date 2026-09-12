@@ -88,7 +88,7 @@ export default function ChatPage() {
 
   const fetchMessages = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch(`/api/messages/${userId}`);
+      const res = await fetch(`/api/messages/${userId}`, { signal });
       const data = await res.json();
       setMessages(data);
       if (!otherUser) {
@@ -127,7 +127,7 @@ export default function ChatPage() {
         body: JSON.stringify(body),
       });
       const msg = await res.json();
-      setMessages([...messages, msg]);
+      setMessages((prev) => [...prev, msg]);
       setNewMessage("");
       setPreviewFile(null);
       stopTyping();
@@ -283,16 +283,7 @@ export default function ChatPage() {
             {otherUser?.name} is typing...
           </div>
         )}
-        {isTyping && (
-              <div className="flex items-center gap-2 px-4 py-2">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"0ms"}} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"150ms"}} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay:"300ms"}} />
-                </div>
-                <span className="text-xs text-gray-400">typing...</span>
-              </div>
-            )}
+        
             <div ref={messagesEndRef} />
       </div>
 
