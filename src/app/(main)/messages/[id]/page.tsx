@@ -90,7 +90,7 @@ export default function ChatPage() {
     try {
       const res = await fetch(`/api/messages/${userId}`, { signal });
       const data = await res.json();
-      setMessages(data);
+      setMessages(data.messages || data);
       if (!otherUser) {
         const msg = data.find((m: any) => m.sender.id === userId);
         if (msg) {

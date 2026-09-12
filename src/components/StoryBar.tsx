@@ -17,7 +17,7 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-export default function StoryBar() {
+function StoryBar() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const [stories, setStories] = useState<any[]>([]);
@@ -453,3 +453,5 @@ export default function StoryBar() {
     </>
   );
 }
+
+export default memo(StoryBar);
