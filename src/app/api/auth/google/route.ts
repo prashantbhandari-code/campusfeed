@@ -3,11 +3,10 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const PROD_ORIGIN = "https://campusconnect-osm1.onrender.com";
 
 function getGoogleAuthUrl(origin: string) {
-  // Use production origin for redirect URI (Google Cloud Console must have it registered)
-  const base = PROD_ORIGIN;
+  // Use request origin for redirect URI
+  const base = origin;
   const redirectUri = `${base}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,

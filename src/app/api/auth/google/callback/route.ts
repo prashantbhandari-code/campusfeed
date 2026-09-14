@@ -6,7 +6,6 @@ import { createSessionToken } from "@/lib/session-token";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const PROD_ORIGIN = "https://campusconnect-osm1.onrender.com";
 
 function generateUsername(name: string): string {
   const base = name
@@ -26,14 +25,17 @@ export async function GET(req: Request) {
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
 
+    // Get the origin from the request
+    const origin = url.origin;
+
     if (error || !code) {
-      const loginUrl = new URL("/login", PROD_ORIGIN);
+      const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
 
     // 1. Exchange auth code for tokens
-    const redirectUri = `${PROD_ORIGIN}/api/auth/google/callback`;
+    const redirectUri = `${origin}/api/auth/google/callback`;
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
 
     if (!tokenRes.ok) {
       console.error("Google token exchange failed:", tokenRes.status);
-      const loginUrl = new URL("/login", PROD_ORIGIN);
+      const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -62,7 +64,7 @@ export async function GET(req: Request) {
 
     if (!profileRes.ok) {
       console.error("Google profile fetch failed:", profileRes.status);
-      const loginUrl = new URL("/login", PROD_ORIGIN);
+      const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -71,7 +73,7 @@ export async function GET(req: Request) {
     const { email, name, picture, id: googleId } = googleProfile;
 
     if (!email) {
-      const loginUrl = new URL("/login", PROD_ORIGIN);
+      const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
       return NextResponse.redirect(loginUrl);
     }
@@ -99,7 +101,7 @@ export async function GET(req: Request) {
     // 4. Set signed cc_session cookie
     const sessionToken = createSessionToken(user.id);
 
-    const feedUrl = new URL("/feed", PROD_ORIGIN);
+    const feedUrl = new URL("/feed", origin);
     const response = NextResponse.redirect(feedUrl);
 
     response.headers.append(
@@ -110,7 +112,7 @@ export async function GET(req: Request) {
     return response;
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    const loginUrl = new URL("/login", PROD_ORIGIN);
+    const loginUrl = new URL("/login", url.origin);
     loginUrl.searchParams.set("error", "google-failed");
     return NextResponse.redirect(loginUrl);
   }
