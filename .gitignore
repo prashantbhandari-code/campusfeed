@@ -59,3 +59,5 @@ check-env.js
 render-fix.js
 update-render.js
 .freebuff/
+
+.vercel
