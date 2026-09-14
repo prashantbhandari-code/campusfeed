@@ -20,8 +20,8 @@ function generateUsername(name: string): string {
 }
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
   try {
-    const url = new URL(req.url);
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
 
