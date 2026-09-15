@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 
+// Strip HTML tags to prevent stored XSS
+function sanitize(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
 // GET /api/groups/[id]/posts — list posts in a group
 export async function GET(
   req: Request,
@@ -65,7 +70,7 @@ export async function POST(
 
     const post = await prisma.groupPost.create({
       data: {
-        content: content?.trim() || null,
+        content: content ? sanitize(content) : null,
         images: JSON.stringify(images || []),
         groupId,
         authorId: userId,

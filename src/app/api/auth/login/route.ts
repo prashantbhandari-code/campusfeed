@@ -40,6 +40,7 @@ async function handler(req: Request) {
 
     // 4. Set signed cc_session cookie
     const sessionToken = createSessionToken(user.id);
+    const isProduction = process.env.NODE_ENV === "production";
 
     const response = NextResponse.json({
       success: true,
@@ -48,7 +49,7 @@ async function handler(req: Request) {
 
     response.headers.append(
       "Set-Cookie",
-      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
     );
 
     return response;

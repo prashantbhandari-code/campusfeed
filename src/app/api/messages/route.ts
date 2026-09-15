@@ -5,6 +5,11 @@ import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { emitToUser } from "@/lib/socket";
 
+// Strip HTML tags to prevent stored XSS
+function sanitize(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
 export async function GET(req: Request) {
   try {
     const session = await getAppwriteSession(req);
@@ -63,7 +68,7 @@ export async function POST(req: Request) {
 
     const message = await prisma.message.create({
       data: {
-        content: content || "",
+        content: content ? sanitize(content) : "",
         senderId: (session.user as any).id,
         receiverId,
         fileUrl: fileUrl || null,

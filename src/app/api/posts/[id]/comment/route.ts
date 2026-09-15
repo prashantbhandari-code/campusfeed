@@ -4,6 +4,11 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 
+// Strip HTML tags to prevent stored XSS
+function sanitize(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
@@ -35,9 +40,14 @@ export async function POST(
       return NextResponse.json({ error: "Content required" }, { status: 400 });
     }
 
+    const sanitizedContent = sanitize(content);
+    if (!sanitizedContent) {
+      return NextResponse.json({ error: "Content required" }, { status: 400 });
+    }
+
     const comment = await prisma.comment.create({
       data: {
-        content,
+        content: sanitizedContent,
         postId: params.id,
         authorId: (session.user as any).id,
       },

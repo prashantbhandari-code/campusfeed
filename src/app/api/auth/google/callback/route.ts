@@ -100,13 +100,14 @@ export async function GET(req: Request) {
 
     // 4. Set signed cc_session cookie
     const sessionToken = createSessionToken(user.id);
+    const isProduction = process.env.NODE_ENV === "production";
 
     const feedUrl = new URL("/feed", origin);
     const response = NextResponse.redirect(feedUrl);
 
     response.headers.append(
       "Set-Cookie",
-      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
     );
 
     return response;

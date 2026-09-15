@@ -69,6 +69,7 @@ async function handler(req: Request) {  try {
       );
     }
 
+    const isProduction = process.env.NODE_ENV === "production";
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, username: user.username },
@@ -76,7 +77,7 @@ async function handler(req: Request) {  try {
 
     response.headers.append(
       "Set-Cookie",
-      `cc_session=${createSessionToken(user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+      `cc_session=${createSessionToken(user.id)}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
     );
 
     return response;

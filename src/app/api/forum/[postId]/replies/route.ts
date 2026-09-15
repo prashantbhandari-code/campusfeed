@@ -2,17 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 
+// Strip HTML tags to prevent stored XSS
+function sanitize(input: string): string {
+  return input.replace(/<[^>]*>/g, "").trim();
+}
+
 export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
     const session = await getAppwriteSession(req);
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
+    const sanitizedContent = sanitize(body.content || "");
+    if (!sanitizedContent) {
+      return NextResponse.json({ error: "Content required" }, { status: 400 });
+    }
+
     const reply = await prisma.forumReply.create({
       data: {
         postId: params.postId,
         authorId: session.user.id,
-        content: body.content,
+        content: sanitizedContent,
       },
     });
 

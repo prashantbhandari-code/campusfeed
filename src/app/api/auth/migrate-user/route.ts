@@ -115,6 +115,7 @@ async function handler(req: Request) {  try {
     // forged client-side). The cc_session cookie is the credential that
     // matters — all server APIs authenticate with it.
     const setCookie = sessionRes.ok ? sessionRes.headers.get("set-cookie") : null;
+    const isProduction = process.env.NODE_ENV === "production";
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email },
@@ -122,11 +123,11 @@ async function handler(req: Request) {  try {
 
     if (setCookie) {
       const cookieParts = setCookie.split(";")[0];
-      response.headers.append("Set-Cookie", cookieParts + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000");
+      response.headers.append("Set-Cookie", cookieParts + "; Path=/; HttpOnly; SameSite=Lax;" + (isProduction ? " Secure;" : "") + " Max-Age=31536000");
     }
     response.headers.append(
       "Set-Cookie",
-      `cc_session=${createSessionToken(user.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`
+      `cc_session=${createSessionToken(user.id)}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
     );
 
     return response;
