@@ -129,7 +129,22 @@ function PostCard({ post, onDelete }: PostCardProps) {
         >
           <UserAvatar user={post.author} size="md" />
           <div>
-            <p className="font-semibold text-sm text-gray-900 dark:text-white hover:text-primary-400 transition-colors">{post.author.name}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-sm text-gray-900 dark:text-white hover:text-primary-400 transition-colors">{post.author.name}</p>
+              {post.author.role === 'admin' && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-600 text-white">
+                  👑 Dean
+                </span>
+              )}
+              {post.author.role === 'teacher' && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-600 text-white">
+                  📚 Teacher
+                </span>
+              )}
+              {post.author.verified && post.author.role !== 'admin' && post.author.role !== 'teacher' && (
+                <span className="text-blue-500 text-xs">✓</span>
+              )}
+            </div>
             {post.author.department && (
               <p className="text-[10px] text-campus-400">{post.author.department}</p>
             )}

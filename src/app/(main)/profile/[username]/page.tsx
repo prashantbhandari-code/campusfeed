@@ -226,7 +226,22 @@ export default function ProfilePage() {
           </div>
 
           {/* Name & Username */}
-          <h1 className="text-2xl font-bold text-center sm:text-left">{profile.name}</h1>
+          <div className="flex items-center gap-2 justify-center sm:justify-start">
+            <h1 className="text-2xl font-bold">{profile.name}</h1>
+            {profile.role === 'admin' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-purple-600 text-white">
+                👑 Dean
+              </span>
+            )}
+            {profile.role === 'teacher' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-600 text-white">
+                📚 Teacher
+              </span>
+            )}
+            {profile.verified && profile.role !== 'admin' && profile.role !== 'teacher' && (
+              <span className="text-blue-500">✓</span>
+            )}
+          </div>
           <div className="flex items-center gap-2 mb-3 justify-center sm:justify-start">
               <p className="text-gray-500">@{profile.username}</p>
               {!isSelf && doesFollowYou && (

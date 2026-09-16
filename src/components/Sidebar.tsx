@@ -25,6 +25,10 @@ export default function Sidebar() {
     { href: "/settings", icon: HiCog, label: "Settings" },
   ];
 
+  const adminItems = user?.role === 'admin' ? [
+    { href: "/admin", icon: HiCog, label: "Admin Panel", badge: '👑' },
+  ] : [];
+
   useEffect(() => {
     const fetchUnread = async () => {
       try {
@@ -64,6 +68,30 @@ export default function Sidebar() {
           );
         })}
       </div>
+
+      {adminItems.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/[0.06]">
+          <p className="px-4 mb-2 text-xs font-semibold text-purple-400 uppercase tracking-wider">Administration</p>
+          {adminItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive
+                    ? "bg-purple-600/10 text-purple-500 dark:text-purple-400 font-semibold border-l-2 border-purple-500 -ml-[2px] pl-[18px]"
+                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                <item.icon className="text-xl" />
+                <span>{item.label}</span>
+                {item.badge && <span className="ml-auto text-sm">{item.badge}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       </aside>
   );
