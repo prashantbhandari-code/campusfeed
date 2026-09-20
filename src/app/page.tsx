@@ -30,15 +30,15 @@ export default function Home() {
         <div className="flex items-center justify-center gap-3 mb-6">
           <HiAcademicCap className="text-6xl md:text-8xl text-campus-400" />
         </div>
-        <h1 className="text-6xl md:text-8xl font-bold mb-4 text-gradient">CampusConnect</h1>
+        <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold mb-4 text-gradient break-words">CampusConnect</h1>
         <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-400 mb-4">
           Your Campus. Your People.
         </p>
-        <p className="text-base text-gray-400 dark:text-gray-500 mb-12">
+        <p className="text-base text-gray-400 dark:text-gray-500 mb-8">
           The private social network for KIIT University students
         </p>
 
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-campus-600/20 border border-campus-500/30 rounded-full mb-10">
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-campus-600/20 border border-campus-500/30 rounded-full mb-14">
           <HiCheckCircle className="text-campus-400" />
           <span className="text-campus-700 dark:text-campus-300 font-medium">Only @kiit.ac.in emails allowed</span>
         </div>
@@ -52,16 +52,16 @@ export default function Home() {
           </Link>
           <Link
             href="/login"
-            className="px-8 py-4 glass hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl text-lg font-semibold transition-all hover-lift"
+            className="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-900 dark:text-white rounded-xl text-lg font-semibold transition-all hover-lift"
           >
             Sign In
           </Link>
         </div>
 
-        <div className="mt-20 grid grid-cols-3 gap-8 text-center">
+        <div className="mt-20 grid grid-cols-3 gap-12 text-center">
           <div>
-            <div className="text-3xl font-bold text-campus-400">KIIT</div>
-            <div className="text-gray-400 dark:text-gray-500 mt-1">University Only</div>
+            <div className="text-3xl font-bold text-campus-400">1st</div>
+            <div className="text-gray-400 dark:text-gray-500 mt-1">Campus Verified</div>
           </div>
           <div>
             <div className="text-3xl font-bold text-purple-400">20+</div>
