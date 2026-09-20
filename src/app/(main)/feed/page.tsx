@@ -88,9 +88,11 @@ export default function FeedPage() {
     } catch (error) { console.error("Operation failed:", error); }
   };
 
-  return (      <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
+  return (
+    <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
       {/* Main Feed */}
       <div className="flex-1 max-w-2xl">
+        <h1 className="sr-only">CampusConnect Feed</h1>
         <StoryBar />
 
         <div className="border-b border-gray-200 dark:border-white/5 mb-4" />
@@ -150,7 +152,14 @@ export default function FeedPage() {
                 </div>
               )}
               {!hasMore && posts.length > 0 && (
-                <p className="text-center text-gray-400 dark:text-gray-500 text-sm">No more posts</p>
+                <div className="text-center py-6">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-full">
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">No more posts</span>
+                  </div>
+                  <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="block mx-auto mt-3 text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">
+                    ↑ Back to top
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -162,24 +171,27 @@ export default function FeedPage() {
         <div className="sticky top-20">
           <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Suggested for you</h3>
-            {suggestions.map((s: any) => (
-              <Link
-                key={s.id}
-                href={`/profile/${s.username}`}
-                className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all"
-              >
-                <UserAvatar user={s} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{s.name}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate">@{s.username}</p>
-                    {s.department && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-campus-600/20 text-campus-400 rounded-full">{s.department}</span>
-                    )}
-                  </div>
+            <div className="space-y-3">
+              {suggestions.map((s: any) => (
+                <div key={s.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-all">
+                  <Link href={`/profile/${s.username}`} className="flex items-center gap-3 flex-1 min-w-0">
+                    <UserAvatar user={s} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate capitalize">{s.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">@{s.username}</p>
+                        {s.department && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-campus-600/20 text-campus-400 rounded-full">{s.department}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                  <button className="px-3 py-1.5 text-xs font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-500/10 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-500/20 transition-colors whitespace-nowrap">
+                    Follow
+                  </button>
                 </div>
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

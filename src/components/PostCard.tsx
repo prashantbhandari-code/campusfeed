@@ -151,7 +151,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"><HiDotsHorizontal className="text-xl" /></button>
+          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 self-center"><HiDotsHorizontal className="text-xl" /></button>
           {showMenu && (
             <div className="absolute right-0 top-10 bg-white dark:bg-dark-700 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl py-2 min-w-[160px] z-50">
               {user?.id === post.authorId && <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"><HiOutlinePencil className="w-4 h-4" /> Edit</button>}
@@ -205,7 +205,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </div>
       ) : post.content ? (
-        <p className="px-4 py-3 text-[13px] leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
+        <p className="px-4 py-3 text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{post.content}</p>
       ) : null}
 
       {/* Actions Bar — Instagram style */}
