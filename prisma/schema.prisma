@@ -41,6 +41,7 @@ model User {
   following     Follow[] @relation("Follower")
   groups        Group[]
   groupMembers  GroupMember[]
+  groupMessages GroupMessage[]
   groupPosts    GroupPost[]
 courses         Course[]
   createdSections Section[]
@@ -268,6 +269,7 @@ model Group {
   members   GroupMember[]
   posts     GroupPost[]
   sections  Section[]
+  messages  GroupMessage[]
 
   @@index([type])
   @@index([department])
@@ -291,6 +293,21 @@ model GroupMember {
   @@index([userId])
 
   @@map("group_members")
+}
+
+model GroupMessage {
+  id        String   @id @default(uuid())
+  content   String
+  groupId   String
+  senderId  String
+  createdAt DateTime @default(now())
+
+  group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+
+  @@map("group_messages")
 }
 
 model GroupPost {

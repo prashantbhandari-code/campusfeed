@@ -3,6 +3,7 @@ import { parse } from "url";
 import next from "next";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { setIO } from "./src/lib/socket";
+import prisma from "./src/lib/prisma";
 import { NextResponse } from "next/server";
 import { getUserIdFromCookieHeader } from "./src/lib/session-token";
 
@@ -77,15 +78,31 @@ app.prepare().then(() => {
       console.log(`👤 User ${userId} online (${onlineUsers.get(userId)!.size} sockets)`);
     });
 
-    // User joins a group chat room
-    socket.on("join-group", (groupId: string) => {
-      socket.join(`group:${groupId}`);
-      console.log(`👥 Socket ${socket.id} joined group ${groupId}`);
+    // User joins a group chat room — membership is verified against the
+    // database (same rule the group messages API enforces); a client can only
+    // join rooms for groups it actually belongs to.
+    socket.on("join-group", async (payload: string | { groupId?: string }) => {
+      const groupId = typeof payload === "string" ? payload : payload?.groupId;
+      if (!groupId) return;
+      try {
+        const membership = await prisma.groupMember.findUnique({
+          where: { groupId_userId: { groupId, userId } },
+        });
+        if (!membership) {
+          console.log(`⚠️ User ${userId} tried to join group ${groupId} — not a member, rejected`);
+          return;
+        }
+        socket.join(`group:${groupId}`);
+        console.log(`👥 Socket ${socket.id} joined group ${groupId}`);
+      } catch (error) {
+        console.error("join-group failed:", error);
+      }
     });
 
     // User leaves a group chat room
-    socket.on("leave-group", (groupId: string) => {
-      socket.leave(`group:${groupId}`);
+    socket.on("leave-group", (payload: string | { groupId?: string }) => {
+      const groupId = typeof payload === "string" ? payload : payload?.groupId;
+      if (groupId) socket.leave(`group:${groupId}`);
     });
 
     // Typing indicators

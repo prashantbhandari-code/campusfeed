@@ -19,6 +19,7 @@ async function pollOnce(): Promise<void> {
       if (typeof data.timestamp === "number") since = data.timestamp;
       (data.messages || []).forEach((m: any) => publish("new-message", m.message));
       (data.reactions || []).forEach((r: any) => publish("message-reaction", r));
+      (data.groupMessages || []).forEach((m: any) => publish("new-group-message", m));
     }
 
     const typingRes = await fetch(`/api/socketio?since=${since}&type=typing`);

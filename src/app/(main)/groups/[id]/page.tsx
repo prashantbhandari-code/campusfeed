@@ -6,7 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import UserAvatar from "@/components/UserAvatar";
-import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChatAlt2, HiOutlineUsers } from "react-icons/hi";
+import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChat, HiOutlineChatAlt2, HiOutlineUsers } from "react-icons/hi";
+import GroupChat from "@/components/GroupChat";
 
 
 interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; memberCount: number; postCount: number; isMember: boolean; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null } }[] }
@@ -32,7 +33,7 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [posts, setPosts] = useState<GroupPost[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [activeTab, setActiveTab] = useState<"posts" | "sections" | "members">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "chat" | "sections" | "members">("posts");
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [sectionPosts, setSectionPosts] = useState<GroupPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,15 +112,20 @@ export default function GroupDetailPage() {
           </div>
         </div>
         <div className="flex border-b border-gray-200 dark:border-white/[0.06]">
-          {(["posts","sections","members"] as const).map((tab) => (
+          {(["posts","chat","sections","members"] as const).map((tab) => (
             <button key={tab} onClick={() => { setActiveTab(tab); setActiveSection(null); }} className={"flex-1 py-3 text-sm font-medium capitalize transition-colors flex items-center justify-center gap-1.5 " + (activeTab === tab ? "text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white")}>
               {tab === "posts" && <HiOutlineChatAlt2 className="text-sm" />}
+              {tab === "chat" && <HiOutlineChat className="text-sm" />}
               {tab === "sections" && <HiOutlineCollection className="text-sm" />}
               {tab === "members" && <HiOutlineUsers className="text-sm" />}
               {tab}
             </button>
           ))}
         </div>
+
+        {activeTab === "chat" && (
+          <GroupChat key={String(group.isMember)} groupId={groupId} isMember={group.isMember} />
+        )}
 
         {activeTab === "posts" && (
           <div className="px-4 py-4 space-y-4">

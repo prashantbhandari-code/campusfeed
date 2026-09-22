@@ -16,6 +16,12 @@ export function emitToUser(userId: string, event: string, data: any) {
   io.to(`user:${userId}`).emit(event, data);
 }
 
+// Helper: emit to a group chat room (callers must join rooms server-side)
+export function emitToGroup(groupId: string, event: string, data: any) {
+  if (!io) return;
+  io.to(`group:${groupId}`).emit(event, data);
+}
+
 // Helper: broadcast to all connected users
 export function broadcast(event: string, data: any) {
   if (!io) return;

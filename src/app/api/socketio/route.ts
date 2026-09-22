@@ -47,6 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'join-group' || action === 'leave-group') {
+      // Rooms exist only in WebSocket mode; polling derives group access from
+      // the DB on every request, so there is nothing to track here.
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Socket.IO polling error:', error);
@@ -77,10 +83,19 @@ export async function GET(request: NextRequest) {
 
     // Newest-first + take 50 so a first poll (since=0) can't skip recent
     // messages behind a full page of older history.
-    const [messages, rawReactions] = await Promise.all([
+    const [messages, groupMessages, rawReactions] = await Promise.all([
       prisma.message.findMany({
         where: { receiverId: userId, createdAt: { gt } },
         include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      prisma.groupMessage.findMany({
+        where: {
+          createdAt: { gt },
+          group: { members: { some: { userId } } },
+        },
+        include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
@@ -113,6 +128,7 @@ export async function GET(request: NextRequest) {
       messages: messages
         .reverse()
         .map((m) => ({ message: m, senderId: m.senderId, timestamp: m.createdAt.getTime() })),
+      groupMessages: groupMessages.reverse(),
       reactions: reactionPayload,
       timestamp: Date.now() - POLL_SKEW_MS,
     });
