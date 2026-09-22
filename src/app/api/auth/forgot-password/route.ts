@@ -7,10 +7,70 @@ import crypto from "crypto";
 import { Resend } from "resend";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+// Brevo requires a sender that is verified in the Brevo dashboard
+// (Senders & IPs -> Senders). e.g. "CampusConnect <your-verified@email.com>"
+const BREVO_FROM = process.env.BREVO_FROM || "";
 
 function generateOtp(): string {
   // 6-digit numeric code: 100000..999999
   return crypto.randomInt(100000, 1000000).toString();
+}
+
+function otpEmailHtml(name: string | null, otp: string): string {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #2563eb; font-size: 28px; margin: 0;">🎓 CampusConnect</h1>
+      </div>
+      <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
+        <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Reset Your Password</h2>
+        <p style="color: #475569; line-height: 1.6;">
+          Hi ${name || "there"},<br><br>
+          Enter this code on the reset page to choose a new password:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <span style="display: inline-block; background: #1e293b; color: white; font-size: 36px; font-weight: 700; letter-spacing: 12px; padding: 16px 28px; border-radius: 12px;">
+            ${otp}
+          </span>
+        </div>
+        <p style="color: #64748b; font-size: 14px;">
+          This code expires in 10 minutes and can be used once. If you didn't request this, you can safely ignore this email.
+        </p>
+      </div>
+      <p style="color: #94a3b8; font-size: 12px; text-align: center;">
+        CampusConnect — Your Campus Hub
+      </p>
+    </div>
+  `;
+}
+
+/**
+ * Brevo (free 300/day, no domain needed — only a verified sender).
+ * POST https://api.brevo.com/v3/smtp/email with `api-key` header.
+ * Returns true only on a 2xx response.
+ */
+async function sendViaBrevo(to: string, name: string | null, otp: string): Promise<boolean> {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": BREVO_API_KEY,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "CampusConnect", email: BREVO_FROM },
+      to: [{ email: to }],
+      subject: "Your CampusConnect password reset code",
+      htmlContent: otpEmailHtml(name, otp),
+    }),
+  });
+
+  if (res.ok) return true;
+
+  const detail = await res.text().catch(() => res.statusText);
+  console.error(`Brevo delivery FAILED for ${to} (${res.status}): ${detail.slice(0, 500)}`);
+  return false;
 }
 
 async function handler(req: Request) {
@@ -45,46 +105,26 @@ async function handler(req: Request) {
       },
     });
 
-    // Send the OTP via Resend
-    if (RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here") {
+    // Send the OTP — Brevo first (reaches any recipient), Resend as fallback
+    const brevoConfigured = BREVO_API_KEY && BREVO_FROM;
+    if (brevoConfigured) {
+      const ok = await sendViaBrevo(email, user.name, otp);
+      if (ok) console.log(`Reset OTP sent to ${email} via Brevo`);
+    } else if (RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here") {
       const resend = new Resend(RESEND_API_KEY);
       const sent = await resend.emails.send({
         from: "CampusConnect <onboarding@resend.dev>",
         to: email,
         subject: "Your CampusConnect password reset code",
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb; font-size: 28px; margin: 0;">🎓 CampusConnect</h1>
-            </div>
-            <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
-              <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Reset Your Password</h2>
-              <p style="color: #475569; line-height: 1.6;">
-                Hi ${user.name || "there"},<br><br>
-                Enter this code on the reset page to choose a new password:
-              </p>
-              <div style="text-align: center; margin: 30px 0;">
-                <span style="display: inline-block; background: #1e293b; color: white; font-size: 36px; font-weight: 700; letter-spacing: 12px; padding: 16px 28px; border-radius: 12px;">
-                  ${otp}
-                </span>
-              </div>
-              <p style="color: #64748b; font-size: 14px;">
-                This code expires in 10 minutes and can be used once. If you didn't request this, you can safely ignore this email.
-              </p>
-            </div>
-            <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-              CampusConnect — Your Campus Hub
-            </p>
-          </div>
-        `,
+        html: otpEmailHtml(user.name, otp),
       });
       if (sent.error) {
         console.error(`Resend delivery FAILED for ${email}: ${sent.error.name} — ${sent.error.message}`);
       } else {
-        console.log(`Reset OTP sent to ${email}`);
+        console.log(`Reset OTP sent to ${email} via Resend`);
       }
     } else {
-      // Resend not configured — log the code for development
+      // Neither provider configured — log the code for development
       console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
     }
 
