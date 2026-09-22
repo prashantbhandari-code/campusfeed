@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * client-supplied Appwrite ID without verification, so anyone could fetch
  * another user's profile by setting the header. Identity now comes only from
  * the server-set signed cookie, which every login path establishes via
- * /api/auth/session-sync (or /api/auth/migrate-user).
+ * the login / Google OAuth flows.
  */
 export async function GET(req: Request) {
   try {

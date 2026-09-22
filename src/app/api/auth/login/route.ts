@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { createSessionToken } from "@/lib/session-token";
+import { createSessionCookie } from "@/lib/session-cookie";
 import { withRateLimit } from "@/lib/rateLimit";
 
 /**
@@ -39,18 +39,12 @@ async function handler(req: Request) {
     }
 
     // 4. Set signed cc_session cookie
-    const sessionToken = createSessionToken(user.id);
-    const isProduction = process.env.NODE_ENV === "production";
-
     const response = NextResponse.json({
       success: true,
       user: { id: user.id, name: user.name, email: user.email, username: user.username },
     });
 
-    response.headers.append(
-      "Set-Cookie",
-      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
-    );
+    response.headers.append("Set-Cookie", createSessionCookie(user.id));
 
     return response;
   } catch (error) {

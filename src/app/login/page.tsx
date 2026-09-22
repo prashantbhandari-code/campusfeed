@@ -52,22 +52,10 @@ function LoginForm() {
         return;
       }
 
-      // Fallback: try migration path for existing PG-only users
-      const migrateRes = await fetch("/api/auth/migrate-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (migrateRes.ok) {
-        toast.success("Welcome back to CampusConnect!");
-        window.location.href = "/feed";
-      } else {
-        const errorData = await migrateRes.json().catch(() => ({}));
-        toast.error(errorData.error === "no-password" 
-          ? "This account uses Google sign-in. Please use 'Sign in with Google'."
-          : "Invalid email or password");
-      }
+      const errorData = await loginRes.json().catch(() => ({}));
+      toast.error(errorData.error === "no-password"
+        ? "This account uses Google sign-in. Please use 'Sign in with Google'."
+        : "Invalid email or password");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {

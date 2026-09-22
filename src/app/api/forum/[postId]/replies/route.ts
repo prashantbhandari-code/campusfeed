@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { sanitize } from "@/lib/sanitize";
 
 // Strip HTML tags to prevent stored XSS
-function sanitize(input: string): string {
-  return input.replace(/<[^>]*>/g, "").trim();
-}
 
 export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
   try {

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createSessionToken } from "@/lib/session-token";
+import { createSessionCookie } from "@/lib/session-cookie";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
@@ -99,16 +99,10 @@ export async function GET(req: Request) {
     }
 
     // 4. Set signed cc_session cookie
-    const sessionToken = createSessionToken(user.id);
-    const isProduction = process.env.NODE_ENV === "production";
-
     const feedUrl = new URL("/feed", origin);
     const response = NextResponse.redirect(feedUrl);
 
-    response.headers.append(
-      "Set-Cookie",
-      `cc_session=${sessionToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=31536000`
-    );
+    response.headers.append("Set-Cookie", createSessionCookie(user.id));
 
     return response;
   } catch (error) {

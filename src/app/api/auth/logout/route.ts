@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { clearSessionCookie } from "@/lib/session-cookie";
 
 /**
  * Clears the signed cc_session cookie on sign-out. The Appwrite SDK session
@@ -8,11 +9,7 @@ import { NextResponse } from "next/server";
  * fully logged out.
  */
 export async function POST() {
-  const isProduction = process.env.NODE_ENV === "production";
   const response = NextResponse.json({ success: true });
-  response.headers.append(
-    "Set-Cookie",
-    `cc_session=; Path=/; HttpOnly; SameSite=Lax;${isProduction ? " Secure;" : ""} Max-Age=0`
-  );
+  response.headers.append("Set-Cookie", clearSessionCookie());
   return response;
 }

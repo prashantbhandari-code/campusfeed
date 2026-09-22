@@ -3,12 +3,10 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 
 // Strip HTML tags to prevent stored XSS
-function sanitize(input: string): string {
-  return input.replace(/<[^>]*>/g, "").trim();
-}
 
 export async function GET(req: Request) {
   try {
