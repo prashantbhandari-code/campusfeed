@@ -48,7 +48,7 @@ async function handler(req: Request) {
     // Send the OTP via Resend
     if (RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here") {
       const resend = new Resend(RESEND_API_KEY);
-      await resend.emails.send({
+      const sent = await resend.emails.send({
         from: "CampusConnect <onboarding@resend.dev>",
         to: email,
         subject: "Your CampusConnect password reset code",
@@ -78,7 +78,11 @@ async function handler(req: Request) {
           </div>
         `,
       });
-      console.log(`Reset OTP sent to ${email}`);
+      if (sent.error) {
+        console.error(`Resend delivery FAILED for ${email}: ${sent.error.name} — ${sent.error.message}`);
+      } else {
+        console.log(`Reset OTP sent to ${email}`);
+      }
     } else {
       // Resend not configured — log the code for development
       console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
