@@ -30,7 +30,7 @@ export default function Home() {
         <div className="flex items-center justify-center gap-3 mb-6">
           <HiAcademicCap className="text-6xl md:text-8xl text-campus-400" />
         </div>
-        <h1 className="text-5xl sm:text-6xl md:text-8xl font-bold mb-4 text-gradient break-words">CampusConnect</h1>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold mb-4 text-gradient whitespace-nowrap">CampusConnect</h1>
         <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-400 mb-4">
           Your Campus. Your People.
         </p>
