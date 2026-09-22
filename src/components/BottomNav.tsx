@@ -6,9 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { HiHome, HiUser, HiOutlineUserGroup } from "react-icons/hi2";
 import { HiSearch, HiCalendar } from "react-icons/hi";
+import { useUnreadMessages } from "@/lib/useUnreadMessages";
 
 export default function BottomNav() {
   const { data: session } = useSession();
+  const unreadMessages = useUnreadMessages();
   const pathname = usePathname();
   const user = session?.user as any;
   const router = useRouter();
@@ -41,6 +43,11 @@ export default function BottomNav() {
                     <path d="M22 2L11 13" />
                     <path d="M22 2L15 22L11 13L2 9L22 2Z" />
                   </svg>
+                  {unreadMessages > 0 && (
+                    <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] px-1 text-center leading-4">
+                      {unreadMessages > 9 ? "9+" : unreadMessages}
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] font-medium">{item.label}</span>
               </button>

@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useSession } from "@/lib/appwrite-session";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useTheme } from "@/components/ThemeProvider";
 import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
+import { useUnreadMessages } from "@/lib/useUnreadMessages";
 import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
     const user = session?.user as any;
-  const [unreadCount, setUnreadCount] = useState(0);
+  const unreadCount = useUnreadMessages();
   const notifUnread = useUnreadNotifications();
 
   const Badge = ({ count }: { count: number }) =>
@@ -37,20 +37,6 @@ export default function Sidebar() {
   const adminItems = user?.role === 'admin' ? [
     { href: "/admin", icon: HiCog, label: "Admin Panel", badge: '👑' },
   ] : [];
-
-  useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const res = await fetch("/api/messages");
-        const data = await res.json();
-        const count = data.reduce((acc: number, c: any) => acc + (c.unread || 0), 0);
-        setUnreadCount(count);
-      } catch (error) { console.error("Operation failed:", error); }
-    };
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-white/[0.06] glass-card rounded-none z-40">

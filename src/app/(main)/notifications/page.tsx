@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import UserAvatar from "@/components/UserAvatar";
 import { formatDate } from "@/lib/utils";
-import { HiHeart, HiChat, HiUserAdd, HiMail } from "react-icons/hi";
+import { HiHeart, HiChat, HiUserAdd } from "react-icons/hi";
 import toast from "react-hot-toast";
 
 export default function NotificationsPage() {
@@ -62,7 +62,6 @@ export default function NotificationsPage() {
       case "like": return <HiHeart className="text-red-500" />;
       case "comment": return <HiChat className="text-blue-500" />;
       case "follow": return <HiUserAdd className="text-green-500" />;
-      case "message": return <HiMail className="text-purple-500" />;
       default: return null;
     }
   };
@@ -72,7 +71,6 @@ export default function NotificationsPage() {
       case "like": return "liked your post";
       case "comment": return "commented on your post";
       case "follow": return "started following you";
-      case "message": return notif.count && notif.count > 1 ? `sent you ${notif.count} messages` : "sent you a message";
       default: return "interacted with you";
     }
   };

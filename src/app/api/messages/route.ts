@@ -79,21 +79,9 @@ export async function POST(req: Request) {
       },
     });
 
-    await prisma.notification.create({
-      data: {
-        type: "message",
-        userId: receiverId,
-        fromUserId: (session.user as any).id,
-      },
-    });
-
-    // Emit real-time events
+    // Message alerts belong to the Messages badge (conversation unread count),
+    // not the notifications bell — no Notification row, no new-notification emit.
     emitToUser(receiverId, "new-message", message);
-    emitToUser(receiverId, "new-notification", {
-      type: "message",
-      fromUser: message.sender,
-      createdAt: message.createdAt,
-    });
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     // Newest-first + take 50 so a first poll (since=0) can't skip recent
     // messages behind a full page of older history.
-    const [messages, groupMessages, rawReactions, unreadNotifications] = await Promise.all([
+    const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages] = await Promise.all([
       prisma.message.findMany({
         where: { receiverId: userId, createdAt: { gt } },
         include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
@@ -108,7 +108,9 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      prisma.notification.count({ where: { userId, read: false } }),
+      // Message alerts belong to the Messages badge, not the bell
+      prisma.notification.count({ where: { userId, read: false, NOT: { type: "message" } } }),
+      prisma.message.count({ where: { receiverId: userId, read: false } }),
     ]);
 
     // Full reaction lists for every message touched in this window (they render
@@ -132,6 +134,7 @@ export async function GET(request: NextRequest) {
       groupMessages: groupMessages.reverse(),
       reactions: reactionPayload,
       unreadNotifications,
+      unreadMessages,
       timestamp: Date.now() - POLL_SKEW_MS,
     });
   } catch (error) {

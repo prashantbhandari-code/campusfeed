@@ -11,6 +11,7 @@ let timer: ReturnType<typeof setInterval> | null = null;
 let since = 0; // server timestamps; lags real time by a skew window (dedup absorbs re-sends)
 let typingFrom: string | null = null;
 let lastUnreadNotifs: number | null = null;
+let lastUnreadMsgs: number | null = null;
 
 async function pollOnce(): Promise<void> {
   try {
@@ -27,6 +28,13 @@ async function pollOnce(): Promise<void> {
       ) {
         lastUnreadNotifs = data.unreadNotifications;
         publish("notification-unread", data.unreadNotifications);
+      }
+      if (
+        typeof data.unreadMessages === "number" &&
+        data.unreadMessages !== lastUnreadMsgs
+      ) {
+        lastUnreadMsgs = data.unreadMessages;
+        publish("messages-unread", data.unreadMessages);
       }
     }
 

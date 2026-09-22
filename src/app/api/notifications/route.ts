@@ -12,7 +12,8 @@ export async function GET(req: Request) {
     }
 
     const notifications = await prisma.notification.findMany({
-      where: { userId: (session.user as any).id },
+      // Message alerts live in the Messages badge — hide legacy message rows
+      where: { userId: (session.user as any).id, NOT: { type: "message" } },
       include: {
         fromUser: { select: { id: true, name: true, username: true, avatar: true } },
       },
