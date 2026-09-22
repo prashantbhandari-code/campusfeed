@@ -15,6 +15,9 @@ function getGoogleAuthUrl(origin: string) {
     scope: "openid email profile",
     access_type: "offline",
     prompt: "consent",
+    // Pre-filter the account chooser to university accounts.
+    // Google treats `hd` as a hint only — the callback re-verifies the domain.
+    hd: "kiit.ac.in",
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }

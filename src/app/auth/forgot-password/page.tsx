@@ -4,99 +4,253 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { HiAcademicCap, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
+import { HiAcademicCap, HiCheckCircle, HiShieldCheck } from "react-icons/hi";
 
 function ForgotPasswordForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+
+  // Step 2 (the diagram's dialog): OTP + new password
+  const [sentTo, setSentTo] = useState("");
+  const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const isValidEmail = email.endsWith("@kiit.ac.in");
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+  const otpValid = otp.length === 6;
+  const canVerify = otpValid && password.length >= 6 && passwordsMatch;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Call our server API — no Appwrite SDK involved
-      const res = await fetch("/api/auth/forgot-password", {
+      await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
 
-      // Always show success to prevent email enumeration
-      setSent(true);
-      toast.success("Recovery email sent! Check your inbox.");
+      // Always advance to prevent email enumeration
+      setSentTo(email);
+      setOtp("");
+      toast.success("Recovery code sent! Check your inbox.");
     } catch {
-      // Even on error, show success to prevent enumeration
-      setSent(true);
+      setSentTo(email);
     } finally {
       setLoading(false);
     }
   };
 
-  if (sent) {
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canVerify) return;
+    setVerifying(true);
+
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sentTo, otp, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Invalid or expired code. Please try again.");
+        return;
+      }
+
+      setSuccess(true);
+      toast.success("Password updated! You can now sign in.");
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: sentTo }),
+      });
+      toast.success("A new code is on its way.");
+    } catch {
+      toast.error("Could not resend. Try again.");
+    }
+  };
+
+  const header = (
+    <div className="text-center mb-8">
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <HiAcademicCap className="text-4xl text-campus-400" />
+        <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
+      </div>
+    </div>
+  );
+
+  // ── Success screen ─────────────────────────────────────────
+  if (success) {
     return (
       <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
         <div className="w-full max-w-md animate-slide-up">
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <HiAcademicCap className="text-4xl text-campus-400" />
-              <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
-            </div>
-          </div>
+          {header}
           <div className="glass rounded-2xl p-8 text-center">
             <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <HiCheckCircle className="text-3xl text-green-500" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Check Your Email</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-2 text-sm">
-              We&apos;ve sent a password reset link to:
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Password Updated!</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+              Your password has been changed. You can now sign in with your new password.
             </p>
-            <p className="text-gray-900 dark:text-white font-semibold mb-6">{email}</p>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-xl">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Didn&apos;t receive it? Check your spam folder or try again in a few minutes.
-                </p>
-              </div>
-              <button
-                onClick={() => { setSent(false); setEmail(""); }}
-                className="w-full py-3 bg-gray-100 dark:bg-dark-700 hover:bg-gray-200 dark:hover:bg-dark-600 text-gray-700 dark:text-white rounded-xl font-semibold transition-all"
-              >
-                Try Another Email
-              </button>
-              <Link
-                href="/login"
-                className="block w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all text-center"
-              >
-                Back to Login
-              </Link>
-            </div>
+            <Link
+              href="/login?password-set=true"
+              className="block w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all text-center"
+            >
+              Go to Login
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
+  // ── Step 2: OTP dialog ─────────────────────────────────────
+  if (sentTo) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
+        <div className="w-full max-w-md animate-slide-up">
+          {header}
+          <div className="glass rounded-2xl p-8 space-y-5">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <HiShieldCheck className="text-3xl text-primary-500" />
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                Enter the 6-digit code we sent to
+              </p>
+              <p className="text-gray-900 dark:text-white font-semibold">{sentTo}</p>
+            </div>
+
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                  Reset Code
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                  className="w-full px-4 py-3 text-center text-2xl tracking-[0.6em] font-bold bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white"
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  placeholder="Minimum 6 characters"
+                  minLength={6}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 ${
+                      confirmPassword && !passwordsMatch
+                        ? "border-red-500"
+                        : "border-gray-200 dark:border-dark-500"
+                    }`}
+                    placeholder="Re-enter your password"
+                    required
+                  />
+                  {confirmPassword && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {passwordsMatch ? (
+                        <HiCheckCircle className="text-green-400 text-xl" />
+                      ) : (
+                        <span className="text-red-400 text-xs">Doesn&apos;t match</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={verifying || !canVerify}
+                className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {verifying ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto" />
+                ) : (
+                  "Verify & Set Password"
+                )}
+              </button>
+            </form>
+
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <button onClick={handleResend} className="text-primary-500 dark:text-primary-400 hover:text-primary-600 font-semibold">
+                Resend code
+              </button>
+              <button
+                onClick={() => { setSentTo(""); setOtp(""); setPassword(""); setConfirmPassword(""); }}
+                className="text-primary-500 dark:text-primary-400 hover:text-primary-600 font-semibold"
+              >
+                Use a different email
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center mt-6 text-gray-500 dark:text-gray-400">
+            <Link href="/login" className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 font-semibold">
+              Back to Login
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 1: enter email ────────────────────────────────────
   return (
     <div className="min-h-screen bg-white dark:bg-dark-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md animate-slide-up">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <HiAcademicCap className="text-4xl text-campus-400" />
-            <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
-          </div>
+        {header}
+        <div className="text-center mb-1">
           <p className="text-gray-500 dark:text-gray-400 mb-1">Reset your password</p>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            Enter your KIIT email and we&apos;ll send you a reset link
+            Enter your KIIT email and we&apos;ll send you a 6-digit code
           </p>
         </div>
 
-        <div className="glass rounded-2xl p-8 space-y-5">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="glass rounded-2xl p-8 space-y-5 mt-6">
+          <form onSubmit={handleSend} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">
                 KIIT Email
@@ -123,7 +277,7 @@ function ForgotPasswordForm() {
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto" />
               ) : (
-                "Send Reset Link"
+                "Send Code"
               )}
             </button>
           </form>

@@ -78,10 +78,20 @@ export async function GET(req: Request) {
       return NextResponse.redirect(loginUrl);
     }
 
+    // University mail required — `hd` above is only a hint, this is the check
+    // (mirrors the email/password register path).
+    if (!email.endsWith("@kiit.ac.in")) {
+      const loginUrl = new URL("/login", origin);
+      loginUrl.searchParams.set("error", "not-kiit");
+      return NextResponse.redirect(loginUrl);
+    }
+
     // 3. Check if user exists in PostgreSQL
     let user = await prisma.user.findUnique({ where: { email } });
+    let isNewUser = false;
 
     if (!user) {
+      isNewUser = true;
       // New user — create profile
       const username = generateUsername(name || email.split("@")[0]);
       user = await prisma.user.create({
@@ -98,9 +108,10 @@ export async function GET(req: Request) {
       });
     }
 
-    // 4. Set signed cc_session cookie
-    const feedUrl = new URL("/feed", origin);
-    const response = NextResponse.redirect(feedUrl);
+    // 4. Set signed cc_session cookie. New users must fill required details
+    // first (diagram: "student have to filled required details").
+    const destUrl = new URL(isNewUser ? "/auth/complete-profile" : "/feed", origin);
+    const response = NextResponse.redirect(destUrl);
 
     response.headers.append("Set-Cookie", createSessionCookie(user.id));
 

@@ -55,7 +55,7 @@ function LoginForm() {
       const errorData = await loginRes.json().catch(() => ({}));
       toast.error(errorData.error === "no-password"
         ? "This account uses Google sign-in. Please use 'Sign in with Google'."
-        : "Invalid email or password");
+        : "Invalid email/username or password");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -131,13 +131,13 @@ function LoginForm() {
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">KIIT Email</label>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Username or KIIT Email</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                placeholder="yourname@kiit.ac.in"
+                placeholder="username or yourname@kiit.ac.in"
                 required
               />
             </div>

@@ -12,14 +12,21 @@ import { withRateLimit } from "@/lib/rateLimit";
  */
 async function handler(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { email: identifier, password } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+    if (!identifier || !password) {
+      return NextResponse.json({ error: "Email/username and password required" }, { status: 400 });
     }
 
-    // 1. Find user in PostgreSQL
-    const user = await prisma.user.findUnique({ where: { email } });
+    // 1. Find user by email OR username (diagram: "Username / KIIT mail")
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: identifier, mode: "insensitive" } },
+          { username: { equals: identifier, mode: "insensitive" } },
+        ],
+      },
+    });
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }

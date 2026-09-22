@@ -6,54 +6,50 @@ import bcrypt from "bcryptjs";
 import { withRateLimit } from "@/lib/rateLimit";
 
 /**
- * Password reset — verifies the token from the emailed link,
- * updates the password in PostgreSQL. No Appwrite dependency.
+ * Password reset — verifies the 6-digit OTP emailed by /api/auth/forgot-password,
+ * then updates the password in PostgreSQL. Single-use, time-limited code.
+ * No Appwrite dependency.
  */
 async function handler(req: Request) {
   try {
-    const { token, password } = await req.json();
+    const { email, otp, password } = await req.json();
 
-    if (!token || !password) {
-      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
+    if (!email || !otp || !password) {
+      return NextResponse.json({ error: "Email, code and password required" }, { status: 400 });
     }
 
     if (typeof password !== "string" || password.length < 6) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
-    // 1. Find the token
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+    // Generic failure — same response whether the email, code, or expiry is wrong,
+    // so this endpoint can't be used to probe which accounts exist.
+    const fail = () => NextResponse.json({ error: "Invalid or expired code" }, { status: 401 });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return fail();
+
+    // 1. Find the OTP for this user (token column holds the code)
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: { userId: user.id, token: String(otp) },
     });
 
-    if (!resetToken) {
-      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
-    }
+    if (!resetToken) return fail();
 
-    // 2. Check if token is expired
-    if (new Date() > resetToken.expiresAt) {
-      return NextResponse.json({ error: "Reset link has expired. Please request a new one." }, { status: 401 });
-    }
+    // 2. Expired?
+    if (new Date() > resetToken.expiresAt) return fail();
 
-    // 3. Check if token was already used
-    if (resetToken.used) {
-      return NextResponse.json({ error: "Reset link has already been used. Please request a new one." }, { status: 401 });
-    }
+    // 3. Already used?
+    if (resetToken.used) return fail();
 
-    // 4. Find the user
-    const user = await prisma.user.findUnique({ where: { id: resetToken.userId } });
-    if (!user) {
-      return NextResponse.json({ error: "Invalid or expired reset link" }, { status: 401 });
-    }
-
-    // 5. Hash the new password and update
+    // 4. Hash the new password and update
     const hashedPassword = await bcrypt.hash(password, 12);
     await prisma.user.update({
       where: { id: user.id },
       data: { password: hashedPassword },
     });
 
-    // 6. Mark the token as used
+    // 5. Mark the code as used (single-use)
     await prisma.passwordResetToken.update({
       where: { id: resetToken.id },
       data: { used: true },

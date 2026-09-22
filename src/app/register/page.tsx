@@ -5,14 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { HiAcademicCap, HiCheckCircle } from "react-icons/hi";
-
-const DEPARTMENTS = [
-  "CSE", "CSE (Data Science)", "CSE (AI & ML)", "CSE (IoT)", "CSE (Cyber Security)",
-  "IT", "ECE", "EEE", "Mechanical", "Civil",
-  "Electrical", "Biotechnology", "Chemical", "Aerospace",
-  "Automobile", "Mechatronics", "Architecture", "Law",
-  "Management", "Media & Communication", "Design"
-];
+import { DEPARTMENTS } from "@/lib/departments";
 
 export default function RegisterPage() {
   const router = useRouter();
