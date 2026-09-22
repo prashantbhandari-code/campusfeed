@@ -10,6 +10,7 @@ let refs = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 let since = 0; // server timestamps; lags real time by a skew window (dedup absorbs re-sends)
 let typingFrom: string | null = null;
+let lastUnreadNotifs: number | null = null;
 
 async function pollOnce(): Promise<void> {
   try {
@@ -20,6 +21,13 @@ async function pollOnce(): Promise<void> {
       (data.messages || []).forEach((m: any) => publish("new-message", m.message));
       (data.reactions || []).forEach((r: any) => publish("message-reaction", r));
       (data.groupMessages || []).forEach((m: any) => publish("new-group-message", m));
+      if (
+        typeof data.unreadNotifications === "number" &&
+        data.unreadNotifications !== lastUnreadNotifs
+      ) {
+        lastUnreadNotifs = data.unreadNotifications;
+        publish("notification-unread", data.unreadNotifications);
+      }
     }
 
     const typingRes = await fetch(`/api/socketio?since=${since}&type=typing`);

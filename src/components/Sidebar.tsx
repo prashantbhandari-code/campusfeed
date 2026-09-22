@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useTheme } from "@/components/ThemeProvider";
+import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
 import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog } from "react-icons/hi";
 
 export default function Sidebar() {
@@ -13,6 +14,14 @@ export default function Sidebar() {
   const pathname = usePathname();
     const user = session?.user as any;
   const [unreadCount, setUnreadCount] = useState(0);
+  const notifUnread = useUnreadNotifications();
+
+  const Badge = ({ count }: { count: number }) =>
+    count > 0 ? (
+      <span className="ml-auto text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] px-1 flex items-center justify-center">
+        {count > 9 ? "9+" : count}
+      </span>
+    ) : null;
 
   const menuItems = [
     { href: "/feed", icon: HiOutlineHome, label: "Home" },
@@ -64,11 +73,8 @@ export default function Sidebar() {
             >
               <item.icon className="text-xl flex-shrink-0" />
               <span>{item.label}</span>
-              {item.href === "/messages" && unreadCount > 0 && (
-                <span className="ml-auto text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] px-1 flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
+              {item.href === "/messages" && <Badge count={unreadCount} />}
+              {item.href === "/notifications" && <Badge count={notifUnread} />}
             </Link>
           );
         })}

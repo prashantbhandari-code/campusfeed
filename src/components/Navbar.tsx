@@ -2,33 +2,17 @@
 
 import { useSession, signOutAppwrite as signOut } from "@/lib/appwrite-session";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { HiBell, HiCog, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";
-import { useSocketEvent } from "@/lib/useSocket";
+import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
 import { useTheme } from "@/components/ThemeProvider";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [unread, setUnread] = useState(0);
+  const unread = useUnreadNotifications();
   const { theme, toggleTheme } = useTheme();
   const user = session?.user as any;
-
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await fetch("/api/notifications");
-        const data = await res.json();
-        setUnread(data.filter((n: any) => !n.read).length);
-      } catch (error) { console.error("Operation failed:", error); }
-    };
-    fetchNotifications();
-  }, []);
-
-  useSocketEvent("new-notification", () => {
-    setUnread((prev) => prev + 1);
-  }, []);
 
   // Desktop: no top navbar (sidebar handles everything)
   // Mobile: logo + theme toggle + bell + sign out
