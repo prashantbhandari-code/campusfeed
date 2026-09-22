@@ -198,7 +198,7 @@ export default function GroupsPage() {
       <div className="max-w-2xl mx-auto px-4 py-4">
         {/* Create Group Modal */}
         {showCreate && (
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-5 mb-4 shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.3)]">
+          <div className="glass-card rounded-2xl p-5 mb-4">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Create New Group</h3>
             <input
               type="text"
@@ -264,7 +264,7 @@ export default function GroupsPage() {
                 <Link
                   key={group.id}
                   href={`/groups/${group.id}`}
-                  className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 flex items-center gap-3 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all block"
+                  className="glass-card rounded-2xl p-4 flex items-center gap-3 hover-lift transition-all block"
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-2xl flex-shrink-0">
                     {group.avatar ? (

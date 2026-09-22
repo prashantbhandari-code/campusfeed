@@ -124,7 +124,7 @@ export default function GroupDetailPage() {
         {activeTab === "posts" && (
           <div className="px-4 py-4 space-y-4">
             {group.isMember && (
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4">
+              <div className="glass-card rounded-2xl p-4">
                 <div className="flex gap-3">
                   <UserAvatar user={user} size="sm" />
                   <div className="flex-1">
@@ -139,7 +139,7 @@ export default function GroupDetailPage() {
             {posts.length === 0 ? (
               <div className="text-center py-12"><span className="text-5xl mb-3 block">📝</span><p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first!</p></div>
             ) : posts.map((post) => (
-              <div key={post.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4">
+              <div key={post.id} className="glass-card rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <UserAvatar user={post.author} size="sm" />
                   <div><p className="text-sm font-semibold text-gray-900 dark:text-white">{post.author.name}</p>
@@ -161,7 +161,7 @@ export default function GroupDetailPage() {
               </div>
             )}
             {showCreateSection && (
-              <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-5 mb-4">
+              <div className="glass-card rounded-2xl p-5 mb-4">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Create Section</h3>
                 <input type="text" value={newSection.name} onChange={(e) => setNewSection({...newSection, name: e.target.value})} placeholder="Section name (e.g., Announcements, Assignments)" className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white mb-3 focus:outline-none focus:border-primary-500" />
                 <textarea value={newSection.description} onChange={(e) => setNewSection({...newSection, description: e.target.value})} placeholder="Description (optional)" className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white mb-3 resize-none" rows={2} />
@@ -180,7 +180,7 @@ export default function GroupDetailPage() {
                   {sections.map((section, i) => {
                     const cs = SECTION_COLORS[i % SECTION_COLORS.length];
                     return (
-                      <button key={section.id} onClick={() => setActiveSection(section.id)} className="w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all text-left">
+                      <button key={section.id} onClick={() => setActiveSection(section.id)} className="w-full glass-card rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all text-left">
                         <div className={"w-12 h-12 rounded-xl " + cs.bg + " " + cs.border + " border flex items-center justify-center text-2xl flex-shrink-0"}>{section.icon || "📁"}</div>
                         <div className="flex-1 min-w-0"><h4 className="font-semibold text-gray-900 dark:text-white">{section.name}</h4>
                           {section.description && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{section.description}</p>}
@@ -195,7 +195,7 @@ export default function GroupDetailPage() {
               <div>
                 <button onClick={() => setActiveSection(null)} className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 mb-4 hover:underline"><HiArrowLeft className="text-sm" /> Back to Sections</button>
                 {group.isMember && (
-                  <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 mb-4">
+                  <div className="glass-card rounded-2xl p-4 mb-4">
                     <div className="flex gap-3">
                       <UserAvatar user={user} size="sm" />
                       <div className="flex-1">
@@ -212,7 +212,7 @@ export default function GroupDetailPage() {
                 ) : (
                   <div className="space-y-4">
                     {sectionPosts.map((post) => (
-                      <div key={post.id} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4">
+                      <div key={post.id} className="glass-card rounded-2xl p-4">
                         <div className="flex items-center gap-3 mb-3">
                           <UserAvatar user={post.author} size="sm" />
                           <div><p className="text-sm font-semibold text-gray-900 dark:text-white">{post.author.name}</p>

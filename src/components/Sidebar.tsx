@@ -44,7 +44,7 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-gray-200 dark:border-white/[0.06] bg-white dark:bg-dark-900 z-40">
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-white/[0.06] glass-card rounded-none z-40">
       <Link href="/feed" className="flex items-center gap-3 px-4 py-3 mb-4 hover:opacity-80 transition-opacity">
         <HiAcademicCap className="text-2xl text-campus-400 flex-shrink-0" />
         <span className="text-xl font-bold text-gradient">CampusConnect</span>
@@ -58,8 +58,8 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
                 isActive
-                  ? "bg-primary-600/10 text-primary-500 dark:text-primary-400 font-semibold after:absolute after:left-0 after:top-1/2 after:-translate-y-1/2 after:w-[3px] after:h-5 after:bg-primary-500 after:rounded-r-full"
-                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-primary-500/15 text-primary-400 font-semibold after:absolute after:left-0 after:top-1/2 after:-translate-y-1/2 after:w-[3px] after:h-5 after:bg-primary-400 after:rounded-r-full"
+                  : "text-gray-400 hover:bg-white/[0.06] hover:text-white"
               }`}
             >
               <item.icon className="text-xl flex-shrink-0" />
@@ -70,7 +70,7 @@ export default function Sidebar() {
       </div>
 
       {adminItems.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-white/[0.06]">
+        <div className="mt-4 pt-4 border-t border-white/[0.06]">
           <p className="px-4 mb-2 text-xs font-semibold text-purple-400 uppercase tracking-wider">Administration</p>
           {adminItems.map((item) => {
             const isActive = pathname === item.href;
@@ -80,8 +80,8 @@ export default function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                   isActive
-                    ? "bg-purple-600/10 text-purple-500 dark:text-purple-400 font-semibold border-l-2 border-purple-500 -ml-[2px] pl-[18px]"
-                    : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-purple-600/15 text-purple-400 font-semibold after:absolute after:left-0 after:top-1/2 after:-translate-y-1/2 after:w-[3px] after:h-5 after:bg-purple-400 after:rounded-r-full"
+                    : "text-gray-400 hover:bg-white/[0.06] hover:text-white"
                 }`}
               >
                 <item.icon className="text-xl" />

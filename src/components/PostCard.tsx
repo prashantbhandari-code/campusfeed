@@ -120,7 +120,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
   const parsedImages = (() => { try { return JSON.parse(post.images || "[]"); } catch { return []; } })();
 
   return (
-    <div className="mb-6 bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
+    <div className="mb-6 glass-card rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 dark:border-white/[0.06]">
         <div

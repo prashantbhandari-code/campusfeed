@@ -84,7 +84,7 @@ export default function NotificationsPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-xl p-4 animate-pulse flex items-center gap-3">
+            <div key={i} className="glass-card rounded-xl p-4 animate-pulse flex items-center gap-3">
               <div className="w-12 h-12 bg-gray-200 dark:bg-dark-600 rounded-full" />
               <div className="flex-1">
                 <div className="h-4 bg-gray-200 dark:bg-dark-600 rounded w-2/3 mb-2" />
@@ -94,7 +94,7 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-2xl p-12 text-center">
           <div className="text-6xl mb-4">🔔</div>
           <p className="text-gray-900 dark:text-gray-300 text-lg font-medium mb-2">All caught up!</p>
           <p className="text-gray-500 dark:text-gray-400 text-sm">You&apos;ll see notifications when people interact with you</p>
@@ -104,7 +104,7 @@ export default function NotificationsPage() {
           {deduplicateNotifications(notifications).map((notif) => (
             <div
               key={notif.id}
-              className={`bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-xl p-4 flex items-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.03] ${
+              className={`glass-card rounded-xl p-4 flex items-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.03] ${
                 !notif.read ? "border-l-2 border-primary-500 bg-primary-50/50 dark:bg-primary-500/5" : ""
               }`}
             >

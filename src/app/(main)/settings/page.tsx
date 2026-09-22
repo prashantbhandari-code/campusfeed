@@ -100,7 +100,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl mb-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-all">
+      <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 glass-card rounded-2xl mb-4 hover-lift transition-all">
         <div className="flex items-center gap-3">
           {theme === "dark" ? <HiOutlineSun className="text-xl text-yellow-500" /> : <HiOutlineMoon className="text-xl text-blue-500" />}
           <div className="text-left">
@@ -114,7 +114,7 @@ export default function SettingsPage() {
       {MENU_SECTIONS.map((section) => (
         <div key={section.title} className="mb-4">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-1 mb-2">{section.title}</h3>
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)] divide-y divide-gray-100 dark:divide-white/[0.04]">
+          <div className="glass-card rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/[0.04]">
             {section.items.map((item) => (
               <Link key={item.label} href={item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-all">
                 <item.icon className="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0" />
@@ -133,7 +133,7 @@ export default function SettingsPage() {
       {/* Push Notifications */}
       <div className="mb-4">
         <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-1 mb-2">Push Notifications</h3>
-        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
+        <div className="glass-card rounded-2xl p-4">
           <PushNotificationToggle />
         </div>
       </div>

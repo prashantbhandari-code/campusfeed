@@ -103,7 +103,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden animate-pulse">
+        <div className="glass-card rounded-2xl overflow-hidden animate-pulse">
           <div className="h-40 bg-gray-200 dark:bg-dark-600" />
           <div className="p-6">
             <div className="flex items-center gap-6">
@@ -122,7 +122,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-12 text-center">
+        <div className="glass-card rounded-2xl p-12 text-center">
           <p className="text-gray-400 text-lg">User not found</p>
         </div>
       </div>
@@ -134,7 +134,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Profile Card */}
-      <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl overflow-hidden mb-4">
+      <div className="glass-card rounded-2xl overflow-hidden mb-4">
         {/* Cover Photo */}
         <div className="relative h-40 bg-gradient-to-br from-campus-900 via-campus-700 to-primary-800">
           {profile.coverPhoto && (

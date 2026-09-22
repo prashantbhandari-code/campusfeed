@@ -115,7 +115,7 @@ export default function FeedPage() {
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-4 animate-pulse">
+              <div key={i} className="glass-card rounded-2xl p-4 animate-pulse">
                 <div className="flex gap-3 mb-4">
                   <div className="w-10 h-10 bg-gray-200 dark:bg-dark-600 rounded-full" />
                   <div className="flex-1">
@@ -129,7 +129,7 @@ export default function FeedPage() {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="bg-white dark:bg-dark-800 border border-gray-200 dark:border-white/[0.08] rounded-2xl p-12 text-center">
+          <div className="glass-card rounded-2xl p-12 text-center">
             <div className="text-6xl mb-4">🏫</div>
             <p className="text-gray-600 dark:text-gray-300 text-lg font-medium mb-2">Welcome to Campus!</p>
             <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Follow your classmates or share your first post</p>
@@ -169,7 +169,7 @@ export default function FeedPage() {
       {/* Sidebar Suggestions */}
       <div className="hidden lg:block w-80 flex-shrink-0">
         <div className="sticky top-20">
-          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/5 rounded-2xl p-4 shadow-sm dark:shadow-none">
+          <div className="glass-card rounded-2xl p-4 shadow-sm dark:shadow-none">
             <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-4">Suggested for you</h3>
             <div className="space-y-3">
               {suggestions.map((s: any) => (

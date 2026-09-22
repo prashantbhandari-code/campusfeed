@@ -260,7 +260,7 @@ function StoryBar() {
   return (
     <>
       {/* Story Bar */}
-      <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-white/[0.08] rounded-2xl px-4 py-3 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
+      <div className="glass-card rounded-2xl px-4 py-3">
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {/* My Story */}
           <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group" onClick={() => { const m = confirm("Choose an option:\n\nOK = Take Photo\nCancel = Choose from Gallery"); if (m) openCamera(); else fileRef.current?.click(); }}>
