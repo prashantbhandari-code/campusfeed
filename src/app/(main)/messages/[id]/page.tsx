@@ -60,13 +60,20 @@ export default function ChatPage() {
 
 
   useSocketEvent("new-message", (msg: any) => {
-    if (msg.sender.id === userId || msg.receiverId === user?.id) {
+    // Only this conversation's partner — the poll delivers every message to me
+    if (msg.sender?.id === userId) {
       setMessages((prev) => {
         if (prev.find((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
     }
-  }, [userId, user?.id]);
+  }, [userId]);
+
+  useSocketEvent("message-reaction", (data: { messageId: string; reactions: any[] }) => {
+    if (data?.messageId && Array.isArray(data.reactions)) {
+      setMessageReactions((prev) => ({ ...prev, [data.messageId]: data.reactions }));
+    }
+  }, []);
 
   useSocketEvent("user-typing", (data: { senderId: string }) => {
     if (data.senderId === userId) setTyping(true);

@@ -34,7 +34,7 @@ export default function Sidebar() {
       try {
         const res = await fetch("/api/messages");
         const data = await res.json();
-        const count = data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
+        const count = data.reduce((acc: number, c: any) => acc + (c.unread || 0), 0);
         setUnreadCount(count);
       } catch (error) { console.error("Operation failed:", error); }
     };
@@ -64,6 +64,11 @@ export default function Sidebar() {
             >
               <item.icon className="text-xl flex-shrink-0" />
               <span>{item.label}</span>
+              {item.href === "/messages" && unreadCount > 0 && (
+                <span className="ml-auto text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] px-1 flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { emitToUser } from "@/lib/socket";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -35,6 +36,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       where: { messageId },
       include: { user: { select: { id: true, name: true, username: true } } },
     });
+
+    // Push live update to both chat participants (WebSocket deployments;
+    // on Vercel the polling fallback in /api/socketio delivers it instead)
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { senderId: true, receiverId: true },
+    });
+    if (message) {
+      const payload = { messageId, reactions };
+      emitToUser(message.senderId, "message-reaction", payload);
+      if (message.receiverId !== message.senderId) {
+        emitToUser(message.receiverId, "message-reaction", payload);
+      }
+    }
 
     return NextResponse.json(reactions);
   } catch (error) {

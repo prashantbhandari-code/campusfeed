@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromCookieHeader } from '@/lib/session-token';
+import prisma from '@/lib/prisma';
 
-// In-memory store for demo - in production, use Redis or Appwrite Realtime
-const messageQueues = new Map<string, Array<{ senderId: string; message: any; timestamp: number }>>();
+// In-memory typing state (ephemeral, per-instance — fine for typing hints)
 const typingUsers = new Map<string, { senderId: string; senderName: string; timestamp: number }>();
 
-// Cleanup old messages every 5 minutes
+// Cleanup stale typing entries
 setInterval(() => {
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  Array.from(messageQueues.entries()).forEach(([userId, messages]) => {
-    const filtered = messages.filter((m: { timestamp: number }) => m.timestamp > fiveMinutesAgo);
-    if (filtered.length === 0) {
-      messageQueues.delete(userId);
-    } else {
-      messageQueues.set(userId, filtered);
-    }
-  });
   Array.from(typingUsers.entries()).forEach(([userId, typing]) => {
     if (typing.timestamp < fiveMinutesAgo) {
       typingUsers.delete(userId);
@@ -23,7 +15,12 @@ setInterval(() => {
   });
 }, 60 * 1000);
 
-// POST: Send a message or typing indicator
+const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
+// Re-scan the last 3s on each poll so a message written between query and
+// timestamp can't be missed; client dedupes by id.
+const POLL_SKEW_MS = 3000;
+
+// POST: typing indicators (messages go through /api/messages → DB)
 export async function POST(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get('cookie') || '';
@@ -34,30 +31,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, receiverId, groupId, data } = body;
-
-    if (action === 'message' && receiverId) {
-      // Queue message for receiver
-      if (!messageQueues.has(receiverId)) {
-        messageQueues.set(receiverId, []);
-      }
-      messageQueues.get(receiverId)!.push({
-        senderId: userId,
-        message: data,
-        timestamp: Date.now(),
-      });
-      return NextResponse.json({ success: true });
-    }
-
-    if (action === 'group-message' && groupId) {
-      // Queue for all group members (simplified - in production use Appwrite Realtime)
-      return NextResponse.json({ success: true, note: 'Group messaging via Appwrite Realtime' });
-    }
+    const { action, receiverId, senderName } = body;
 
     if (action === 'typing' && receiverId) {
       typingUsers.set(receiverId, {
         senderId: userId,
-        senderName: data?.senderName || 'User',
+        senderName: senderName || 'User',
         timestamp: Date.now(),
       });
       return NextResponse.json({ success: true });
@@ -75,7 +54,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: Poll for new messages
+// GET: Poll for new messages / reactions / typing state
 export async function GET(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get('cookie') || '';
@@ -86,7 +65,7 @@ export async function GET(request: NextRequest) {
     }
 
     const url = new URL(request.url);
-    const since = parseInt(url.searchParams.get('since') || '0');
+    const since = parseInt(url.searchParams.get('since') || '0') || 0;
     const type = url.searchParams.get('type') || 'messages';
 
     if (type === 'typing') {
@@ -94,18 +73,48 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ typing: typing || null });
     }
 
-    // Get pending messages
-    const messages = messageQueues.get(userId) || [];
-    const pendingMessages = messages.filter(m => m.timestamp > since);
+    const gt = new Date(Math.max(0, since));
 
-    // Clear retrieved messages
-    if (pendingMessages.length > 0) {
-      messageQueues.set(userId, messages.filter(m => m.timestamp <= since));
+    // Newest-first + take 50 so a first poll (since=0) can't skip recent
+    // messages behind a full page of older history.
+    const [messages, rawReactions] = await Promise.all([
+      prisma.message.findMany({
+        where: { receiverId: userId, createdAt: { gt } },
+        include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      prisma.messageReaction.findMany({
+        where: {
+          createdAt: { gt },
+          message: { OR: [{ senderId: userId }, { receiverId: userId }] },
+        },
+        select: { id: true, emoji: true, messageId: true, userId: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+    ]);
+
+    // Full reaction lists for every message touched in this window (they render
+    // as complete chips, not incremental adds)
+    const reactionPayload: Array<{ messageId: string; reactions: any[] }> = [];
+    const touchedIds = Array.from(new Set(rawReactions.map((r) => r.messageId)));
+    if (touchedIds.length > 0) {
+      const all = await prisma.messageReaction.findMany({
+        where: { messageId: { in: touchedIds } },
+        select: { id: true, emoji: true, messageId: true, userId: true, createdAt: true, user: { select: USER_SELECT } },
+      });
+      for (const id of touchedIds) {
+        reactionPayload.push({ messageId: id, reactions: all.filter((r) => r.messageId === id) });
+      }
     }
 
     return NextResponse.json({
-      messages: pendingMessages,
-      timestamp: Date.now(),
+      messages: messages
+        .reverse()
+        .map((m) => ({ message: m, senderId: m.senderId, timestamp: m.createdAt.getTime() })),
+      reactions: reactionPayload,
+      timestamp: Date.now() - POLL_SKEW_MS,
     });
   } catch (error) {
     console.error('Socket.IO polling error:', error);
