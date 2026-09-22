@@ -33,6 +33,7 @@ export async function GET(
         },
         include: {
           sender: { select: { id: true, name: true, username: true, avatar: true } },
+          reactions: { include: { user: { select: { id: true, name: true, username: true } } } },
         },
         orderBy: { createdAt: "asc" },
         skip,

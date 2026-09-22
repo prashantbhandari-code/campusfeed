@@ -90,24 +90,24 @@ export default function ChatPage() {
     try {
       const res = await fetch(`/api/messages/${userId}`, { signal });
       const data = await res.json();
-      setMessages(data.messages || data);
+      const list: any[] = data.messages || data;
+      setMessages(list);
+      const rmap: Record<string, any[]> = {};
+      list.forEach((m: any) => { if (m.reactions?.length) rmap[m.id] = m.reactions; });
+      setMessageReactions(rmap);
       if (!otherUser) {
-        const msg = data.find((m: any) => m.sender.id === userId);
+        const msg = list.find((m: any) => m.sender?.id === userId);
         if (msg) {
           setOtherUser(msg.sender);
         } else {
           const userRes = await fetch(`/api/users?userId=${userId}`);
           const users = await userRes.json();
-          if (users.length > 0) setOtherUser(users[0]);
+          if (Array.isArray(users) && users.length > 0) setOtherUser(users[0]);
         }
       }
     } catch (error) { console.error("Message operation failed:", error); } finally {
       setLoading(false);
     }
-    // Auto-mark messages as read
-    try {
-      await fetch("/api/messages/" + userId + "/read", { method: "POST" });
-    } catch (error) { console.error("Message operation failed:", error); }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -263,6 +263,16 @@ export default function ChatPage() {
                       <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="text-lg hover:scale-125 transition-transform px-1">
                         {emoji}
                       </button>
+                    ))}
+                  </div>
+                )}
+                {/* Existing reactions */}
+                {(messageReactions[msg.id]?.length ?? 0) > 0 && (
+                  <div className={`flex flex-wrap gap-1 mt-1 ${isMine ? "justify-end" : ""}`}>
+                    {messageReactions[msg.id].map((r: any) => (
+                      <span key={r.id} className="text-xs bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-full px-1.5 py-0.5 shadow-sm">
+                        {r.emoji}
+                      </span>
                     ))}
                   </div>
                 )}
