@@ -50,12 +50,13 @@ function StoryBar() {
     try {
       const res = await fetch("/api/stories", { signal });
       const data = await res.json();
-      const valid = data.filter((s: any) => {
+      // API errors return {error}, not an array
+      const valid = (Array.isArray(data) ? data : []).filter((s: any) => {
         if (!s.images) return false;
         try { const imgs = JSON.parse(s.images); return Array.isArray(imgs) && imgs.some((i: any) => i && typeof i === "string" && i.length > 0); } catch { return false; }
       });
       setStories(valid);
-    } catch (error) { console.error("Story operation failed:", error); }
+    } catch (error) { if (!(error instanceof DOMException && error.name === "AbortError")) console.error("Story operation failed:", error); }
   };
 
   const openCamera = async () => {
@@ -115,7 +116,7 @@ function StoryBar() {
       setIsLiked(data.isLiked);
       setLikeCount(data.likeCount);
       setComments(data.comments || []);
-    } catch (error) { console.error("Story operation failed:", error); }
+    } catch (error) { if (!(error instanceof DOMException && error.name === "AbortError")) console.error("Story operation failed:", error); }
   };
 
   const getStoryImages = (story: any): string[] => {
@@ -171,7 +172,7 @@ function StoryBar() {
       const data = await res.json();
       setIsLiked(data.liked);
       setLikeCount((prev) => data.liked ? prev + 1 : prev - 1);
-    } catch (error) { console.error("Story operation failed:", error); }
+    } catch (error) { if (!(error instanceof DOMException && error.name === "AbortError")) console.error("Story operation failed:", error); }
   };
 
   const handleComment = async () => {
@@ -183,7 +184,7 @@ function StoryBar() {
         setComments((prev) => [...prev, data]);
         setComment("");
       }
-    } catch (error) { console.error("Story operation failed:", error); }
+    } catch (error) { if (!(error instanceof DOMException && error.name === "AbortError")) console.error("Story operation failed:", error); }
   };
 
   const handleDelete = async () => {

@@ -9,11 +9,14 @@ const POLL_MS = 2000;
 let refs = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 let since = 0; // server timestamps; lags real time by a skew window (dedup absorbs re-sends)
+let inFlight = false; // never stack ticks — each one holds 5 DB connections
 let typingFrom: string | null = null;
 let lastUnreadNotifs: number | null = null;
 let lastUnreadMsgs: number | null = null;
 
 async function pollOnce(): Promise<void> {
+  if (inFlight) return; // previous tick still running; skip rather than pile up
+  inFlight = true;
   try {
     const res = await fetch(`/api/socketio?since=${since}&type=messages`);
     if (res.ok) {
@@ -51,6 +54,8 @@ async function pollOnce(): Promise<void> {
     }
   } catch (error) {
     console.error("Polling error:", error);
+  } finally {
+    inFlight = false;
   }
 }
 

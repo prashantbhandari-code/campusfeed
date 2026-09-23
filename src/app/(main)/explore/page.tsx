@@ -21,16 +21,25 @@ export default function ExplorePage() {
   const [followStates, setFollowStates] = useState<Record<string, { isFollowing: boolean; doesFollowYou: boolean }>>({});
 
   useEffect(() => {
-    searchUsers();
     fetchPosts();
   }, []);
+
+  // Re-run the people search when the query changes — the previous version
+  // fetched once on mount with an empty query, so typing did nothing.
+  // Also re-run when currentUser arrives so follow state can populate.
+  useEffect(() => {
+    // Immediate on first load (empty query), debounced while typing.
+    const timer = setTimeout(() => searchUsers(), query ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [query, currentUser?.id]);
 
   const searchUsers = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/users?q=${query}`);
       const data = await res.json();
-      setUsers(data);
+      // The endpoint returns an error object if unauthenticated or the db is down.
+      setUsers(Array.isArray(data) ? data : []);
       // Fetch follow status for each user
       if (currentUser?.id) {
         const statuses: Record<string, { isFollowing: boolean; doesFollowYou: boolean }> = {};
@@ -54,7 +63,7 @@ export default function ExplorePage() {
     try {
       const res = await fetch("/api/posts");
       const data = await res.json();
-      setPosts(data);
+      setPosts(Array.isArray(data) ? data : []);
     } catch (error) { console.error("Operation failed:", error); }
   };
 

@@ -111,7 +111,7 @@ export default function EventsPage() {
           <div className="bg-white dark:bg-dark-900 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-white/[0.08] shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/[0.08]">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">Create Event</h2>
-              <button onClick={() => setShowCreate(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-800"><HiOutlineX className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => setShowCreate(false)} aria-label="Close" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-800"><HiOutlineX className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-4 space-y-4">
               <div>

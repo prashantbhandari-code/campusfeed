@@ -70,6 +70,7 @@ function PushNotificationToggle() {
       <button
         onClick={() => isSubscribed ? unsubscribe() : subscribe()}
         disabled={loading}
+        aria-label="Enable push notifications"
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
           isSubscribed ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
         } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
@@ -91,7 +92,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all">
+        <button onClick={() => router.back()} aria-label="Go back" className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all">
           <HiOutlineArrowLeft className="text-xl text-gray-600 dark:text-gray-400" />
         </button>
         <div className="flex items-center gap-2">

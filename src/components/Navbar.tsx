@@ -35,6 +35,8 @@ export default function Navbar() {
 
           <Link
             href="/notifications"
+            title="Notifications"
+            aria-label={unread > 0 ? `Notifications, ${unread > 9 ? "9+" : unread} unread` : "Notifications"}
             className={`relative p-2 rounded-xl transition-all ${
               pathname === "/notifications" ? "text-primary-500 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"
             }`}

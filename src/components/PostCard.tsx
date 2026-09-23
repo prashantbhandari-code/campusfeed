@@ -56,8 +56,10 @@ function PostCard({ post, onDelete }: PostCardProps) {
     if (!wasLiked) { setHeartAnimation(true); setTimeout(() => setHeartAnimation(false), 300); }
     try {
       const res = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setIsLiked(data.isLiked);
+      if (typeof data.likesCount !== "number") throw new Error("bad payload");
+      setIsLiked(!!data.isLiked);
       setLikesCount(data.likesCount);
     } catch { setIsLiked(wasLiked); setLikesCount(prevCount); toast.error("Failed"); }
   };
@@ -68,7 +70,9 @@ function PostCard({ post, onDelete }: PostCardProps) {
     toast.success(wasSaved ? "Removed" : "Saved");
     try {
       const res = await fetch(`/api/posts/${post.id}/save`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (typeof data.isSaved !== "boolean") throw new Error("bad payload");
       setIsSaved(data.isSaved);
     } catch { setIsSaved(wasSaved); toast.error("Failed"); }
   };
@@ -84,6 +88,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
         body: JSON.stringify({ content: commentText }),
       });
       const newComment = await res.json();
+      if (!res.ok) throw new Error(newComment?.error || `HTTP ${res.status}`);
       setComments([newComment, ...comments]);
       setCommentText("");
     } catch {
@@ -94,7 +99,8 @@ function PostCard({ post, onDelete }: PostCardProps) {
   const handleDelete = async () => {
     if (!confirm("Delete this post?")) return;
     try {
-      await fetch(`/api/posts/${post.id}`, { method: "DELETE" });
+      const delRes = await fetch(`/api/posts/${post.id}`, { method: "DELETE" });
+      if (!delRes.ok) throw new Error(`HTTP ${delRes.status}`);
       onDelete?.();
       toast.success("Post deleted");
     } catch {
@@ -151,7 +157,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
           </div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 self-center"><HiDotsHorizontal className="text-xl" /></button>
+          <button onClick={() => setShowMenu(!showMenu)} aria-label="More options" aria-expanded={showMenu} className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 self-center"><HiDotsHorizontal className="text-xl" /></button>
           {showMenu && (
             <div className="absolute right-0 top-10 bg-white dark:bg-dark-700 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl py-2 min-w-[160px] z-50">
               {user?.id === post.authorId && <button onClick={() => { setIsEditing(true); setShowMenu(false); }} className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"><HiOutlinePencil className="w-4 h-4" /> Edit</button>}
@@ -211,21 +217,21 @@ function PostCard({ post, onDelete }: PostCardProps) {
       {/* Actions Bar — Instagram style */}
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-5">
-          <button onClick={handleLike} className="transition-all">
+          <button onClick={handleLike} className="transition-all" aria-label={isLiked ? "Unlike post" : "Like post"}>
             {isLiked ? (
               <HiHeart className={`text-2xl text-red-500 ${heartAnimation ? "animate-heart" : ""}`} />
             ) : (
               <HiOutlineHeart className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
             )}
           </button>
-          <button onClick={() => setShowComments(!showComments)} className="transition-all">
+          <button onClick={() => setShowComments(!showComments)} className="transition-all" aria-label="Show comments" aria-expanded={showComments}>
             <HiOutlineChat className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400 -scale-x-100" />
           </button>
-          <button className="transition-all">
+          <button className="transition-all" aria-label="Share post">
             <HiOutlineShare className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
           </button>
         </div>
-        <button onClick={handleSave} className="transition-all">
+        <button onClick={handleSave} className="transition-all" aria-label={isSaved ? "Remove from saved" : "Save post"}>
           {isSaved ? (
             <HiBookmark className="text-2xl text-gray-700 dark:text-gray-200" />
           ) : (

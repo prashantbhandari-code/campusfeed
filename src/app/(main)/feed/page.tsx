@@ -51,6 +51,8 @@ export default function FeedPage() {
     try {
       const res = await fetch(`/api/posts?page=${pageNum}`);
       const data = await res.json();
+      // API errors return {error}, not an array — don't let that crash the feed
+      if (!Array.isArray(data)) { setHasMore(false); return; }
       if (pageNum === 1) {
         setPosts(data);
       } else {
@@ -84,7 +86,9 @@ export default function FeedPage() {
     try {
       const res = await fetch("/api/users?q=");
       const data = await res.json();
-      setSuggestions(data.slice(0, 5));
+      // The endpoint may return an error object when unauthenticated or when the
+      // database is unavailable — never treat that as a list.
+      setSuggestions(Array.isArray(data) ? data.slice(0, 5) : []);
     } catch (error) { console.error("Operation failed:", error); }
   };
 

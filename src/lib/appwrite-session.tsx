@@ -64,14 +64,31 @@ export function AppwriteSessionProvider({ children }: { children: React.ReactNod
           });
           setStatus("authenticated");
         }
-      } else if (mountedRef.current) {
-        setSession(null);
-        setStatus("unauthenticated");
+      } else if (res.status === 401 || res.status === 403) {
+        // Definitive "not signed in" — clear the session
+        if (mountedRef.current) {
+          setSession(null);
+          setStatus("unauthenticated");
+        }
+      }
+      // 5xx / other: transient server failure, not an auth verdict.
+      // Keep whatever session we already have so a DB blip doesn't sign the
+      // user out; if we never had one, fall through to unauthenticated below.
+      else if (mountedRef.current) {
+        setSession((prev) => {
+          if (prev) return prev;
+          setStatus("unauthenticated");
+          return null;
+        });
       }
     } catch {
+      // Network error — same rule as above: don't drop a known session
       if (mountedRef.current) {
-        setSession(null);
-        setStatus("unauthenticated");
+        setSession((prev) => {
+          if (prev) return prev;
+          setStatus("unauthenticated");
+          return null;
+        });
       }
     }
   }, []);

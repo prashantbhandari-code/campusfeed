@@ -170,10 +170,10 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
           </div>
         )}
         <div className="flex justify-center gap-4 mt-6">
-          {isIncoming && callState === "ringing" && <button onClick={requestPermissionAndCall} className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
+          {isIncoming && callState === "ringing" && <button onClick={requestPermissionAndCall} aria-label="Accept call" className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
           {(callState === "connected" || callState === "connecting") && <button onClick={toggleMute} className={isMuted ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isMuted ? <HiMicrophone className="text-xl" /> : <HiMicrophone className="text-xl" />}</button>}
           {(callState === "connected" || callState === "connecting") && callType === "video" && <button onClick={toggleVideo} className={isVideoOff ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isVideoOff ? <HiVideoCameraSlash className="text-xl" /> : <HiVideoCamera className="text-xl" />}</button>}
-          {callState !== "ended" && <button onClick={endCall} className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center"><HiPhoneXMark className="text-2xl text-white" /></button>}
+          {callState !== "ended" && <button onClick={endCall} aria-label="End call" className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center"><HiPhoneXMark className="text-2xl text-white" /></button>}
         </div>
       </div>
     </div>
