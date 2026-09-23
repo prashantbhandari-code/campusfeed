@@ -14,7 +14,9 @@ function getGoogleAuthUrl(origin: string) {
     response_type: "code",
     scope: "openid email profile",
     access_type: "offline",
-    prompt: "consent",
+    // No `prompt: consent` — that forces the consent screen on every login.
+    // Omitting it lets returning users sign in with a single click; Google
+    // still asks for consent the first time.
     // Pre-filter the account chooser to university accounts.
     // Google treats `hd` as a hint only — the callback re-verifies the domain.
     hd: "kiit.ac.in",
