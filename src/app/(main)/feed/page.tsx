@@ -95,7 +95,7 @@ export default function FeedPage() {
         <h1 className="sr-only">CampusConnect Feed</h1>
         <StoryBar />
 
-        <div className="border-b border-gray-200 dark:border-white/5 mb-4" />
+        <div className="border-b border-gray-200 dark:border-white/5 mb-2" />
 
         {/* Pull to refresh indicator */}
         {refreshing && (
@@ -107,7 +107,7 @@ export default function FeedPage() {
         {/* Refresh button (mobile) */}
         <button
           onClick={handleRefresh}
-          className="md:hidden w-full text-center py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2"
+          className="md:hidden w-full text-center py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-1"
         >
           {refreshing ? "Refreshing..." : "Pull to refresh"}
         </button>
