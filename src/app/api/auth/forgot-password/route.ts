@@ -3,75 +3,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { withRateLimit } from "@/lib/rateLimit";
-import crypto from "crypto";
-import { Resend } from "resend";
+import { generateOtp, sendOtpEmail } from "@/lib/email";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
-// Brevo requires a sender that is verified in the Brevo dashboard
-// (Senders & IPs -> Senders). e.g. "CampusConnect <your-verified@email.com>"
-const BREVO_FROM = process.env.BREVO_FROM || "";
-
-function generateOtp(): string {
-  // 6-digit numeric code: 100000..999999
-  return crypto.randomInt(100000, 1000000).toString();
-}
-
-function otpEmailHtml(name: string | null, otp: string): string {
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2563eb; font-size: 28px; margin: 0;">🎓 CampusConnect</h1>
-      </div>
-      <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
-        <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Reset Your Password</h2>
-        <p style="color: #475569; line-height: 1.6;">
-          Hi ${name || "there"},<br><br>
-          Enter this code on the reset page to choose a new password:
-        </p>
-        <div style="text-align: center; margin: 30px 0;">
-          <span style="display: inline-block; background: #1e293b; color: white; font-size: 36px; font-weight: 700; letter-spacing: 12px; padding: 16px 28px; border-radius: 12px;">
-            ${otp}
-          </span>
-        </div>
-        <p style="color: #64748b; font-size: 14px;">
-          This code expires in 10 minutes and can be used once. If you didn't request this, you can safely ignore this email.
-        </p>
-      </div>
-      <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-        CampusConnect — Your Campus Hub
-      </p>
-    </div>
-  `;
-}
-
-/**
- * Brevo (free 300/day, no domain needed — only a verified sender).
- * POST https://api.brevo.com/v3/smtp/email with `api-key` header.
- * Returns true only on a 2xx response.
- */
-async function sendViaBrevo(to: string, name: string | null, otp: string): Promise<boolean> {
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": BREVO_API_KEY,
-      "content-type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: "CampusConnect", email: BREVO_FROM },
-      to: [{ email: to }],
-      subject: "Your CampusConnect password reset code",
-      htmlContent: otpEmailHtml(name, otp),
-    }),
+// Same "sent" answer whether or not the account exists, so this can't probe for users.
+const sent = () =>
+  NextResponse.json({
+    success: true,
+    message: "If an account exists, a recovery code has been sent.",
   });
-
-  if (res.ok) return true;
-
-  const detail = await res.text().catch(() => res.statusText);
-  console.error(`Brevo delivery FAILED for ${to} (${res.status}): ${detail.slice(0, 500)}`);
-  return false;
-}
 
 async function handler(req: Request) {
   try {
@@ -80,64 +19,26 @@ async function handler(req: Request) {
       return NextResponse.json({ error: "Valid KIIT email required" }, { status: 400 });
     }
 
-    // Find user in PostgreSQL
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      // Don't reveal whether user exists — show success anyway
-      return NextResponse.json({ success: true, message: "If an account exists, a recovery code has been sent." });
-    }
+    if (!user) return sent();
 
     // Generate a 6-digit OTP — short expiry, single use
     const otp = generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Delete any existing unused codes for this user
-    await prisma.passwordResetToken.deleteMany({
-      where: { userId: user.id, used: false },
-    });
-
-    // Store the new code (token column holds the OTP)
+    // Replace any existing unused code for this user
+    await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, used: false } });
     await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        token: otp,
-        expiresAt,
-      },
+      data: { userId: user.id, token: otp, expiresAt },
     });
 
-    // Send the OTP — Brevo first (reaches any recipient), Resend as fallback
-    const resendConfigured = !!RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here";
-    let sent = false;
+    // Brevo first, Resend whenever Brevo is unconfigured or its send failed
+    await sendOtpEmail(email, user.name, otp);
 
-    if (BREVO_API_KEY && BREVO_FROM) {
-      sent = await sendViaBrevo(email, user.name, otp);
-      if (sent) console.log(`Reset OTP sent to ${email} via Brevo`);
-    }
-
-    // Fall back to Resend when Brevo is unconfigured OR the send failed
-    if (!sent && resendConfigured) {
-      const { error } = await new Resend(RESEND_API_KEY).emails.send({
-        from: "CampusConnect <onboarding@resend.dev>",
-        to: email,
-        subject: "Your CampusConnect password reset code",
-        html: otpEmailHtml(user.name, otp),
-      });
-      if (error) {
-        console.error(`Resend delivery FAILED for ${email}: ${error.name} — ${error.message}`);
-      } else {
-        console.log(`Reset OTP sent to ${email} via Resend`);
-      }
-    }
-
-    // Neither provider configured — log the code for development
-    if (!BREVO_API_KEY && !resendConfigured) {
-      console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
-    }
-
-    return NextResponse.json({ success: true, message: "If an account exists, a recovery code has been sent." });
+    return sent();
   } catch (error) {
     console.error("Forgot password error:", error);
-    return NextResponse.json({ success: true, message: "If an account exists, a recovery code has been sent." });
+    return sent();
   }
 }
 

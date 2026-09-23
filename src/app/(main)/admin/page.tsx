@@ -30,6 +30,23 @@ interface Stats {
   recentUsers: User[];
 }
 
+interface EmailHealth {
+  ok: boolean;
+  reach: 'all' | 'owner-only' | 'none';
+  providers: {
+    provider: string;
+    configured: boolean;
+    ok: boolean;
+    detail: string;
+  }[];
+}
+
+const REACH_LABEL: Record<string, string> = {
+  all: 'Reaching every recipient',
+  'owner-only': 'Reaching the account owner only',
+  none: 'Not able to send',
+};
+
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -37,9 +54,11 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'moderation'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'moderation' | 'system'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [emailHealth, setEmailHealth] = useState<EmailHealth | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
 
   useEffect(() => {
     if (user && user.role !== 'admin') {
@@ -48,6 +67,7 @@ export default function AdminDashboard() {
     }
     fetchStats();
     fetchUsers();
+    fetchEmailHealth();
   }, [user, router]);
 
   const fetchStats = async () => {
@@ -73,6 +93,20 @@ export default function AdminDashboard() {
       console.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmailHealth = async () => {
+    setCheckingEmail(true);
+    try {
+      const res = await fetch('/api/admin/email-health', { credentials: 'include' });
+      if (res.ok) {
+        setEmailHealth(await res.json());
+      }
+    } catch (error) {
+      console.error('Failed to check email health:', error);
+    } finally {
+      setCheckingEmail(false);
     }
   };
 
@@ -173,7 +207,7 @@ export default function AdminDashboard() {
       <div className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1">
-            {(['overview', 'users', 'moderation'] as const).map(tab => (
+            {(['overview', 'users', 'moderation', 'system'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -184,6 +218,9 @@ export default function AdminDashboard() {
                 }`}
               >
                 {tab}
+                {tab === 'system' && emailHealth && !emailHealth.ok && (
+                  <span className="ml-2 inline-block w-2 h-2 rounded-full bg-red-500" />
+                )}
               </button>
             ))}
           </div>
@@ -361,6 +398,54 @@ export default function AdminDashboard() {
                 <p className="text-gray-400 text-sm">Resolved Today</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'system' && (
+          <div className="space-y-6">
+            {/* Delivery summary */}
+            <div className={`rounded-xl p-4 border ${
+              emailHealth?.ok ? 'bg-green-600/10 border-green-600/30' : 'bg-red-600/10 border-red-600/30'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Email Delivery</h3>
+                  <p className={`text-sm ${emailHealth?.ok ? 'text-green-400' : 'text-red-400'}`}>
+                    {!emailHealth ? 'Checking providers…' : REACH_LABEL[emailHealth.reach]}
+                  </p>
+                </div>
+                <button
+                  onClick={fetchEmailHealth}
+                  disabled={checkingEmail}
+                  className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {checkingEmail ? 'Checking…' : 'Re-check'}
+                </button>
+              </div>
+            </div>
+
+            {/* Per-provider detail */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(emailHealth?.providers ?? []).map(p => (
+                <div key={p.provider} className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold capitalize">{p.provider}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      p.ok ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
+                    }`}>
+                      {p.ok ? 'Ready' : 'Not delivering'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-400">{p.detail}</p>
+                </div>
+              ))}
+            </div>
+
+            {emailHealth && !emailHealth.ok && (
+              <p className="text-sm text-amber-400">
+                Password reset codes are not reaching everyone. Fix the provider above, then re-check.
+              </p>
+            )}
           </div>
         )}
       </div>
