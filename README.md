@@ -4,7 +4,7 @@
 
 Campusfeed is an Instagram-inspired social networking platform built exclusively for KIIT University students. It enables students to connect, share posts, send messages, make calls, join groups, attend events, and build a campus community — all in one app.
 
-> **Live Demo:** [https://campusconnect-osm1.onrender.com](https://campusconnect-osm1.onrender.com)
+> **Live Demo:** [https://campusfeed-prashantbhandari-code.vercel.app](https://campusfeed-prashantbhandari-code.vercel.app)
 
 ---
 
@@ -376,7 +376,7 @@ Add these to your Google Cloud Console OAuth credentials:
 
 ### Getting Started
 
-1. **Visit** https://campusconnect-osm1.onrender.com
+1. **Visit** https://campusfeed-prashantbhandari-code.vercel.app
 2. **Sign in** with your Google account (must use your college email)
 3. **Complete your profile** - set username, select department and batch year
 4. **Start exploring!**

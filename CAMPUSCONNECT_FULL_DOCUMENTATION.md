@@ -14,7 +14,7 @@
 | Documentation Version | 2.0 |
 | Last Updated | September 12, 2026 |
 | Repository | https://github.com/prashantbhandari2024/Campusfeed |
-| Live Demo | https://campusconnect-osm1.onrender.com |
+| Live Demo | https://campusfeed-prashantbhandari-code.vercel.app |
 | License | MIT |
 
 ### Documentation Purpose
