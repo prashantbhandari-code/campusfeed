@@ -106,25 +106,31 @@ async function handler(req: Request) {
     });
 
     // Send the OTP — Brevo first (reaches any recipient), Resend as fallback
-    const brevoConfigured = BREVO_API_KEY && BREVO_FROM;
-    if (brevoConfigured) {
-      const ok = await sendViaBrevo(email, user.name, otp);
-      if (ok) console.log(`Reset OTP sent to ${email} via Brevo`);
-    } else if (RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here") {
-      const resend = new Resend(RESEND_API_KEY);
-      const sent = await resend.emails.send({
+    const resendConfigured = !!RESEND_API_KEY && RESEND_API_KEY !== "re_your_key_here";
+    let sent = false;
+
+    if (BREVO_API_KEY && BREVO_FROM) {
+      sent = await sendViaBrevo(email, user.name, otp);
+      if (sent) console.log(`Reset OTP sent to ${email} via Brevo`);
+    }
+
+    // Fall back to Resend when Brevo is unconfigured OR the send failed
+    if (!sent && resendConfigured) {
+      const { error } = await new Resend(RESEND_API_KEY).emails.send({
         from: "CampusConnect <onboarding@resend.dev>",
         to: email,
         subject: "Your CampusConnect password reset code",
         html: otpEmailHtml(user.name, otp),
       });
-      if (sent.error) {
-        console.error(`Resend delivery FAILED for ${email}: ${sent.error.name} — ${sent.error.message}`);
+      if (error) {
+        console.error(`Resend delivery FAILED for ${email}: ${error.name} — ${error.message}`);
       } else {
         console.log(`Reset OTP sent to ${email} via Resend`);
       }
-    } else {
-      // Neither provider configured — log the code for development
+    }
+
+    // Neither provider configured — log the code for development
+    if (!BREVO_API_KEY && !resendConfigured) {
       console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
     }
 
