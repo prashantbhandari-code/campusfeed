@@ -221,6 +221,20 @@ model Notification {
   @@map("notifications")
 }
 
+// Ephemeral WebRTC signaling relay for the polling transport (Vercel).
+// Rows live short: delivered inside a 30s window, deleted after 5 minutes.
+model CallSignal {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  type       String // call-offer | call-answer | call-end | ice-candidate
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  @@index([receiverId, createdAt])
+  @@map("call_signals")
+}
+
 model VerificationToken {
   id        String   @id @default(uuid())
   email     String

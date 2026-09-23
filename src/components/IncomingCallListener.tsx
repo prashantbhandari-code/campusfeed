@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useSession } from "@/lib/appwrite-session";
-import { useSocketEvent } from "@/lib/useSocket";
+import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import CallModal from "./CallModal";
 
 export default function IncomingCallListener() {
   const { data: session } = useSession();
   const user = session?.user as any;
+  // Anchors the shared realtime loop (ref-counted polling) on every (main)
+  // page — unread badges, group chat, and incoming calls all ride it.
+  useSocket(user?.id);
   const [showCall, setShowCall] = useState(false);
   const [callData, setCallData] = useState<any>(null);
 

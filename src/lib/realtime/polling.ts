@@ -13,6 +13,7 @@ let inFlight = false; // never stack ticks — each one holds 5 DB connections
 let typingFrom: string | null = null;
 let lastUnreadNotifs: number | null = null;
 let lastUnreadMsgs: number | null = null;
+const seenSignals = new Set<string>(); // call signals re-scan the skew window — drop repeats by id
 
 async function pollOnce(): Promise<void> {
   if (inFlight) return; // previous tick still running; skip rather than pile up
@@ -29,6 +30,17 @@ async function pollOnce(): Promise<void> {
       (data.messages || []).forEach((m: any) => publish("new-message", m.message));
       (data.reactions || []).forEach((r: any) => publish("message-reaction", r));
       (data.groupMessages || []).forEach((m: any) => publish("new-group-message", m));
+      for (const s of data.callSignals || []) {
+        if (seenSignals.has(s.id)) continue;
+        seenSignals.add(s.id);
+        if (seenSignals.size > 500) {
+          // Set iterates in insertion order — prune the oldest quarter
+          const oldest: string[] = [];
+          seenSignals.forEach((id) => { if (oldest.length < 250) oldest.push(id); });
+          oldest.forEach((id) => seenSignals.delete(id));
+        }
+        publish(s.event, s.data);
+      }
       if (
         typeof data.unreadNotifications === "number" &&
         data.unreadNotifications !== lastUnreadNotifs

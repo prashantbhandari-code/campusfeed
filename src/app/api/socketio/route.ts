@@ -53,6 +53,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
+    // WebRTC call signaling relay for the polling transport (server.ts covers
+    // WS mode). Target key per event mirrors server.ts's socket handlers;
+    // senderId always comes from the cookie, never the body.
+    const CALL_TARGET_KEY: Record<string, string> = {
+      'call-offer': 'receiverId',
+      'call-answer': 'callerId',
+      'call-end': 'otherUserId',
+      'ice-candidate': 'targetUserId',
+    };
+    const targetKey = CALL_TARGET_KEY[action];
+    if (targetKey) {
+      const targetId = body[targetKey];
+      if (!targetId) return NextResponse.json({ error: 'Missing target' }, { status: 400 });
+      await prisma.callSignal.create({
+        data: { senderId: userId, receiverId: targetId, type: action, payload: body },
+      });
+      // Signals are only deliverable for 30s — sweep expired rows here.
+      await prisma.callSignal.deleteMany({
+        where: { createdAt: { lt: new Date(Date.now() - 5 * 60 * 1000) } },
+      });
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Socket.IO polling error:', error);
@@ -80,10 +103,12 @@ export async function GET(request: NextRequest) {
     }
 
     const gt = new Date(Math.max(0, since));
+    // Call signals expire: never replay a ring older than 30s (first poll has since=0).
+    const signalFloor = new Date(Math.max(since, Date.now() - 30_000));
 
     // Newest-first + take 50 so a first poll (since=0) can't skip recent
     // messages behind a full page of older history.
-    const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages] = await Promise.all([
+    const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages, rawCallSignals] = await Promise.all([
       prisma.message.findMany({
         where: { receiverId: userId, createdAt: { gt } },
         include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
@@ -111,6 +136,11 @@ export async function GET(request: NextRequest) {
       // Message alerts belong to the Messages badge, not the bell
       prisma.notification.count({ where: { userId, read: false, NOT: { type: "message" } } }),
       prisma.message.count({ where: { receiverId: userId, read: false } }),
+      prisma.callSignal.findMany({
+        where: { receiverId: userId, createdAt: { gt: signalFloor } },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+      }),
     ]);
 
     // Full reaction lists for every message touched in this window (they render
@@ -127,12 +157,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Translate stored signals into the same event names server.ts emits on WS.
+    const callSignalsOut = rawCallSignals.map((s) => {
+      const p: any = s.payload;
+      if (s.type === 'call-offer')
+        return { id: s.id, event: 'incoming-call', data: { callerId: s.senderId, callerName: p.callerName, callerAvatar: p.callerAvatar, offer: p.offer, callType: p.callType } };
+      if (s.type === 'call-answer')
+        return { id: s.id, event: 'call-accepted', data: { answer: p.answer, receiverId: s.senderId } };
+      if (s.type === 'call-end')
+        return { id: s.id, event: 'call-ended', data: { endedBy: s.senderId } };
+      return { id: s.id, event: 'ice-candidate', data: { candidate: p.candidate, fromUserId: s.senderId } };
+    });
+
     return NextResponse.json({
       messages: messages
         .reverse()
         .map((m) => ({ message: m, senderId: m.senderId, timestamp: m.createdAt.getTime() })),
       groupMessages: groupMessages.reverse(),
       reactions: reactionPayload,
+      callSignals: callSignalsOut,
       // Typing rides the same response so each tick is one round trip, not two.
       typing: typingUsers.get(userId) || null,
       unreadNotifications,

@@ -31,6 +31,16 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const ringRef = useRef<NodeJS.Timeout | null>(null);
   const startedRef = useRef(false);
   const callStateRef = useRef(callState);
+  const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
+  // ICE can arrive before the remote description it belongs to (poll batches
+  // deliver answer + candidates together) — hold until the description is set.
+  const deliverPendingIce = async () => {
+    const pc = pcRef.current;
+    if (!pc || !pc.remoteDescription) return;
+    for (const c of pendingIceRef.current.splice(0)) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch (e) { console.warn("ICE candidate failed:", e); }
+    }
+  };
 
   const stopRing = useCallback(() => { if (ringRef.current) { clearInterval(ringRef.current); ringRef.current = null; } }, []);
   const playRing = useCallback(() => {
@@ -101,6 +111,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       // Set the remote offer
       if (offer) {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await deliverPendingIce();
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         emit("call-answer", { callerId: otherUser.id, answer });
@@ -112,8 +123,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     }
   }, [callType, otherUser, offer, emit, setupPC]);
 
-  useSocketEvent("call-accepted", async (d: { answer: RTCSessionDescriptionInit }) => { stopRing(); setCallState("connecting"); if (pcRef.current) await pcRef.current.setRemoteDescription(new RTCSessionDescription(d.answer)); }, []);
-  useSocketEvent("ice-candidate", async (d: { candidate: RTCIceCandidateInit }) => { if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(d.candidate)); }, []);
+  useSocketEvent("call-accepted", async (d: { answer: RTCSessionDescriptionInit }) => { stopRing(); setCallState("connecting"); if (pcRef.current) { await pcRef.current.setRemoteDescription(new RTCSessionDescription(d.answer)); await deliverPendingIce(); } }, []);
+  useSocketEvent("ice-candidate", (d: { candidate: RTCIceCandidateInit }) => {
+    const pc = pcRef.current;
+    if (!pc || !pc.remoteDescription) { pendingIceRef.current.push(d.candidate); return; }
+    pc.addIceCandidate(new RTCIceCandidate(d.candidate)).catch((e) => console.warn("ICE candidate failed:", e));
+  }, []);
   useSocketEvent("call-rejected", () => { stopRing(); setCallState("ended"); setTimeout(onClose, 1500); }, []);
   useSocketEvent("call-ended", () => { endCall(); }, []);
   useEffect(() => {
@@ -154,7 +169,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
           <div className="rounded-2xl bg-gray-100 dark:bg-dark-800 p-8 text-center">
             <div className="w-24 h-24 rounded-full bg-primary-600/20 flex items-center justify-center mx-auto mb-4"><div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold">{otherUser.name?.charAt(0)}</div></div>
             <h3 className="text-xl font-bold text-white mb-1">{otherUser.name}</h3>
-            <p className="text-gray-400 text-sm mb-2">@{otherUser.username}</p>
+            {otherUser.username ? <p className="text-gray-400 text-sm mb-2">@{otherUser.username}</p> : null}
             <p className={errorMsg ? "text-red-400 text-sm" : "text-gray-500 text-sm"}>{stateText}</p>
             {callState === "requesting-permission" && !errorMsg && (
               <div className="flex justify-center mt-4">
