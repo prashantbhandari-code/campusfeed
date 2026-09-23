@@ -133,6 +133,8 @@ export async function GET(request: NextRequest) {
         .map((m) => ({ message: m, senderId: m.senderId, timestamp: m.createdAt.getTime() })),
       groupMessages: groupMessages.reverse(),
       reactions: reactionPayload,
+      // Typing rides the same response so each tick is one round trip, not two.
+      typing: typingUsers.get(userId) || null,
       unreadNotifications,
       unreadMessages,
       timestamp: Date.now() - POLL_SKEW_MS,

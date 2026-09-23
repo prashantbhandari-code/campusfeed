@@ -39,11 +39,9 @@ async function pollOnce(): Promise<void> {
         lastUnreadMsgs = data.unreadMessages;
         publish("messages-unread", data.unreadMessages);
       }
-    }
 
-    const typingRes = await fetch(`/api/socketio?since=${since}&type=typing`);
-    if (typingRes.ok) {
-      const typing = (await typingRes.json()).typing;
+      // Typing comes back on the same response — one round trip per tick.
+      const typing = data.typing;
       if (typing) {
         typingFrom = typing.senderId;
         publish("user-typing", typing);
