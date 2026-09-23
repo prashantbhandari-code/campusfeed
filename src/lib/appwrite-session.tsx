@@ -14,6 +14,7 @@ export interface AppwriteSession {
     batchYear: string;
     rollNumber: string;
     collegeEmail: string;
+    role: string;
   };
 }
 
@@ -58,6 +59,7 @@ export function AppwriteSessionProvider({ children }: { children: React.ReactNod
               batchYear: profile.batchYear || "",
               rollNumber: profile.rollNumber || "",
               collegeEmail: profile.collegeEmail || "",
+              role: profile.role || "student",
             },
           });
           setStatus("authenticated");
