@@ -37,6 +37,7 @@ interface EmailHealth {
     provider: string;
     configured: boolean;
     ok: boolean;
+    reach: string;
     detail: string;
   }[];
 }
@@ -431,9 +432,13 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold capitalize">{p.provider}</h4>
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      p.ok ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
+                      p.reach === 'all'
+                        ? 'bg-green-600/20 text-green-400'
+                        : p.ok
+                          ? 'bg-amber-600/20 text-amber-400'
+                          : 'bg-red-600/20 text-red-400'
                     }`}>
-                      {p.ok ? 'Ready' : 'Not delivering'}
+                      {p.reach === 'all' ? 'Ready' : p.ok ? 'Limited' : 'Not delivering'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-400">{p.detail}</p>

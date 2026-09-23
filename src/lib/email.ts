@@ -128,7 +128,7 @@ export type EmailProviderHealth = {
 };
 
 export type EmailHealth = {
-  /** At least one provider can actually send. */
+  /** Mail reaches every recipient — the state students actually need. */
   ok: boolean;
   reach: EmailReach;
   providers: EmailProviderHealth[];
@@ -206,6 +206,9 @@ async function probeResend(): Promise<EmailProviderHealth> {
 /**
  * Live check of every configured email provider — makes real API calls, so it
  * catches a revoked key or an unverified sender rather than just missing config.
+ *
+ * `ok` is deliberately strict: a provider that only reaches the account owner
+ * still fails every password reset, so it does not count as healthy.
  */
 export async function checkEmailHealth(): Promise<EmailHealth> {
   const providers = await Promise.all([probeBrevo(), probeResend()]);
@@ -215,5 +218,5 @@ export async function checkEmailHealth(): Promise<EmailHealth> {
       ? "owner-only"
       : "none";
 
-  return { ok: reach !== "none", reach, providers };
+  return { ok: reach === "all", reach, providers };
 }
