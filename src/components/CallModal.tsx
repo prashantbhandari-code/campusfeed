@@ -26,6 +26,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const durationRef = useRef<NodeJS.Timeout | null>(null);
   const ringRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,7 +61,13 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     setTimeout(onClose, 1000);
   }, [otherUser.id, emit, onClose, stopRing]);
   const setupPC = useCallback((pc: RTCPeerConnection) => {
-    pc.ontrack = (e) => { if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0]; };
+    pc.ontrack = (e) => {
+      // Voice calls have no <video> element — without attaching the remote
+      // stream to *some* media element, its audio is never played.
+      const stream = e.streams[0];
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+      else if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
+    };
     pc.onicecandidate = (e) => { if (e.candidate) emit("ice-candidate", { targetUserId: otherUser.id, candidate: e.candidate }); };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "connected") { setCallState("connected"); stopRing(); durationRef.current = setInterval(() => setCallDuration(p => p + 1), 1000); }
@@ -151,6 +158,8 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-md mx-4">
+        {/* Plays remote audio on voice calls (video calls use the <video> element) */}
+        <audio ref={remoteAudioRef} autoPlay playsInline />
         {callType === "video" && (
           <div className="relative rounded-2xl overflow-hidden bg-gray-900 dark:bg-dark-900 aspect-[3/4]">
             <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
