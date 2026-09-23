@@ -17,8 +17,12 @@ let lastUnreadMsgs: number | null = null;
 async function pollOnce(): Promise<void> {
   if (inFlight) return; // previous tick still running; skip rather than pile up
   inFlight = true;
+  // Abort a stalled tick before Vercel's 10s kill so inFlight releases and
+  // the next tick retries fresh — one hung fetch must not stop delivery.
+  const ctrl = new AbortController();
+  const watchdog = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const res = await fetch(`/api/socketio?since=${since}&type=messages`);
+    const res = await fetch(`/api/socketio?since=${since}&type=messages`, { signal: ctrl.signal });
     if (res.ok) {
       const data = await res.json();
       if (typeof data.timestamp === "number") since = data.timestamp;
@@ -51,8 +55,11 @@ async function pollOnce(): Promise<void> {
       }
     }
   } catch (error) {
-    console.error("Polling error:", error);
+    if (!(error instanceof DOMException && error.name === "AbortError")) {
+      console.error("Polling error:", error);
+    }
   } finally {
+    clearTimeout(watchdog);
     inFlight = false;
   }
 }
