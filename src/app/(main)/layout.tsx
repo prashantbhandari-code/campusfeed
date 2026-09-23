@@ -30,7 +30,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   if (!session) return null;
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-dvh flex flex-col">
       <Navbar />
       <div className="flex-1 flex pt-14 lg:pt-0 ">
         {/* Desktop sidebar */}

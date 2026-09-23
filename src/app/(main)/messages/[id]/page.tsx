@@ -221,15 +221,16 @@ export default function ChatPage() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1 bg-gray-50 dark:bg-dark-900">
-        {messages.map((msg: any) => {
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-dark-900">
+        {messages.map((msg: any, i: number) => {
           const isMine = msg.sender.id === user?.id;
+          const newGroup = i === 0 || messages[i - 1].sender.id !== msg.sender.id;
           return (
-            <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[75%] ${isMine ? "order-2" : ""}`}>
-                {!isMine && <UserAvatar user={msg.sender} size="sm" />}
+            <div key={msg.id} className={`flex gap-2 items-start ${isMine ? "justify-end" : "justify-start"} ${newGroup ? "mt-3" : "mt-0.5"}`}>
+              {!isMine && (newGroup ? <UserAvatar user={msg.sender} size="sm" /> : <div className="w-8 flex-shrink-0" aria-hidden="true" />)}
+              <div className={`max-w-[75%] min-w-0 flex flex-col ${isMine ? "items-end" : ""}`}>
                 {msg.fileUrl && (
-                  <div className="mt-1 mb-1">
+                  <div className="mb-1">
                     {msg.fileType === "image" ? (
                       <img src={msg.fileUrl} alt="" className="rounded-2xl max-w-[250px] max-h-[300px] object-cover cursor-pointer" onClick={() => window.open(msg.fileUrl, "_blank")} />
                     ) : msg.fileType === "audio" ? (
@@ -250,18 +251,15 @@ export default function ChatPage() {
                   </div>
                 )}
                 {msg.content && (
-                  <>
-                    <div
-                      className={`mt-1 px-4 py-2 rounded-2xl text-sm ${
-                        isMine
-                          ? "bg-primary-600 text-white rounded-br-md"
-                          : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-gray-200 rounded-bl-md"
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                    <button onClick={() => setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id)} className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-1">😀+</button>
-                  </>
+                  <div
+                    className={`px-4 py-2 rounded-2xl text-sm break-words ${
+                      isMine
+                        ? "bg-primary-600 text-white rounded-br-md"
+                        : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-gray-200 rounded-bl-md"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
                 )}
                 {/* Reaction picker */}
                 {reactionPickerMsgId === msg.id && (
@@ -283,9 +281,12 @@ export default function ChatPage() {
                     ))}
                   </div>
                 )}
-                <p className={`text-[10px] text-gray-400 dark:text-gray-500 mt-1 ${isMine ? "text-right" : ""}`}>
-                  {formatDate(msg.createdAt)}
-                </p>
+                <div className={`flex items-center gap-2 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
+                  <button onClick={() => setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id)} className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">😀+</button>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                    {formatDate(msg.createdAt)}
+                  </p>
+                </div>
               </div>
             </div>
           );
@@ -344,7 +345,7 @@ export default function ChatPage() {
           onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
           placeholder={uploading ? "Uploading..." : "Type a message..."}
           disabled={uploading}
-          className="flex-1 bg-gray-100 dark:bg-dark-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+          className="flex-1 min-w-0 bg-gray-100 dark:bg-dark-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
         <button
           type="submit"

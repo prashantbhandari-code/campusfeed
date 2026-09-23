@@ -2,6 +2,7 @@
 
 import { getInitials, generateAvatarColor } from "@/lib/utils";
 import Image from "next/image";
+import { useState } from "react";
 
 interface UserAvatarProps {
   user: { name: string; avatar?: string | null; username?: string };
@@ -35,13 +36,15 @@ const onlineDotSize = {
 export default function UserAvatar({ user, size = "md", showStory = false, hasStory = false, isOnline }: UserAvatarProps) {
   const initials = getInitials(user.name);
   const colorClass = generateAvatarColor(user.name);
+  const [failed, setFailed] = useState(false);
 
-  const avatar = user.avatar ? (
+  const avatar = user.avatar && !failed ? (
     <Image
       src={user.avatar}
       alt={user.name}
       width={80}
       height={80}
+      onError={() => setFailed(true)}
       className={`${sizeClasses[size]} rounded-full object-cover`}
     />
   ) : (
