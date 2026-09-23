@@ -47,7 +47,7 @@ function LoginForm() {
       });
 
       if (loginRes.ok) {
-        toast.success("Welcome back to CampusConnect!");
+        toast.success("Welcome back to Campusfeed!");
         window.location.href = "/feed";
         return;
       }
@@ -74,7 +74,7 @@ function LoginForm() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <HiAcademicCap className="text-4xl text-campus-400" />
-            <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
+            <h1 className="text-4xl font-bold text-gradient">Campusfeed</h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-3">Sign in to your campus</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-campus-600/20 border border-campus-500/30 rounded-full">
@@ -190,7 +190,7 @@ function LoginForm() {
         <p className="text-center mt-6 text-gray-500 dark:text-gray-400">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 font-semibold">
-            Join CampusConnect
+            Join Campusfeed
           </Link>
         </p>
       </div>

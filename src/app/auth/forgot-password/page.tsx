@@ -90,7 +90,7 @@ function ForgotPasswordForm() {
     <div className="text-center mb-8">
       <div className="flex items-center justify-center gap-2 mb-3">
         <HiAcademicCap className="text-4xl text-campus-400" />
-        <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
+        <h1 className="text-4xl font-bold text-gradient">Campusfeed</h1>
       </div>
     </div>
   );

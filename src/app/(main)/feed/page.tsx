@@ -96,7 +96,7 @@ export default function FeedPage() {
     <div className="flex gap-8 max-w-6xl mx-auto px-4 py-6">
       {/* Main Feed */}
       <div className="flex-1 max-w-2xl">
-        <h1 className="sr-only">CampusConnect Feed</h1>
+        <h1 className="sr-only">Campusfeed Feed</h1>
         <StoryBar />
 
         <div className="border-b border-gray-200 dark:border-white/5 mb-2" />

@@ -18,7 +18,7 @@ export async function setupDatabase() {
 
   // Create database
   try {
-    await api("POST", "/v1/databases", { databaseId: DB_ID, name: "CampusConnect" });
+    await api("POST", "/v1/databases", { databaseId: DB_ID, name: "Campusfeed" });
     console.log("Database created:", DB_ID);
   } catch (e: any) {
     if (e.code === 409) console.log("Database already exists");

@@ -9,33 +9,33 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: {
-    default: "CampusConnect - KIIT University",
-    template: "%s | CampusConnect",
+    default: "Campusfeed - KIIT University",
+    template: "%s | Campusfeed",
   },
   description: "The private social network for KIIT University students. Connect with your campus community. Share posts, join groups, chat with friends, and stay updated on campus events.",
   keywords: ["KIIT", "campus", "social network", "university", "students", "college", "Bhubaneswar", "education", "student community"],
-  authors: [{ name: "CampusConnect" }],
-  creator: "CampusConnect",
+  authors: [{ name: "Campusfeed" }],
+  creator: "Campusfeed",
   metadataBase: new URL("https://campusconnect-osm1.onrender.com"),
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://campusconnect-osm1.onrender.com",
-    siteName: "CampusConnect",
-    title: "CampusConnect - KIIT University",
+    siteName: "Campusfeed",
+    title: "Campusfeed - KIIT University",
     description: "The private social network for KIIT University students. Connect with your campus community.",
     images: [
       {
         url: "/og-image.svg",
         width: 1200,
         height: 630,
-        alt: "CampusConnect - KIIT University",
+        alt: "Campusfeed - KIIT University",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CampusConnect - KIIT University",
+    title: "Campusfeed - KIIT University",
     description: "The private social network for KIIT University students. Connect with your campus community.",
     images: ["/og-image.svg"],
   },
@@ -70,7 +70,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              name: "CampusConnect",
+              name: "Campusfeed",
               url: "https://campusconnect-osm1.onrender.com",
               description: "The private social network for KIIT University students.",
               applicationCategory: "SocialNetworkingApplication",
@@ -82,7 +82,7 @@ export default function RootLayout({
               },
               author: {
                 "@type": "Organization",
-                name: "CampusConnect",
+                name: "Campusfeed",
                 url: "https://campusconnect-osm1.onrender.com",
               },
             }),

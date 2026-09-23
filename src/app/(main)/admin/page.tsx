@@ -191,7 +191,7 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-400 text-sm">CampusConnect Administration</p>
+            <p className="text-gray-400 text-sm">Campusfeed Administration</p>
           </div>
           <div className="flex items-center gap-4">
             <span className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-full text-sm font-medium">

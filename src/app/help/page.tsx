@@ -17,7 +17,7 @@ export default function HelpCenterPage() {
       <div className="text-center py-16 bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08]">
         <HiOutlineQuestionMarkCircle className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
         <p className="text-gray-500 dark:text-gray-400 text-lg">Help Center</p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Get help with CampusConnect</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Get help with Campusfeed</p>
       </div>
     </div>
   );

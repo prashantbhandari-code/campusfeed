@@ -4,7 +4,7 @@ import { Resend } from "resend";
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
 // Brevo requires a sender that is verified in the Brevo dashboard
-// (Senders & IPs -> Senders). e.g. "CampusConnect <your-verified@email.com>"
+// (Senders & IPs -> Senders). e.g. "Campusfeed <your-verified@email.com>"
 const BREVO_FROM = process.env.BREVO_FROM || "";
 const REQUEST_TIMEOUT_MS = 8000;
 
@@ -20,7 +20,7 @@ function otpEmailHtml(name: string | null, otp: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2563eb; font-size: 28px; margin: 0;">🎓 CampusConnect</h1>
+        <h1 style="color: #2563eb; font-size: 28px; margin: 0;">🎓 Campusfeed</h1>
       </div>
       <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin-bottom: 20px;">
         <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Reset Your Password</h2>
@@ -38,7 +38,7 @@ function otpEmailHtml(name: string | null, otp: string): string {
         </p>
       </div>
       <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-        CampusConnect — Your Campus Hub
+        Campusfeed — Your Campus Hub
       </p>
     </div>
   `;
@@ -65,9 +65,9 @@ async function postToBrevo(to: string, name: string | null, otp: string): Promis
       accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "CampusConnect", email: BREVO_FROM },
+      sender: { name: "Campusfeed", email: BREVO_FROM },
       to: [{ email: to }],
-      subject: "Your CampusConnect password reset code",
+      subject: "Your Campusfeed password reset code",
       htmlContent: otpEmailHtml(name, otp),
     }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -94,9 +94,9 @@ export async function sendOtpEmail(to: string, name: string | null, otp: string)
 
   if (resendConfigured()) {
     const { error } = await new Resend(RESEND_API_KEY).emails.send({
-      from: "CampusConnect <onboarding@resend.dev>",
+      from: "Campusfeed <onboarding@resend.dev>",
       to,
-      subject: "Your CampusConnect password reset code",
+      subject: "Your Campusfeed password reset code",
       html: otpEmailHtml(name, otp),
     });
     if (!error) {

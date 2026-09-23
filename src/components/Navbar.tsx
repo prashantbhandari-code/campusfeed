@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="px-4 h-14 flex items-center justify-between">
         <Link href="/feed" className="flex items-center gap-2 text-xl font-bold text-gradient">
           <HiAcademicCap className="text-xl" />
-          CampusConnect
+          Campusfeed
         </Link>
 
         <div className="flex items-center gap-1">

@@ -69,7 +69,7 @@ export default function CompleteProfilePage() {
         return;
       }
 
-      toast.success("Welcome to CampusConnect!");
+      toast.success("Welcome to Campusfeed!");
       window.location.href = "/feed";
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -92,7 +92,7 @@ export default function CompleteProfilePage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <HiAcademicCap className="text-4xl text-campus-400" />
-            <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
+            <h1 className="text-4xl font-bold text-gradient">Campusfeed</h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-3">One last step — your details</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-campus-600/20 border border-campus-500/30 rounded-full">

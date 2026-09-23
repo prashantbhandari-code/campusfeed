@@ -17,7 +17,7 @@ export default function AboutPage() {
       <div className="text-center py-16 bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08]">
         <HiOutlineInformationCircle className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
         <p className="text-gray-500 dark:text-gray-400 text-lg">About</p>
-        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">CampusConnect v1.0 for KIIT University</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Campusfeed v1.0 for KIIT University</p>
       </div>
     </div>
   );

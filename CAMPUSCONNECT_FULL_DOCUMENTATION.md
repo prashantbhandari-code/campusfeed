@@ -1,7 +1,7 @@
-# 🎓 CampusConnect
+# 🎓 Campusfeed
 ## Full-Stack University Social & Learning Platform
 
-> **CampusConnect** is a full-stack platform designed to bring university social networking, communication, groups, learning management, events, and notifications into one unified campus experience.
+> **Campusfeed** is a full-stack platform designed to bring university social networking, communication, groups, learning management, events, and notifications into one unified campus experience.
 
 ---
 
@@ -9,23 +9,23 @@
 
 | Field | Details |
 |---|---|
-| Project | CampusConnect |
+| Project | Campusfeed |
 | Version | 1.0.0 |
 | Documentation Version | 2.0 |
 | Last Updated | September 12, 2026 |
-| Repository | https://github.com/prashantbhandari2024/CampusConnect |
+| Repository | https://github.com/prashantbhandari2024/Campusfeed |
 | Live Demo | https://campusconnect-osm1.onrender.com |
 | License | MIT |
 
 ### Documentation Purpose
-This document is the primary technical and product reference for CampusConnect. It covers the product vision, implemented capabilities, architecture, data model, project structure, API surface, setup, configuration, deployment, security, performance, responsive behavior, roadmap, and contribution workflow.
+This document is the primary technical and product reference for Campusfeed. It covers the product vision, implemented capabilities, architecture, data model, project structure, API surface, setup, configuration, deployment, security, performance, responsive behavior, roadmap, and contribution workflow.
 
 ---
 
 ## 2. Executive Summary
 
 ### 2.1 Product
-CampusConnect is a university-focused social platform intended to reduce fragmentation between student communication, campus communities, and academic workflows.
+Campusfeed is a university-focused social platform intended to reduce fragmentation between student communication, campus communities, and academic workflows.
 
 ### 2.2 Core Problem
 The project identifies several fragmented student experiences:
@@ -37,7 +37,7 @@ The project identifies several fragmented student experiences:
 - Study groups may lack organization.
 
 ### 2.3 Product Vision
-CampusConnect aims to become a **single digital home for university students**, combining:
+Campusfeed aims to become a **single digital home for university students**, combining:
 
 1. Social networking
 2. Academic/LMS functionality
@@ -345,7 +345,7 @@ The original documentation provides representative definitions for `User`, `Post
 ## 8. Repository Structure
 
 ```text
-CampusConnect/
+Campusfeed/
 ├── src/
 │   ├── app/
 │   │   ├── (main)/
@@ -510,8 +510,8 @@ CampusConnect/
 ### 10.2 Installation
 
 ```bash
-git clone https://github.com/prashantbhandari2024/CampusConnect.git
-cd CampusConnect
+git clone https://github.com/prashantbhandari2024/Campusfeed.git
+cd Campusfeed
 npm install
 ```
 
@@ -561,7 +561,7 @@ GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 RESEND_API_KEY="re_your-resend-api-key"
-EMAIL_FROM="CampusConnect <noreply@yourdomain.com>"
+EMAIL_FROM="Campusfeed <noreply@yourdomain.com>"
 
 SESSION_SECRET="your-random-32-char-string"
 
@@ -1071,7 +1071,7 @@ This structure separates **product**, **architecture**, **implementation**, **op
 
 ## 24. License & Acknowledgments
 
-CampusConnect is documented as being released under the MIT License.
+Campusfeed is documented as being released under the MIT License.
 
 The original documentation acknowledges:
 
@@ -1096,7 +1096,7 @@ For project support, the original documentation directs users to:
 
 ## 26. Source of Truth
 
-This improved document is a **restructured and enhanced version of the supplied CampusConnect documentation**. Existing implementation claims have been preserved, while additional headings, workflows, checklists, governance recommendations, and documentation-gap analysis have been clearly identified as recommendations rather than silently presented as implemented functionality.
+This improved document is a **restructured and enhanced version of the supplied Campusfeed documentation**. Existing implementation claims have been preserved, while additional headings, workflows, checklists, governance recommendations, and documentation-gap analysis have been clearly identified as recommendations rather than silently presented as implemented functionality.
 
 ---
 

@@ -76,7 +76,7 @@ export default function RegisterPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <HiAcademicCap className="text-4xl text-campus-400" />
-            <h1 className="text-4xl font-bold text-gradient">CampusConnect</h1>
+            <h1 className="text-4xl font-bold text-gradient">Campusfeed</h1>
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-3">Create your student account</p>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-campus-600/20 border border-campus-500/30 rounded-full">
@@ -263,7 +263,7 @@ export default function RegisterPage() {
                 {loading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto"></div>
                 ) : (
-                  "Join CampusConnect"
+                  "Join Campusfeed"
                 )}
               </button>
             </form>

@@ -42,7 +42,7 @@ export default function Sidebar() {
     <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col p-4 border-r border-white/[0.06] glass-card rounded-none z-40">
       <Link href="/feed" className="flex items-center gap-3 px-4 py-3 mb-4 hover:opacity-80 transition-opacity">
         <HiAcademicCap className="text-2xl text-campus-400 flex-shrink-0" />
-        <span className="text-xl font-bold text-gradient">CampusConnect</span>
+        <span className="text-xl font-bold text-gradient">Campusfeed</span>
       </Link>
       <div className="space-y-0.5">
         {menuItems.map((item) => {

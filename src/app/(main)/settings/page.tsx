@@ -45,10 +45,10 @@ const MENU_SECTIONS = [
   {
     title: "Support & About",
     items: [
-      { label: "Help Center", description: "Get help with CampusConnect", icon: HiOutlineQuestionMarkCircle, href: "/help" },
+      { label: "Help Center", description: "Get help with Campusfeed", icon: HiOutlineQuestionMarkCircle, href: "/help" },
       { label: "Report a Problem", description: "Let us know about issues", icon: HiOutlineFlag, href: "/report" },
       { label: "Terms & Policies", description: "Terms of service and privacy policy", icon: HiOutlineDocumentText, href: "/terms" },
-      { label: "About", description: "CampusConnect v1.0 for KIIT University", icon: HiOutlineInformationCircle, href: "/about" },
+      { label: "About", description: "Campusfeed v1.0 for KIIT University", icon: HiOutlineInformationCircle, href: "/about" },
     ],
   },
 ];
@@ -146,7 +146,7 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      <p className="text-center text-xs text-gray-300 dark:text-gray-600 pb-20">CampusConnect v1.0 for KIIT University</p>
+      <p className="text-center text-xs text-gray-300 dark:text-gray-600 pb-20">Campusfeed v1.0 for KIIT University</p>
     </div>
   );
 }

@@ -1,8 +1,8 @@
-# 🎓 CampusConnect
+# 🎓 Campusfeed
 
 **A Full-Stack Social Media Platform for KIIT University Students**
 
-CampusConnect is an Instagram-inspired social networking platform built exclusively for KIIT University students. It enables students to connect, share posts, send messages, make calls, join groups, attend events, and build a campus community — all in one app.
+Campusfeed is an Instagram-inspired social networking platform built exclusively for KIIT University students. It enables students to connect, share posts, send messages, make calls, join groups, attend events, and build a campus community — all in one app.
 
 > **Live Demo:** [https://campusconnect-osm1.onrender.com](https://campusconnect-osm1.onrender.com)
 
@@ -33,7 +33,7 @@ CampusConnect is an Instagram-inspired social networking platform built exclusiv
 
 ## 🎯 About
 
-CampusConnect is a modern social media platform designed specifically for the students of Kalinga Institute of Industrial Technology (KIIT) University. In today's digital age, students need a unified platform to communicate, collaborate, and stay connected with their campus life. CampusConnect fills this gap by providing a dedicated space where students can:
+Campusfeed is a modern social media platform designed specifically for the students of Kalinga Institute of Industrial Technology (KIIT) University. In today's digital age, students need a unified platform to communicate, collaborate, and stay connected with their campus life. Campusfeed fills this gap by providing a dedicated space where students can:
 
 - Share their academic and social experiences through posts and stories
 - Communicate through real-time messaging and voice/video calls
@@ -47,7 +47,7 @@ The platform is built with a focus on simplicity, performance, and a mobile-firs
 
 ## 💡 Motive
 
-The motivation behind CampusConnect stems from several real-world problems faced by KIIT University students:
+The motivation behind Campusfeed stems from several real-world problems faced by KIIT University students:
 
 1. **Fragmented Communication** — Students use multiple apps (WhatsApp, Instagram, Telegram) for different purposes, leading to information scattered across platforms.
 
@@ -59,7 +59,7 @@ The motivation behind CampusConnect stems from several real-world problems faced
 
 5. **Campus Identity** — There is no dedicated digital identity platform that verifies and connects students from the same institution.
 
-CampusConnect aims to solve all these problems by providing a single, unified platform built exclusively for the KIIT community.
+Campusfeed aims to solve all these problems by providing a single, unified platform built exclusively for the KIIT community.
 
 ---
 
@@ -219,7 +219,7 @@ CampusConnect aims to solve all these problems by providing a single, unified pl
 
 ## 🗄️ Database Schema
 
-CampusConnect uses **17 database models** powered by Prisma ORM:
+Campusfeed uses **17 database models** powered by Prisma ORM:
 
 | Model | Description |
 |-------|-------------|
@@ -253,7 +253,7 @@ CampusConnect uses **17 database models** powered by Prisma ORM:
 ## ⚙️ Workflow
 
 ### 1. Registration & Login
-1. User visits CampusConnect
+1. User visits Campusfeed
 2. Clicks Sign in with Google or enters email/password
 3. Google collects: Name, Email, Profile Picture
 4. If new user → redirected to complete profile (username, department, batch)
@@ -475,6 +475,6 @@ This project is licensed under the MIT License.
 
 **Built with love for KIIT University Students**
 
-CampusConnect - Connecting Campuses, Building Communities
+Campusfeed - Connecting Campuses, Building Communities
 
 </div>
