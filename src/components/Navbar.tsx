@@ -17,7 +17,7 @@ export default function Navbar() {
   // Desktop: no top navbar (sidebar handles everything)
   // Mobile: logo + theme toggle + bell + sign out
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] glass-card rounded-none md:hidden">
+    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] glass-card rounded-none lg:hidden">
       <div className="px-4 h-14 flex items-center justify-between">
         <Link href="/feed" className="flex items-center gap-2 text-xl font-bold text-gradient">
           <HiAcademicCap className="text-xl" />

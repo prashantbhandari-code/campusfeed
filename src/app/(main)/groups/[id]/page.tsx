@@ -87,7 +87,7 @@ export default function GroupDetailPage() {
   const emoji = GROUP_EMOJIS[group.department || ""] || "👥";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 md:pb-0">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 lg:pb-0">
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-white/[0.06]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 text-gray-600 dark:text-gray-400"><HiArrowLeft className="text-xl" /></button>
