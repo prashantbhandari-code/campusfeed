@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       select: {
         id: true, name: true, email: true, username: true,
         avatar: true, department: true, batchYear: true,
-        rollNumber: true, collegeEmail: true,
+        rollNumber: true, collegeEmail: true, role: true,
       },
     });
 
