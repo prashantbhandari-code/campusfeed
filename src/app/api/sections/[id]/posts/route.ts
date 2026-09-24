@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { getBlockedIds } from "@/lib/blocking";
 
 // GET /api/sections/[id]/posts — list posts in a section
 export async function GET(
@@ -15,8 +16,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const blockedIds = await getBlockedIds((session.user as any).id);
     const posts = await prisma.sectionPost.findMany({
-      where: { sectionId: params.id },
+      where: { sectionId: params.id, authorId: { notIn: blockedIds } },
       include: {
         author: {
           select: { id: true, name: true, username: true, avatar: true, department: true },

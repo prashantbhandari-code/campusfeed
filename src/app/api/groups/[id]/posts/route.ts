@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
+import { getBlockedIds } from "@/lib/blocking";
 
 // Strip HTML tags to prevent stored XSS
 
@@ -18,8 +19,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const blockedIds = await getBlockedIds((session.user as any).id);
     const posts = await prisma.groupPost.findMany({
-      where: { groupId: params.id },
+      where: { groupId: params.id, authorId: { notIn: blockedIds } },
       include: {
         author: {
           select: { id: true, name: true, username: true, avatar: true, department: true },

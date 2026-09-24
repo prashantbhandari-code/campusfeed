@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToGroup } from "@/lib/socket";
 import { withRateLimit } from "@/lib/rateLimit";
+import { getBlockedIds } from "@/lib/blocking";
 
 const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
 
@@ -29,8 +30,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
 
+    // Blocked members' messages stay invisible in the shared thread
+    const blockedIds = await getBlockedIds(userId);
     const messages = await prisma.groupMessage.findMany({
-      where: { groupId: params.id },
+      where: { groupId: params.id, senderId: { notIn: blockedIds } },
       include: { sender: { select: USER_SELECT } },
       orderBy: { createdAt: "desc" },
       take: 50,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromCookieHeader } from '@/lib/session-token';
 import prisma from '@/lib/prisma';
+import { getBlockedIds } from '@/lib/blocking';
 
 // In-memory typing state (ephemeral, per-instance — fine for typing hints)
 const typingUsers = new Map<string, { senderId: string; senderName: string; timestamp: number }>();
@@ -106,11 +107,14 @@ export async function GET(request: NextRequest) {
     // Call signals expire: never replay a ring older than 30s (first poll has since=0).
     const signalFloor = new Date(Math.max(since, Date.now() - 30_000));
 
+    // Blocked users never deliver into this poll (either direction)
+    const blockedIds = await getBlockedIds(userId);
+
     // Newest-first + take 50 so a first poll (since=0) can't skip recent
     // messages behind a full page of older history.
     const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages, rawCallSignals] = await Promise.all([
       prisma.message.findMany({
-        where: { receiverId: userId, createdAt: { gt } },
+        where: { receiverId: userId, senderId: { notIn: blockedIds }, createdAt: { gt } },
         include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
         orderBy: { createdAt: 'desc' },
         take: 50,
@@ -118,6 +122,7 @@ export async function GET(request: NextRequest) {
       prisma.groupMessage.findMany({
         where: {
           createdAt: { gt },
+          senderId: { notIn: blockedIds },
           group: { members: { some: { userId } } },
         },
         include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
