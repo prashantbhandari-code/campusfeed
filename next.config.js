@@ -27,7 +27,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               "connect-src 'self' ws: wss: https:",
-              "media-src 'self' blob:",
+              "media-src 'self' blob: https://cloud.appwrite.io",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

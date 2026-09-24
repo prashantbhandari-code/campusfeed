@@ -6,7 +6,7 @@ const APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
 const APPWRITE_KEY = process.env.APPWRITE_API_KEY || "";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB — Vercel caps request bodies at 4.5MB
 const ALLOWED_TYPES = {
   image: ["jpg", "jpeg", "png", "gif", "webp", "svg"],
   audio: ["mp3", "wav", "ogg", "m4a", "aac", "opus", "webm"],
@@ -32,27 +32,38 @@ export const POST = withRateLimit(async (req: Request) => {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    let fileType = "document";
-    let bucketId = "materials";
-    if (ALLOWED_TYPES.image.includes(ext)) { fileType = "image"; bucketId = "posts"; }
-    else if (ALLOWED_TYPES.audio.includes(ext)) { fileType = "audio"; bucketId = "messages"; }
-    else if (ALLOWED_TYPES.video.includes(ext)) { fileType = "video"; bucketId = "posts"; }
-
     const allAllowed = [...ALLOWED_TYPES.image, ...ALLOWED_TYPES.audio, ...ALLOWED_TYPES.video, ...ALLOWED_TYPES.document];
     if (!allAllowed.includes(ext)) {
       return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
     }
 
-    const fileId = `${(session.user as any).id}-${Date.now()}-${ext}`;
+    // MIME first (a voice note recorded as .mp4 must stay audio), ext as fallback
+    const mime = (file.type || "").toLowerCase();
+    let fileType = "document";
+    if (mime.startsWith("image/")) fileType = "image";
+    else if (mime.startsWith("video/")) fileType = "video";
+    else if (mime.startsWith("audio/")) fileType = "audio";
+    else if (ALLOWED_TYPES.image.includes(ext)) fileType = "image";
+    else if (ALLOWED_TYPES.audio.includes(ext)) fileType = "audio";
+    else if (ALLOWED_TYPES.video.includes(ext)) fileType = "video";
+    // Free Appwrite plan allows one bucket — every upload shares it
+    const bucketId = "posts";
+
+    // Appwrite caps fileId at 36 chars: short user prefix + base36 time + random
+    const fileId = `${(session.user as any).id.slice(0, 8)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}-${ext}`;
     const buffer = await file.arrayBuffer();
 
-    // Upload to Appwrite Storage via REST API
+    // Upload to Appwrite Storage via REST API. API-key auth requires the
+    // project header (query param alone is rejected), and files need an
+    // open read permission or the returned view URL 403s for recipients.
     const uploadForm = new FormData();
+    uploadForm.append("fileId", fileId);
     uploadForm.append("file", new Blob([buffer], { type: file.type }), file.name);
+    uploadForm.append("permissions[]", 'read("any")');
 
     const result = await fetch(`${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files?project=${APPWRITE_PROJECT}`, {
       method: "POST",
-      headers: { "X-Appwrite-Key": APPWRITE_KEY },
+      headers: { "X-Appwrite-Key": APPWRITE_KEY, "X-Appwrite-Project": APPWRITE_PROJECT },
       body: uploadForm,
     }).then(r => r.json());
 

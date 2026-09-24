@@ -7,6 +7,7 @@ import UserAvatar from "@/components/UserAvatar";
 import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX } from "react-icons/hi";
 import CallModal from "@/components/CallModal";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import { formatDate } from "@/lib/utils";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 
@@ -141,17 +142,42 @@ export default function ChatPage() {
     } catch (error) { console.error("Message operation failed:", error); }
   };
 
+  const uploadToServer = async (file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    return res.json().catch(() => ({}));
+  };
+
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
+      const data = await uploadToServer(file);
       if (data.url) {
         setPreviewFile({ url: data.url, name: data.fileName, type: data.fileType });
+      } else {
+        toast.error(data.error || "Upload failed");
       }
-    } catch (error) { console.error("Message operation failed:", error); } finally {
+    } catch (error) { console.error("Message operation failed:", error); toast.error("Upload failed"); } finally {
+      setUploading(false);
+    }
+  };
+
+  // Voice notes skip the caption preview and go straight out
+  const sendVoice = async (file: File) => {
+    setUploading(true);
+    try {
+      const data = await uploadToServer(file);
+      if (!data.url) { toast.error(data.error || "Voice upload failed"); return; }
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ receiverId: userId, content: "", fileUrl: data.url, fileType: data.fileType, fileName: data.fileName }),
+      });
+      if (!res.ok) { toast.error("Failed to send voice message"); return; }
+      const msg = await res.json();
+      setMessages((prev) => [...prev, msg]);
+    } catch (error) { console.error("Message operation failed:", error); toast.error("Voice upload failed"); } finally {
       setUploading(false);
     }
   };
@@ -159,19 +185,26 @@ export default function ChatPage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // Safari can't record webm — fall back to mp4, then the browser default
+      let mime: string | undefined;
+      for (const t of ["audio/webm", "audio/mp4"]) {
+        try { if (MediaRecorder.isTypeSupported(t)) { mime = t; break; } } catch { /* older browsers */ }
+      }
+      const ext = mime === "audio/mp4" ? "mp4" : "webm";
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
       recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
       recorder.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
-        await handleFileUpload(file);
+        const type = mime || "audio/webm";
+        const blob = new Blob(audioChunksRef.current, { type });
+        const file = new File([blob], `voice-${Date.now()}.${ext}`, { type });
         stream.getTracks().forEach(t => t.stop());
+        await sendVoice(file);
       };
       recorder.start();
       setRecording(true);
-    } catch (error) { console.error("Message operation failed:", error); }
+    } catch (error) { console.error("Message operation failed:", error); toast.error("Microphone unavailable"); }
   };
 
   const handleReaction = async (messageId: string, emoji: string) => {
@@ -322,7 +355,7 @@ export default function ChatPage() {
 
       {/* Input — pinned to bottom */}
       <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 lg:mb-0">
-        <label htmlFor="file-upload-msg" className="cursor-pointer"><input id="file-upload-msg" type="file" ref={fileInputRef} className="sr-only" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
+        <label htmlFor="file-upload-msg" className="cursor-pointer"><input id="file-upload-msg" type="file" ref={fileInputRef} className="sr-only" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
         <label htmlFor="audio-upload-msg" className="cursor-pointer"><input id="audio-upload-msg" type="file" ref={audioInputRef} className="sr-only" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
 
         <button type="button" onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center justify-center transition-all flex-shrink-0" title="Attach file">
@@ -343,7 +376,7 @@ export default function ChatPage() {
           type="text"
           value={newMessage}
           onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
-          placeholder={uploading ? "Uploading..." : "Type a message..."}
+          placeholder={uploading ? "Uploading..." : recording ? "Recording... tap stop to send" : "Type a message..."}
           disabled={uploading}
           className="flex-1 min-w-0 bg-gray-100 dark:bg-dark-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
         />
