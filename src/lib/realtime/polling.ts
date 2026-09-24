@@ -15,6 +15,26 @@ let lastUnreadNotifs: number | null = null;
 let lastUnreadMsgs: number | null = null;
 const seenSignals = new Set<string>(); // call signals re-scan the skew window — drop repeats by id
 
+// Mobile browsers freeze timers in background tabs, so the loop stalls there.
+// When the tab wakes (or the network switches), force a catch-up poll
+// immediately instead of waiting up to 2s for the next tick.
+function armWakeListeners() {
+  if (typeof window === "undefined") return () => {};
+  const wake = () => {
+    if (refs > 0) pollOnce();
+  };
+  window.addEventListener("focus", wake);
+  document.addEventListener("visibilitychange", wake);
+  window.addEventListener("online", wake);
+  return () => {
+    window.removeEventListener("focus", wake);
+    document.removeEventListener("visibilitychange", wake);
+    window.removeEventListener("online", wake);
+  };
+}
+
+let disarmWake: (() => void) | null = null;
+
 async function pollOnce(): Promise<void> {
   if (inFlight) return; // previous tick still running; skip rather than pile up
   inFlight = true;
@@ -28,8 +48,31 @@ async function pollOnce(): Promise<void> {
       const data = await res.json();
       if (typeof data.timestamp === "number") since = data.timestamp;
       (data.messages || []).forEach((m: any) => publish("new-message", m.message));
-      (data.reactions || []).forEach((r: any) => publish("message-reaction", r));
+      // Changed rows = edits, unsend tombstones, reaction-driven bumps, and my
+      // own sends echoed from another device (those never appear in the
+      // receiver-only new-rows scan). Dispatch on content shape; publishing
+      // both events is safe — every handler dedupes/merges by message id.
+      (data.changedMessages || []).forEach((m: any) => {
+        if (m.deletedForEveryone) {
+          publish("message-deleted", { messageId: m.id });
+        } else {
+          publish("new-message", m);
+          publish("message-edited", { messageId: m.id, content: m.content, editedAt: m.editedAt });
+          if (Array.isArray(m.reactions)) {
+            publish("message-reaction", { messageId: m.id, reactions: m.reactions });
+          }
+        }
+      });
+      // Group rows carry their full shape — tombstones included (soft delete).
       (data.groupMessages || []).forEach((m: any) => publish("new-group-message", m));
+      (data.changedGroupMessages || []).forEach((m: any) => {
+        if (m.deletedForEveryone) {
+          publish("group-message-deleted", { messageId: m.id, groupId: m.groupId });
+        } else {
+          publish("new-group-message", m);
+        }
+      });
+      (data.reactions || []).forEach((r: any) => publish("message-reaction", r));
       for (const s of data.callSignals || []) {
         if (seenSignals.has(s.id)) continue;
         seenSignals.add(s.id);
@@ -81,6 +124,7 @@ export function startPolling(): void {
   if (!timer) {
     pollOnce(); // immediate first tick
     timer = setInterval(pollOnce, POLL_MS);
+    disarmWake = armWakeListeners();
   }
 }
 
@@ -90,5 +134,7 @@ export function stopPolling(): void {
     clearInterval(timer);
     timer = null;
     typingFrom = null;
+    disarmWake?.();
+    disarmWake = null;
   }
 }

@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
+// Baked into client bundles at build time; /api/keepalive reports the live
+// deployment's id so stale tabs can offer a reload after a new deploy.
+const BUILD_ID =
+  process.env.NEXT_PUBLIC_BUILD_ID_OVERRIDE ||
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  `build-${Date.now()}`;
+
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },

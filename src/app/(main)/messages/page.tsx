@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { formatDate } from "@/lib/utils";
 import { useSocket } from "@/lib/useSocket";
+import { subscribe } from "@/lib/realtime/bus";
 import { HiPencilSquare, HiArrowsPointingOut, HiXMark } from "react-icons/hi2";
 
 export default function MessagesPage() {
@@ -18,6 +19,24 @@ export default function MessagesPage() {
 
   useEffect(() => {
     fetchConversations();
+    // Keep badges/previews live: re-fetch when new messages arrive (the poll
+    // ticks the unread counter for every device) or the tab wakes from
+    // background — otherwise this list went stale until a manual reload.
+    const offMessage = subscribe("new-message", () => fetchConversations());
+    const offBadge = subscribe("messages-unread", () => fetchConversations());
+    const wake = () => {
+      if (document.visibilityState === "visible") fetchConversations();
+    };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("focus", wake);
+    window.addEventListener("online", wake);
+    return () => {
+      offMessage();
+      offBadge();
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("focus", wake);
+      window.removeEventListener("online", wake);
+    };
   }, []);
 
   const fetchConversations = async () => {

@@ -64,7 +64,9 @@ function PushNotificationToggle() {
       <div>
         <p className="text-sm font-medium text-gray-900 dark:text-white">Enable Push Notifications</p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {isSubscribed ? "You will receive push notifications" : "Notifications are disabled"}
+          {isSubscribed
+            ? "Enabled on this device — turn it on separately on each phone/computer"
+            : "Off on this device — web notifications work per browser/device"}
         </p>
       </div>
       <button

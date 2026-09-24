@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: Poll for new messages / reactions / typing state
+// GET: Poll for new / changed messages, reactions, typing state.
+// "Changed" rows (updatedAt > since) carry edits, delete-for-everyone
+// tombstones and reaction-triggered bumps to every device — the original
+// poll only delivered brand-new rows, so a second device never saw them.
 export async function GET(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get('cookie') || '';
@@ -123,6 +126,7 @@ export async function GET(request: NextRequest) {
         where: {
           createdAt: { gt },
           senderId: { notIn: blockedIds },
+          deletedForEveryone: false, // fresh history hides tombstones; the changed-rows scan delivers them
           group: { members: { some: { userId } } },
         },
         include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
@@ -147,6 +151,55 @@ export async function GET(request: NextRequest) {
         take: 50,
       }),
     ]);
+
+    // Changed rows in both conversations I'm part of. Tombstones MUST be
+    // included (not filtered) — that's how other devices learn about an unsend.
+    const freshIds = [...messages.map((m) => m.id), ...groupMessages.map((m) => m.id)];
+    const [changedMessages, changedGroupMessages] = await Promise.all([
+      prisma.message.findMany({
+        where: {
+          updatedAt: { gt },
+          id: { notIn: freshIds },
+          OR: [{ senderId: userId }, { receiverId: userId }],
+          senderId: { notIn: blockedIds },
+        },
+        include: {
+          sender: { select: USER_SELECT },
+          receiver: { select: USER_SELECT },
+          replyTo: {
+            select: {
+              id: true, content: true, fileUrl: true, fileType: true, fileName: true,
+              senderId: true, deletedForEveryone: true,
+              sender: { select: { id: true, name: true, username: true, avatar: true } },
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      }),
+      prisma.groupMessage.findMany({
+        where: {
+          updatedAt: { gt },
+          id: { notIn: freshIds },
+          senderId: { notIn: blockedIds },
+          group: { members: { some: { userId } } },
+        },
+        include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+      }),
+    ]);
+
+    // Attach current reaction lists to changed rows so reaction removals sync
+    // too — a deleted reaction row can't be found by the createdAt scan.
+    const changedIds = changedMessages.map((m) => m.id);
+    if (changedIds.length > 0) {
+      const all = await prisma.messageReaction.findMany({
+        where: { messageId: { in: changedIds } },
+        select: { id: true, emoji: true, messageId: true, userId: true, createdAt: true, user: { select: USER_SELECT } },
+      });
+      for (const m of changedMessages) (m as any).reactions = all.filter((r) => r.messageId === m.id);
+    }
 
     // Full reaction lists for every message touched in this window (they render
     // as complete chips, not incremental adds)
@@ -178,7 +231,10 @@ export async function GET(request: NextRequest) {
       messages: messages
         .reverse()
         .map((m) => ({ message: m, senderId: m.senderId, timestamp: m.createdAt.getTime() })),
+      // Field name is historical: poll consumers dispatch these as message-edited/-deleted
+      changedMessages: changedMessages.reverse(),
       groupMessages: groupMessages.reverse(),
+      changedGroupMessages: changedGroupMessages.reverse(),
       reactions: reactionPayload,
       callSignals: callSignalsOut,
       // Typing rides the same response so each tick is one round trip, not two.

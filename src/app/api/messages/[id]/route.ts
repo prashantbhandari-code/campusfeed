@@ -91,10 +91,12 @@ export async function GET(
       }),
     ]);
 
-    await prisma.message.updateMany({
-      where: { senderId: otherUserId, receiverId: userId, read: false },
-      data: { read: true },
-    });
+    // Raw update on purpose: Prisma's @updatedAt would bump every row here and
+    // echo them to all the user's other devices as phantom "changes".
+    await prisma.$executeRaw`
+      UPDATE messages SET "read" = true
+      WHERE "senderId" = ${otherUserId} AND "receiverId" = ${userId} AND "read" = false
+    `;
 
     return NextResponse.json({ messages, total, page, hasMore: skip + messages.length < total });
   } catch (error) {

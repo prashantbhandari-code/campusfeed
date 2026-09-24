@@ -37,6 +37,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       include: { user: { select: { id: true, name: true, username: true } } },
     });
 
+    // Bump the message's change marker so other devices' polls pick this up —
+    // a removed reaction row can't be found by the poll's createdAt scan.
+    await prisma.message.updateMany({
+      where: { id: messageId },
+      data: { updatedAt: new Date() },
+    });
+
     // Push live update to both chat participants (WebSocket deployments;
     // on Vercel the polling fallback in /api/socketio delivers it instead)
     const message = await prisma.message.findUnique({

@@ -174,6 +174,7 @@ model Message {
   readAt     DateTime?
   replyToId  String?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt // bumped on edits/deletes/reaction changes so device polls can find them
 
   // Edit / delete (WhatsApp-style)
   editedAt           DateTime?
@@ -192,6 +193,7 @@ model Message {
   @@index([senderId, receiverId])
   @@index([receiverId, read])
   @@index([createdAt])
+  @@index([updatedAt])
   reactions  MessageReaction[]
 
   @@map("messages")
@@ -330,11 +332,14 @@ model GroupMessage {
   groupId   String
   senderId  String
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt // bumped on deletion so device polls can find the tombstone
+  deletedForEveryone Boolean @default(false) // sender/admin unsend: content cleared, everyone sees a tombstone
 
   group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
+  @@index([updatedAt])
 
   @@map("group_messages")
 }

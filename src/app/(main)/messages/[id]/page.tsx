@@ -65,14 +65,16 @@ export default function ChatPage() {
 
 
   useSocketEvent("new-message", (msg: any) => {
-    // Only this conversation's partner — the poll delivers every message to me
-    if (msg.sender?.id === userId) {
-      setMessages((prev) => {
-        if (prev.find((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
-    }
-  }, [userId]);
+    // The poll delivers both directions for this account: the partner's
+    // messages AND my own sends echoed from another device/tab.
+    const isPartner = msg.sender?.id === userId;
+    const isMineFromElsewhere = msg.senderId === user?.id && msg.receiverId === userId;
+    if (!isPartner && !isMineFromElsewhere) return;
+    setMessages((prev) => {
+      if (prev.find((m) => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+  }, [userId, user?.id]);
 
   useSocketEvent("message-reaction", (data: { messageId: string; reactions: any[] }) => {
     if (data?.messageId && Array.isArray(data.reactions)) {

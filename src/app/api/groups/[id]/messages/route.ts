@@ -30,10 +30,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
 
-    // Blocked members' messages stay invisible in the shared thread
+    // Blocked members' messages stay invisible in the shared thread.
+    // Fresh loads hide tombstones; the poll still delivers them so devices
+    // that already rendered the message learn about the deletion.
     const blockedIds = await getBlockedIds(userId);
     const messages = await prisma.groupMessage.findMany({
-      where: { groupId: params.id, senderId: { notIn: blockedIds } },
+      where: {
+        groupId: params.id,
+        senderId: { notIn: blockedIds },
+        deletedForEveryone: false,
+      },
       include: { sender: { select: USER_SELECT } },
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -120,10 +126,21 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: "You can only delete your own messages" }, { status: 403 });
     }
 
-    await prisma.groupMessage.delete({ where: { id: message.id } });
+    // Soft delete: a tombstone syncs to every device via the poll (updatedAt
+    // bumps); a hard delete could never be delivered to rows already loaded.
+    const tombstone = await prisma.groupMessage.update({
+      where: { id: message.id },
+      data: {
+        content: "",
+        fileUrl: null,
+        fileType: null,
+        fileName: null,
+        deletedForEveryone: true,
+      },
+    });
     emitToGroup(params.id, "group-message-deleted", { messageId: message.id, groupId: params.id });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deletedForEveryone: tombstone.deletedForEveryone });
   } catch (error) {
     console.error("Group messages DELETE error:", error);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
