@@ -174,8 +174,16 @@ model Message {
   replyToId  String?
   createdAt  DateTime @default(now())
 
+  // Edit / delete (WhatsApp-style)
+  editedAt           DateTime?
+  deletedForEveryone Boolean @default(false) // unsend: content cleared, both sides see a tombstone
+  deletedForSender   Boolean @default(false) // "delete for me" when viewer is the sender
+  deletedForReceiver Boolean @default(false) // "delete for me" when viewer is the receiver
+
   sender   User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyTo  Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies  Message[] @relation("MessageReplies")
 
   // Indexes for message queries
   @@index([senderId])

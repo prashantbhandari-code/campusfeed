@@ -69,7 +69,8 @@ export default function MessagesPage() {
               const lastMsg = conv.lastMessage;
               const isAttachment = lastMsg?.content?.startsWith("[") || lastMsg?.fileUrl;
               let preview = lastMsg?.content || "";
-              if (isAttachment && lastMsg?.fileType === "image") preview = "📷 Photo";
+              if (lastMsg?.deletedForEveryone) preview = "🚫 This message was deleted";
+              else if (isAttachment && lastMsg?.fileType === "image") preview = "📷 Photo";
               else if (isAttachment && lastMsg?.fileType === "video") preview = "🎥 Video";
               else if (isAttachment && lastMsg?.fileType === "audio") preview = "🎵 Audio";
               else if (isAttachment) preview = "📎 Attachment";

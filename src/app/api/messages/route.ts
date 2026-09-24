@@ -28,6 +28,9 @@ export async function GET(req: Request) {
 
     const conversationMap = new Map<string, any>();
     conversations.forEach((msg) => {
+      // Skip messages the viewer deleted for themselves
+      const hiddenForMe = msg.senderId === userId ? msg.deletedForSender : msg.deletedForReceiver;
+      if (hiddenForMe) return;
       const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
       if (!conversationMap.has(otherUserId)) {
         conversationMap.set(otherUserId, {
@@ -56,12 +59,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { receiverId, content, fileUrl, fileType, fileName } = await req.json();
+    const { receiverId, content, fileUrl, fileType, fileName, replyToId } = await req.json();
     if (!receiverId) {
       return NextResponse.json({ error: "Receiver required" }, { status: 400 });
     }
     if (!content && !fileUrl) {
       return NextResponse.json({ error: "Content or file required" }, { status: 400 });
+    }
+
+    // Reply target must be a message in this same conversation
+    if (replyToId) {
+      const parent = await prisma.message.findFirst({
+        where: {
+          id: replyToId,
+          OR: [
+            { senderId: (session.user as any).id, receiverId },
+            { senderId: receiverId, receiverId: (session.user as any).id },
+          ],
+        },
+        select: { id: true },
+      });
+      if (!parent) {
+        return NextResponse.json({ error: "Invalid reply target" }, { status: 400 });
+      }
     }
 
     const message = await prisma.message.create({
@@ -72,10 +92,23 @@ export async function POST(req: Request) {
         fileUrl: fileUrl || null,
         fileType: fileType || null,
         fileName: fileName || null,
+        replyToId: replyToId || null,
       },
       include: {
         sender: { select: { id: true, name: true, username: true, avatar: true } },
         receiver: { select: { id: true, name: true, username: true, avatar: true } },
+        replyTo: {
+          select: {
+            id: true,
+            content: true,
+            fileUrl: true,
+            fileType: true,
+            fileName: true,
+            senderId: true,
+            deletedForEveryone: true,
+            sender: { select: { id: true, name: true, username: true, avatar: true } },
+          },
+        },
       },
     });
 

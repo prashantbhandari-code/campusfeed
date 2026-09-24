@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "@/lib/appwrite-session";
 import { useParams } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
-import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX } from "react-icons/hi";
+import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX, HiDotsHorizontal } from "react-icons/hi";
 import CallModal from "@/components/CallModal";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -24,8 +24,12 @@ export default function ChatPage() {
   const [typing, setTyping] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
-  const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null);
   const [messageReactions, setMessageReactions] = useState<Record<string, any[]>>({});
+  const [actionMsgId, setActionMsgId] = useState<string | null>(null);
+  const [editingMsg, setEditingMsg] = useState<any>(null);
+  const [replyToMsg, setReplyToMsg] = useState<any>(null);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sheetOpenedAtRef = useRef(0);
   const [recording, setRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -76,6 +80,19 @@ export default function ChatPage() {
     }
   }, []);
 
+  useSocketEvent("message-edited", (data: { messageId: string; content: string; editedAt: string }) => {
+    if (data?.messageId) {
+      setMessages((prev) => prev.map((m) => (m.id === data.messageId ? { ...m, content: data.content, editedAt: data.editedAt } : m)));
+    }
+  }, []);
+
+  useSocketEvent("message-deleted", (data: { messageId: string }) => {
+    if (data?.messageId) {
+      setMessages((prev) => prev.map((m) => (m.id === data.messageId ? { ...m, content: "", fileUrl: null, fileType: null, fileName: null, deletedForEveryone: true } : m)));
+      setMessageReactions((prev) => { const next = { ...prev }; delete next[data.messageId]; return next; });
+    }
+  }, []);
+
   useSocketEvent("user-typing", (data: { senderId: string }) => {
     if (data.senderId === userId) setTyping(true);
   }, [userId]);
@@ -120,6 +137,7 @@ export default function ChatPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingMsg) { await handleEdit(); return; }
     if (!newMessage.trim() && !previewFile) return;
 
     try {
@@ -129,6 +147,7 @@ export default function ChatPage() {
         body.fileType = previewFile.type;
         body.fileName = previewFile.name;
       }
+      if (replyToMsg) body.replyToId = replyToMsg.id;
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,6 +157,7 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, msg]);
       setNewMessage("");
       setPreviewFile(null);
+      setReplyToMsg(null);
       stopTyping();
     } catch (error) { console.error("Message operation failed:", error); }
   };
@@ -216,8 +236,76 @@ export default function ChatPage() {
       });
       const reactions = await res.json();
       setMessageReactions(prev => ({ ...prev, [messageId]: reactions }));
-      setReactionPickerMsgId(null);
+      setActionMsgId(null);
     } catch (error) { console.error("Message operation failed:", error); }
+  };
+
+  const sheetMsg = messages.find((m) => m.id === actionMsgId) || null;
+  const sheetIsMine = sheetMsg?.sender?.id === user?.id;
+
+  const startLongPress = (msg: any) => {
+    pressTimerRef.current = setTimeout(() => {
+      setActionMsgId(msg.id);
+      sheetOpenedAtRef.current = Date.now();
+    }, 450);
+  };
+  const cancelLongPress = () => {
+    if (pressTimerRef.current) { clearTimeout(pressTimerRef.current); pressTimerRef.current = null; }
+  };
+  const closeSheet = () => {
+    // A long-press's touchend lands on the fresh backdrop — ignore that synthetic close
+    if (Date.now() - sheetOpenedAtRef.current < 400) return;
+    setActionMsgId(null);
+  };
+
+  const handleCopy = async (msg: any) => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      toast.success("Copied");
+      setActionMsgId(null);
+    } catch { toast.error("Couldn't copy message"); }
+  };
+
+  const handleDelete = async (msg: any, scope: "me" | "everyone") => {
+    if (scope === "everyone" && !confirm("Delete this message for everyone?")) return;
+    setActionMsgId(null);
+    try {
+      const res = await fetch(`/api/messages/${msg.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope }),
+      });
+      if (!res.ok) throw new Error();
+      if (scope === "everyone") {
+        setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, content: "", fileUrl: null, fileType: null, fileName: null, deletedForEveryone: true } : m)));
+        setMessageReactions((prev) => { const next = { ...prev }; delete next[msg.id]; return next; });
+        toast.success("Message deleted for everyone");
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+        toast.success("Message deleted");
+      }
+    } catch { toast.error("Couldn't delete message"); }
+  };
+
+  const handleEdit = async () => {
+    if (!editingMsg) return;
+    try {
+      const res = await fetch(`/api/messages/${editingMsg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newMessage }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `server responded ${res.status}`);
+      }
+      setMessages((prev) => prev.map((m) => (m.id === editingMsg.id ? { ...m, content: newMessage.trim(), editedAt: new Date().toISOString() } : m)));
+      setEditingMsg(null);
+      setNewMessage("");
+      toast.success("Message edited");
+    } catch (error) {
+      toast.error(`Couldn't edit — ${error instanceof Error ? error.message : "try again"}`);
+    }
   };
 
   const stopRecording = () => {
@@ -261,8 +349,14 @@ export default function ChatPage() {
           return (
             <div key={msg.id} className={`flex gap-2 items-start ${isMine ? "justify-end" : "justify-start"} ${newGroup ? "mt-3" : "mt-0.5"}`}>
               {!isMine && (newGroup ? <UserAvatar user={msg.sender} size="sm" /> : <div className="w-8 flex-shrink-0" aria-hidden="true" />)}
-              <div className={`max-w-[75%] min-w-0 flex flex-col ${isMine ? "items-end" : ""}`}>
-                {msg.fileUrl && (
+              <div
+                className={`max-w-[75%] min-w-0 flex flex-col select-none ${isMine ? "items-end" : ""}`}
+                onTouchStart={() => startLongPress(msg)}
+                onTouchEnd={cancelLongPress}
+                onTouchMove={cancelLongPress}
+                onContextMenu={(e) => { e.preventDefault(); setActionMsgId(msg.id); }}
+              >
+                {!msg.deletedForEveryone && msg.fileUrl && (
                   <div className="mb-1">
                     {msg.fileType === "image" ? (
                       <img src={msg.fileUrl} alt="" className="rounded-2xl max-w-[250px] max-h-[300px] object-cover cursor-pointer" onClick={() => window.open(msg.fileUrl, "_blank")} />
@@ -283,7 +377,7 @@ export default function ChatPage() {
                     )}
                   </div>
                 )}
-                {msg.content && (
+                {!msg.deletedForEveryone && (msg.content || msg.replyTo) && (
                   <div
                     className={`px-4 py-2 rounded-2xl text-sm break-words ${
                       isMine
@@ -291,17 +385,36 @@ export default function ChatPage() {
                         : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-gray-200 rounded-bl-md"
                     }`}
                   >
+                    {msg.replyTo && (
+                      <div className={`mb-1.5 px-2 py-1 rounded-lg text-xs border-l-2 ${
+                        isMine
+                          ? "border-white/60 bg-white/15 text-white/90"
+                          : "border-gray-400 bg-black/[0.06] dark:bg-white/10 text-gray-600 dark:text-gray-300"
+                      }`}>
+                        <span className="font-semibold block truncate">
+                          {msg.replyTo.deletedForEveryone
+                            ? "Deleted message"
+                            : msg.replyTo.senderId === user?.id
+                              ? "You"
+                              : msg.replyTo.sender?.name || "Message"}
+                        </span>
+                        <span className="block truncate">
+                          {msg.replyTo.deletedForEveryone
+                            ? "🚫 This message was deleted"
+                            : msg.replyTo.content || "📎 Attachment"}
+                        </span>
+                      </div>
+                    )}
                     {msg.content}
                   </div>
                 )}
-                {/* Reaction picker */}
-                {reactionPickerMsgId === msg.id && (
-                  <div className="flex gap-1 mt-1 bg-white dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl p-1.5 shadow-lg">
-                    {["👍","❤️","😂","😮","😢","🔥"].map(emoji => (
-                      <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="text-lg hover:scale-125 transition-transform px-1">
-                        {emoji}
-                      </button>
-                    ))}
+                {msg.deletedForEveryone && (
+                  <div className={`px-4 py-2 rounded-2xl text-sm italic ${
+                    isMine
+                      ? "bg-gray-200 dark:bg-dark-700 text-gray-500 dark:text-gray-400"
+                      : "bg-gray-200 dark:bg-dark-600 text-gray-500 dark:text-gray-400"
+                  }`}>
+                    🚫 This message was deleted
                   </div>
                 )}
                 {/* Existing reactions */}
@@ -315,10 +428,17 @@ export default function ChatPage() {
                   </div>
                 )}
                 <div className={`flex items-center gap-2 mt-1 ${isMine ? "justify-end" : "justify-start"}`}>
-                  <button onClick={() => setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id)} className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">😀+</button>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                    {formatDate(msg.createdAt)}
+                    {msg.editedAt ? "edited · " : ""}{formatDate(msg.createdAt)}
                   </p>
+                  <button
+                    onClick={() => setActionMsgId(actionMsgId === msg.id ? null : msg.id)}
+                    aria-label="Message actions"
+                    aria-expanded={actionMsgId === msg.id}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                  >
+                    <HiDotsHorizontal className="text-base" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -350,6 +470,27 @@ export default function ChatPage() {
           )}
           <span className="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">{previewFile.name}</span>
           <button onClick={() => setPreviewFile(null)} className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"><HiX className="w-5 h-5" /></button>
+        </div>
+      )}
+
+      {/* Reply / edit banner */}
+      {(editingMsg || replyToMsg) && !previewFile && (
+        <div className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 px-4 py-2 flex items-center gap-2">
+          <div className="flex-1 min-w-0 text-xs">
+            <p className="font-semibold text-gray-700 dark:text-gray-300">
+              {editingMsg ? "✏️ Editing message" : `↩️ Reply to ${replyToMsg.sender?.id === user?.id ? "yourself" : replyToMsg.sender?.name || "them"}`}
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 truncate">
+              {editingMsg ? editingMsg.content : replyToMsg.content || "📎 Attachment"}
+            </p>
+          </div>
+          <button
+            onClick={() => { setEditingMsg(null); setReplyToMsg(null); setNewMessage(""); }}
+            aria-label="Cancel"
+            className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+          >
+            <HiX className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -388,6 +529,74 @@ export default function ChatPage() {
           <HiPaperAirplane className="text-xl -rotate-45" />
         </button>
       </form>
+
+      {/* Message action sheet (tap ⋮, long-press, or right-click a message) */}
+      {sheetMsg && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={closeSheet}>
+          <div
+            className="w-full max-w-3xl bg-white dark:bg-dark-800 rounded-t-2xl p-4 pb-8 border-t border-gray-200 dark:border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-center gap-1 pb-3 border-b border-gray-100 dark:border-white/[0.06] mb-2">
+              {["👍","❤️","😂","😮","😢","🔥"].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReaction(sheetMsg.id, emoji)}
+                  className="text-2xl hover:scale-125 transition-transform px-1.5 py-1"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-0.5">
+              {!sheetMsg.deletedForEveryone && (
+                <button
+                  onClick={() => { setReplyToMsg(sheetMsg); setActionMsgId(null); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/[0.06] rounded-xl flex items-center gap-3"
+                >
+                  ↩️ Reply
+                </button>
+              )}
+              {sheetMsg.content && !sheetMsg.deletedForEveryone && (
+                <button
+                  onClick={() => handleCopy(sheetMsg)}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/[0.06] rounded-xl flex items-center gap-3"
+                >
+                  📋 Copy
+                </button>
+              )}
+              {sheetIsMine && sheetMsg.content && !sheetMsg.deletedForEveryone && (
+                <button
+                  onClick={() => { setEditingMsg(sheetMsg); setNewMessage(sheetMsg.content); setActionMsgId(null); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/[0.06] rounded-xl flex items-center gap-3"
+                >
+                  ✏️ Edit
+                </button>
+              )}
+              <button
+                onClick={() => handleDelete(sheetMsg, "me")}
+                className="w-full text-left px-4 py-3 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/[0.06] rounded-xl flex items-center gap-3"
+              >
+                🗑️ Delete for me
+              </button>
+              {sheetIsMine && !sheetMsg.deletedForEveryone && (
+                <button
+                  onClick={() => handleDelete(sheetMsg, "everyone")}
+                  className="w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl flex items-center gap-3"
+                >
+                  🚫 Delete for everyone
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setActionMsgId(null)}
+              className="w-full mt-3 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-white/[0.06] rounded-xl hover:bg-gray-200 dark:hover:bg-white/[0.1] transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {showOutgoingCall && otherUser && user && (
         <CallModal isOpen={showOutgoingCall} onClose={() => setShowOutgoingCall(false)} otherUser={otherUser} currentUser={user} callType={outgoingCallType} />
