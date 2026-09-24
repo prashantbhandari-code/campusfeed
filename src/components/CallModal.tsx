@@ -55,6 +55,13 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const startedRef = useRef(false);
   const callStateRef = useRef(callState);
   const pendingIceRef = useRef<RTCIceCandidateInit[]>([]);
+  // Live stats HUD: ICE progress, the candidate pair that won (host/srflx/
+  // relay says whether the media goes direct or via TURN), and packet loss —
+  // enough to see WHERE a call is stuck instead of just "Connecting...".
+  const [iceState, setIceState] = useState<string>("new");
+  const [pairType, setPairType] = useState<string>("");
+  const [pktStats, setPktStats] = useState<string>("");
+  const statsTimerRef = useRef<NodeJS.Timeout | null>(null);
   // ICE can arrive before the remote description it belongs to (poll batches
   // deliver answer + candidates together) — hold until the description is set.
   const deliverPendingIce = async () => {
@@ -65,6 +72,46 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     }
   };
 
+  const stopStatsPolling = useCallback(() => {
+    if (statsTimerRef.current) { clearInterval(statsTimerRef.current); statsTimerRef.current = null; }
+  }, []);
+  const startStatsPolling = useCallback(() => {
+    stopStatsPolling();
+    setIceState("new"); setPairType(""); setPktStats("");
+    const tick = async () => {
+      const pc = pcRef.current;
+      if (!pc) { stopStatsPolling(); return; }
+      setIceState(pc.iceConnectionState);
+      try {
+        const report = await pc.getStats();
+        const rows: any[] = [];
+        report.forEach((r: any) => rows.push(r));
+        // Active pair: selected > nominated > succeeded > carrying traffic.
+        let best: any = null;
+        let bestScore = 0;
+        for (const r of rows) {
+          if (r.type !== "candidate-pair") continue;
+          const score = (r.selected ? 1000 : 0) + (r.nominated ? 100 : 0)
+            + (r.state === "succeeded" ? 10 : 0)
+            + ((r.bytesSent || 0) + (r.bytesReceived || 0) > 0 ? 1 : 0);
+          if (score > bestScore) { best = r; bestScore = score; }
+        }
+        if (best && bestScore >= 10) {
+          const local: any = best.localCandidateId && rows.find((r) => r.id === best.localCandidateId);
+          const remote: any = best.remoteCandidateId && rows.find((r) => r.id === best.remoteCandidateId);
+          if (local?.candidateType && remote?.candidateType) setPairType(`${local.candidateType} ↔ ${remote.candidateType}`);
+        }
+        // Inbound RTP across audio+video: cumulative loss vs received.
+        let lost = 0, recv = 0;
+        for (const r of rows) {
+          if (r.type === "inbound-rtp") { lost += r.packetsLost || 0; recv += r.packetsReceived || 0; }
+        }
+        setPktStats(recv > 0 || lost > 0 ? `loss ${lost}/${recv}` : "no media yet");
+      } catch { /* getStats unsupported — keep last values */ }
+    };
+    tick();
+    statsTimerRef.current = setInterval(tick, 1000);
+  }, [stopStatsPolling]);
   const stopRing = useCallback(() => { if (ringRef.current) { clearInterval(ringRef.current); ringRef.current = null; } }, []);
   const playRing = useCallback(() => {
     try {
@@ -78,10 +125,11 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     if (durationRef.current) { clearInterval(durationRef.current); durationRef.current = null; }
     emit("call-end", { otherUserId: otherUser.id });
     if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; }
+    stopStatsPolling();
     if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
     setCallState("ended");
     setTimeout(onClose, 1000);
-  }, [otherUser.id, emit, onClose, stopRing]);
+  }, [otherUser.id, emit, onClose, stopRing, stopStatsPolling]);
   const setupPC = useCallback((pc: RTCPeerConnection) => {
     pc.ontrack = (e) => {
       // Voice calls have no <video> element — without attaching the remote
@@ -97,10 +145,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     };
     // Also watch ICE connection state for more granular failure detection
     pc.oniceconnectionstatechange = () => {
+      setIceState(pc.iceConnectionState); // HUD reflects ICE progress within a second
       if (pc.iceConnectionState === "failed") endCall();
       // Don't end on 'disconnected' — allow for brief interruptions and reconnection
     };
-  }, [otherUser.id, emit, endCall, stopRing]);
+    startStatsPolling(); // 1s HUD poll: ICE state, selected pair, packet loss
+  }, [otherUser.id, emit, endCall, stopRing, startStatsPolling]);
   const requestPermissionAndCall = useCallback(async () => {
     setErrorMsg(null);
     setCallState("requesting-permission");
@@ -182,13 +232,15 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     }
     return () => { stopRing(); if (ringTimeout) clearTimeout(ringTimeout); };
   }, [isOpen]);
-  useEffect(() => { return () => { if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; } if (pcRef.current) { pcRef.current.close(); pcRef.current = null; } if (durationRef.current) { clearInterval(durationRef.current); durationRef.current = null; } stopRing(); }; }, [isOpen]);
+  useEffect(() => { return () => { if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; } if (pcRef.current) { pcRef.current.close(); pcRef.current = null; } if (durationRef.current) { clearInterval(durationRef.current); durationRef.current = null; } stopStatsPolling(); stopRing(); }; }, [isOpen]);
   const toggleMute = () => { if (localStreamRef.current) { localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMuted; }); setIsMuted(!isMuted); } };
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };
   const fmt = (s: number) => Math.floor(s/60).toString().padStart(2,"0") + ":" + (s%60).toString().padStart(2,"0");
   if (!isOpen) return null;
   callStateRef.current = callState;
   const stateText = errorMsg ? errorMsg : callState === "requesting-permission" ? "Requesting camera & microphone permission..." : callState === "ringing" ? (isIncoming ? "Incoming call..." : "Ringing...") : callState === "connecting" ? "Connecting..." : callState === "connected" ? fmt(callDuration) : "Call ended";
+  const showHud = (callState === "connecting" || callState === "connected") && !errorMsg;
+  const hudText = `ICE ${iceState} · pair ${pairType || "—"} · ${pktStats || "no media yet"}`;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-md mx-4">
@@ -206,6 +258,11 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
                 <div><p className="text-white font-semibold">{otherUser.name}</p><p className={errorMsg ? "text-red-400 text-sm" : "text-white/70 text-sm"}>{stateText}</p></div>
               </div>
             </div>
+            {showHud && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                <span className="rounded-full bg-black/55 px-3 py-1 font-mono text-[10px] tracking-tight text-white/75">{hudText}</span>
+              </div>
+            )}
           </div>
         )}
         {callType === "audio" && (
@@ -214,6 +271,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
             <h3 className="text-xl font-bold text-white mb-1">{otherUser.name}</h3>
             {otherUser.username ? <p className="text-gray-400 text-sm mb-2">@{otherUser.username}</p> : null}
             <p className={errorMsg ? "text-red-400 text-sm" : "text-gray-500 text-sm"}>{stateText}</p>
+            {showHud && <p className="mt-1 font-mono text-xs text-gray-500">{hudText}</p>}
             {callState === "requesting-permission" && !errorMsg && (
               <div className="flex justify-center mt-4">
                 <div className="w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
