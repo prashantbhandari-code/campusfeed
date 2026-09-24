@@ -42,7 +42,7 @@ export async function POST(
   }
 }
 
-// DELETE /api/groups/[id]/join — leave a group
+// DELETE /api/groups/[id]/join — leave a group (transfers admin, deletes orphaned groups)
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
@@ -56,9 +56,34 @@ export async function DELETE(
     const userId = (session.user as any).id;
     const groupId = params.id;
 
-    await prisma.groupMember.deleteMany({
-      where: { groupId, userId },
+    const membership = await prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId, userId } },
     });
+    if (!membership) {
+      return NextResponse.json({ success: true });
+    }
+
+    if (membership.role === "admin") {
+      const remaining = await prisma.groupMember.count({ where: { groupId } });
+      if (remaining <= 1) {
+        // Last member out — the group has no one left, delete it (WhatsApp rule)
+        await prisma.group.delete({ where: { id: groupId } });
+        return NextResponse.json({ success: true, deleted: true });
+      }
+      // Transfer admin to the longest-standing member before leaving
+      const successor = await prisma.groupMember.findFirst({
+        where: { groupId, userId: { not: userId } },
+        orderBy: { joinedAt: "asc" },
+      });
+      if (successor) {
+        await prisma.groupMember.update({
+          where: { id: successor.id },
+          data: { role: "admin" },
+        });
+      }
+    }
+
+    await prisma.groupMember.delete({ where: { id: membership.id } });
 
     await prisma.group.update({
       where: { id: groupId },

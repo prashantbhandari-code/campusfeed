@@ -60,6 +60,20 @@ export async function POST(
       return NextResponse.json({ error: "Must be a member" }, { status: 403 });
     }
 
+    // Announcement mode: only admins may post when allowMemberPosts is off
+    if (membership.role !== "admin") {
+      const group = await prisma.group.findUnique({
+        where: { id: section.groupId },
+        select: { allowMemberPosts: true },
+      });
+      if (group && !group.allowMemberPosts) {
+        return NextResponse.json(
+          { error: "Only admins can post in this group" },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await req.json();
     const { content, images } = body;
 

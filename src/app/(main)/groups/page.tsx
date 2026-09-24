@@ -31,8 +31,15 @@ interface Group {
 const TABS = [
   { id: "all", label: "All", icon: HiOutlineUsers },
   { id: "mine", label: "My Groups", icon: HiOutlineUserGroup },
-  { id: "department", label: "Department", icon: HiOutlineAcademicCap },
-  { id: "batch", label: "Batch", icon: HiOutlineCalendar },
+  { id: "department", label: "My Department", icon: HiOutlineAcademicCap },
+  { id: "batch", label: "My Batch", icon: HiOutlineCalendar },
+];
+
+const DEPARTMENTS = [
+  "CSE", "IT", "ECE", "EEE", "Mechanical", "Civil",
+  "CSE (Data Science)", "CSE (AI & ML)", "CSE (Cyber Security)", "CSE (IoT)",
+  "Biotechnology", "Chemical", "Aerospace", "Automobile", "Mechatronics",
+  "Architecture", "Law", "Management", "Media & Communication", "Design", "Electrical",
 ];
 
 const GROUP_EMOJIS: Record<string, string> = {
@@ -72,18 +79,32 @@ export default function GroupsPage() {
     name: "",
     description: "",
     type: "custom",
+    department: "",
+    batchYear: "",
+    section: "",
   });
+
+  const isClassGroup = newGroup.type === "class";
+  const needsDepartment = isClassGroup || newGroup.type === "department";
+  const needsBatch = isClassGroup || newGroup.type === "batch";
 
   useEffect(() => {
     fetchGroups();
-  }, [activeTab, search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, search, user?.department, user?.batchYear]);
 
   const fetchGroups = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (activeTab === "department") params.set("type", "department");
-      if (activeTab === "batch") params.set("type", "batch");
+      if (activeTab === "department") {
+        if (user?.department) params.set("department", user.department);
+        else params.set("type", "department");
+      }
+      if (activeTab === "batch") {
+        if (user?.batchYear) params.set("batchYear", String(user.batchYear));
+        else params.set("type", "batch");
+      }
       if (search) params.set("q", search);
 
       const res = await fetch(`/api/groups?${params}`);
@@ -126,20 +147,34 @@ export default function GroupsPage() {
       toast.error("Group name is required");
       return;
     }
+    if (needsDepartment && !newGroup.department) {
+      toast.error("Pick a department for this group type");
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newGroup),
+        body: JSON.stringify({
+          name: newGroup.name,
+          description: newGroup.description,
+          type: newGroup.type === "class" ? "class" : newGroup.type,
+          department: newGroup.department || null,
+          batchYear: newGroup.batchYear ? parseInt(newGroup.batchYear) : null,
+          section: isClassGroup ? newGroup.section : null,
+        }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "create failed");
+      }
       toast.success("Group created!");
       setShowCreate(false);
-      setNewGroup({ name: "", description: "", type: "custom" });
+      setNewGroup({ name: "", description: "", type: "custom", department: "", batchYear: "", section: "" });
       fetchGroups();
-    } catch {
-      toast.error("Failed to create group");
+    } catch (error) {
+      toast.error(error instanceof Error ? `Couldn't create group — ${error.message}` : "Failed to create group");
     } finally {
       setCreating(false);
     }
@@ -214,16 +249,53 @@ export default function GroupsPage() {
               className="w-full px-4 py-2.5 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white mb-3 resize-none focus:outline-none focus:border-primary-500"
               rows={2}
             />
-            <div className="flex gap-2">
+            <div className="space-y-3">
               <select
                 value={newGroup.type}
                 onChange={(e) => setNewGroup({ ...newGroup, type: e.target.value })}
-                className="flex-1 px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white"
               >
                 <option value="custom">Custom Group</option>
+                <option value="class">🎓 Class Group (dept · batch · section)</option>
                 <option value="department">Department</option>
                 <option value="batch">Batch</option>
               </select>
+
+              {needsDepartment && (
+                <select
+                  value={newGroup.department}
+                  onChange={(e) => setNewGroup({ ...newGroup, department: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white"
+                >
+                  <option value="">Select department…</option>
+                  {DEPARTMENTS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              )}
+
+              {needsBatch && (
+                <input
+                  type="number"
+                  min={2020}
+                  max={2035}
+                  value={newGroup.batchYear}
+                  onChange={(e) => setNewGroup({ ...newGroup, batchYear: e.target.value })}
+                  placeholder="Batch year (e.g. 2027)"
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400"
+                />
+              )}
+
+              {isClassGroup && (
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={newGroup.section}
+                  onChange={(e) => setNewGroup({ ...newGroup, section: e.target.value })}
+                  placeholder="Section (e.g. A) — optional"
+                  className="w-full px-3 py-2 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400"
+                />
+              )}
             </div>
             <div className="flex gap-2 mt-3">
               <button
@@ -253,7 +325,13 @@ export default function GroupsPage() {
             <span className="text-6xl mb-4 block">👥</span>
             <h3 className="text-lg font-semibold mb-2">No groups yet</h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              {search ? "Try a different search" : "Create the first group!"}
+              {search
+                ? "Try a different search"
+                : activeTab === "department" && !user?.department
+                  ? "Add your department to your profile to see your class groups"
+                  : activeTab === "batch" && !user?.batchYear
+                    ? "Add your batch year to your profile to see your batch groups"
+                    : "Create the first group!"}
             </p>
           </div>
         ) : (
@@ -281,7 +359,7 @@ export default function GroupsPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">{group.name}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400 flex-shrink-0">
-                        {group.type}
+                        {group.type === "class" ? "class" : group.type}
                       </span>
                     </div>
                     {group.description && (
@@ -294,6 +372,7 @@ export default function GroupsPage() {
                       <span>{group.postCount} posts</span>
                       {group.department && <span>{group.department}</span>}
                       {group.batchYear && <span>Batch {group.batchYear}</span>}
+                      {(group as any).section && <span>Sec {(group as any).section}</span>}
                     </div>
                   </div>
                   <button

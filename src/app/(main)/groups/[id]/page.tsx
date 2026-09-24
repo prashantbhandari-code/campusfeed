@@ -6,11 +6,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import UserAvatar from "@/components/UserAvatar";
-import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChat, HiOutlineChatAlt2, HiOutlineUsers } from "react-icons/hi";
+import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChat, HiOutlineChatAlt2, HiOutlineUsers, HiDotsHorizontal, HiOutlineTrash, HiOutlineShieldCheck } from "react-icons/hi";
+import { useSocketEvent } from "@/lib/useSocket";
 import GroupChat from "@/components/GroupChat";
 
 
-interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; memberCount: number; postCount: number; isMember: boolean; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null } }[] }
+interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; section: string | null; allowMemberPosts: boolean; memberCount: number; postCount: number; isMember: boolean; myRole: string | null; unreadCount: number; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null } }[] }
 
 interface Section { id: string; name: string; description: string | null; icon: string | null; color: string | null; order: number; postCount: number; createdBy: { id: string; name: string; avatar: string | null } }
 
@@ -44,6 +45,9 @@ export default function GroupDetailPage() {
   const [creatingSection, setCreatingSection] = useState(false);
   const [sectionPostContent, setSectionPostContent] = useState("");
   const [postingToSection, setPostingToSection] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
+  const [togglingAnnounce, setTogglingAnnounce] = useState(false);
 
   useEffect(() => { fetchGroup(); fetchPosts(); fetchSections(); }, [groupId]);
   useEffect(() => { if (activeSection) fetchSectionPosts(activeSection); }, [activeSection]);
@@ -51,7 +55,9 @@ export default function GroupDetailPage() {
   const fetchGroup = async () => {
     try { const res = await fetch("/api/groups/" + groupId);
       if (!res.ok) throw new Error();
-      setGroup(await res.json());
+      const data = await res.json();
+      setGroup(data);
+      setUnreadCount(data.unreadCount || 0);
     } catch { toast.error("Group not found"); router.push("/groups"); } finally { setLoading(false); }
   };
   const fetchPosts = async () => { try { const r = await fetch("/api/groups/" + groupId + "/posts"); if (r.ok) setPosts(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
@@ -59,13 +65,100 @@ export default function GroupDetailPage() {
   const fetchSectionPosts = async (sid: string) => { try { const r = await fetch("/api/sections/" + sid + "/posts"); if (r.ok) setSectionPosts(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
 
   const handleJoin = async () => { try { await fetch("/api/groups/" + groupId + "/join", { method: "POST" }); fetchGroup(); fetchPosts(); fetchSections(); toast.success("Joined!"); } catch { toast.error("Failed"); } };
-  const handleLeave = async () => { try { await fetch("/api/groups/" + groupId + "/join", { method: "DELETE" }); fetchGroup(); toast.success("Left"); } catch { toast.error("Failed"); } };
+  const handleLeave = async () => {
+    try {
+      const r = await fetch("/api/groups/" + groupId + "/join", { method: "DELETE" });
+      const data = await r.json().catch(() => ({}));
+      if (data.deleted) {
+        toast.success("You were the last member — group deleted");
+        router.push("/groups");
+        return;
+      }
+      fetchGroup();
+      toast.success("Left");
+    } catch { toast.error("Failed"); }
+  };
 
   const handlePost = async () => {
     if (!newPost.trim()) return; setPosting(true);
     try { const res = await fetch("/api/groups/" + groupId + "/posts", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ content: newPost }) });
       if (!res.ok) throw new Error(); const post = await res.json(); setPosts([post, ...posts]); setNewPost(""); toast.success("Posted!");
     } catch { toast.error("Failed"); } finally { setPosting(false); }
+  };
+
+  // Count messages arriving while the chat tab is closed
+  useSocketEvent("new-group-message", (msg: any) => {
+    if (msg?.groupId === groupId && activeTab !== "chat" && msg.sender?.id !== user?.id) {
+      setUnreadCount((c) => c + 1);
+    }
+  }, [groupId, activeTab, user?.id]);
+
+  const isAdmin = group?.myRole === "admin";
+  const canPost = !!group?.isMember && (group?.allowMemberPosts !== false || isAdmin);
+
+  const toggleAnnounceMode = async () => {
+    if (!group || togglingAnnounce) return;
+    setTogglingAnnounce(true);
+    try {
+      const res = await fetch("/api/groups/" + groupId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowMemberPosts: !group.allowMemberPosts }),
+      });
+      if (!res.ok) throw new Error();
+      setGroup({ ...group, allowMemberPosts: !group.allowMemberPosts });
+      toast.success(group.allowMemberPosts ? "Announcement mode ON — only admins can post" : "Members can post again");
+    } catch { toast.error("Couldn't update setting"); } finally { setTogglingAnnounce(false); }
+  };
+
+  const changeRole = async (userId: string, role: "admin" | "member") => {
+    setMemberMenuId(null);
+    try {
+      const res = await fetch(`/api/groups/${groupId}/members/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "role change failed");
+      }
+      toast.success(role === "admin" ? "Promoted to admin" : "Demoted to member");
+      fetchGroup();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't change role");
+    }
+  };
+
+  const kickMember = async (userId: string, name: string) => {
+    setMemberMenuId(null);
+    if (!confirm(`Remove ${name} from the group?`)) return;
+    try {
+      const res = await fetch(`/api/groups/${groupId}/members/${userId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "remove failed");
+      }
+      toast.success(`${name} removed`);
+      fetchGroup();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't remove member");
+    }
+  };
+
+  const deleteGroup = async () => {
+    if (!confirm(`Delete "${group?.name}" permanently? All posts, messages and sections will be removed.`)) return;
+    try {
+      const res = await fetch("/api/groups/" + groupId, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "delete failed");
+      }
+      toast.success("Group deleted");
+      router.push("/groups");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't delete group");
+    }
   };
 
   const handleCreateSection = async () => {
@@ -105,12 +198,47 @@ export default function GroupDetailPage() {
         <div className="px-4 py-3 border-b border-gray-200 dark:border-white/[0.06]">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{group.name}</h2>
           {group.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{group.description}</p>}
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 flex-wrap">
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary-600/20 text-primary-400">{group.type}</span>
             {group.department && <span className="text-xs px-2 py-0.5 rounded-full bg-blue-600/20 text-blue-400">{group.department}</span>}
             {group.batchYear && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-600/20 text-purple-400">Batch {group.batchYear}</span>}
+            {group.section && <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-600/20 text-cyan-400">Sec {group.section}</span>}
+            {isAdmin && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-600/20 text-amber-400">👑 Admin</span>}
           </div>
+          {group.isMember && group.allowMemberPosts === false && (
+            <p className="text-xs text-orange-500 dark:text-orange-400 mt-2">📢 Announcement mode — only admins can post</p>
+          )}
         </div>
+
+        {/* Admin settings panel */}
+        {isAdmin && (
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-white/[0.06] bg-gray-50 dark:bg-white/[0.02]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Announcement mode</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">When on, only admins can post</p>
+              </div>
+              <button
+                onClick={toggleAnnounceMode}
+                disabled={togglingAnnounce}
+                aria-label="Toggle announcement mode"
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                  group.allowMemberPosts === false ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
+                } ${togglingAnnounce ? "opacity-50" : ""}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  group.allowMemberPosts === false ? "translate-x-6" : "translate-x-1"
+                }`} />
+              </button>
+            </div>
+            <button
+              onClick={deleteGroup}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+            >
+              <HiOutlineTrash className="text-sm" /> Delete group
+            </button>
+          </div>
+        )}
         <div className="flex border-b border-gray-200 dark:border-white/[0.06]">
           {(["posts","chat","sections","members"] as const).map((tab) => (
             <button key={tab} onClick={() => { setActiveTab(tab); setActiveSection(null); }} className={"flex-1 py-3 text-sm font-medium capitalize transition-colors flex items-center justify-center gap-1.5 " + (activeTab === tab ? "text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white")}>
@@ -119,17 +247,22 @@ export default function GroupDetailPage() {
               {tab === "sections" && <HiOutlineCollection className="text-sm" />}
               {tab === "members" && <HiOutlineUsers className="text-sm" />}
               {tab}
+              {tab === "chat" && unreadCount > 0 && activeTab !== "chat" && (
+                <span className="min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         {activeTab === "chat" && (
-          <GroupChat key={String(group.isMember)} groupId={groupId} isMember={group.isMember} />
+          <GroupChat key={String(group.isMember)} groupId={groupId} isMember={group.isMember} isAdmin={isAdmin} onRead={() => setUnreadCount(0)} />
         )}
 
         {activeTab === "posts" && (
           <div className="px-4 py-4 space-y-4">
-            {group.isMember && (
+            {canPost && (
               <div className="glass-card rounded-2xl p-4">
                 <div className="flex gap-3">
                   <UserAvatar user={user} size="sm" />
@@ -140,6 +273,11 @@ export default function GroupDetailPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+            {group.isMember && !canPost && (
+              <div className="rounded-2xl border border-dashed border-orange-300 dark:border-orange-500/40 bg-orange-50 dark:bg-orange-500/10 px-4 py-3 text-center">
+                <p className="text-sm text-orange-600 dark:text-orange-400">📢 Only admins can post announcements in this group</p>
               </div>
             )}
             {posts.length === 0 ? (
@@ -200,7 +338,7 @@ export default function GroupDetailPage() {
             ) : (
               <div>
                 <button onClick={() => setActiveSection(null)} className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 mb-4 hover:underline"><HiArrowLeft className="text-sm" /> Back to Sections</button>
-                {group.isMember && (
+                {canPost && (
                   <div className="glass-card rounded-2xl p-4 mb-4">
                     <div className="flex gap-3">
                       <UserAvatar user={user} size="sm" />
@@ -236,18 +374,51 @@ export default function GroupDetailPage() {
         )}
 
         {activeTab === "members" && (
-          <div className="px-4 py-4 space-y-2">
-            {group.members.map((member) => (
-              <Link key={member.id} href={"/profile/" + member.user.username} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors">
-                <UserAvatar user={member.user} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.user.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">@{member.user.username}</p>
+          <div className="px-4 py-4 space-y-2" onClick={() => setMemberMenuId(null)}>
+            {group.members.map((member) => {
+              const isSelf = member.user.id === user?.id;
+              const menuOpen = memberMenuId === member.id;
+              return (
+                <div key={member.id} className="relative flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors">
+                  <Link href={"/profile/" + member.user.username} className="flex items-center gap-3 flex-1 min-w-0">
+                    <UserAvatar user={member.user} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.user.name}{isSelf && " (you)"}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">@{member.user.username}</p>
+                    </div>
+                    {member.role === "admin" && <span className="text-xs px-2 py-0.5 rounded-full bg-primary-600/20 text-primary-400">👑 Admin</span>}
+                    {member.user.department && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">{member.user.department}</span>}
+                  </Link>
+                  {isAdmin && !isSelf && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMemberMenuId(menuOpen ? null : member.id); }}
+                      aria-label={`Actions for ${member.user.name}`}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10"
+                    >
+                      <HiDotsHorizontal className="text-lg" />
+                    </button>
+                  )}
+                  {menuOpen && (
+                    <div className="absolute right-2 top-full z-20 mt-1 w-52 bg-white dark:bg-dark-700 border border-gray-200 dark:border-white/[0.1] rounded-xl shadow-xl py-1 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => changeRole(member.user.id, member.role === "admin" ? "member" : "admin")}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/[0.06] flex items-center gap-2"
+                      >
+                        <HiOutlineShieldCheck className="text-sm text-amber-500" />
+                        {member.role === "admin" ? "Remove as admin" : "Make admin"}
+                      </button>
+                      <button
+                        onClick={() => kickMember(member.user.id, member.user.name)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                      >
+                        <HiOutlineTrash className="text-sm" />
+                        Remove from group
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {member.role === "admin" && <span className="text-xs px-2 py-0.5 rounded-full bg-primary-600/20 text-primary-400">Admin</span>}
-                {member.user.department && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">{member.user.department}</span>}
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
 

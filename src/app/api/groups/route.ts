@@ -14,15 +14,20 @@ export async function GET(req: Request) {
 
     const userId = (session.user as any).id;
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get("type"); // department, batch, custom, null=all
+    const type = searchParams.get("type"); // department, batch, class, custom, null=all
     const query = searchParams.get("q") || "";
+    const department = searchParams.get("department"); // filter by viewer's own department
+    const batchYear = searchParams.get("batchYear"); // filter by viewer's own batch
 
     const where: any = {};
     if (type) where.type = type;
+    if (department) where.department = department;
+    if (batchYear) where.batchYear = parseInt(batchYear);
     if (query) {
       where.OR = [
         { name: { contains: query } },
         { description: { contains: query } },
+        { department: { contains: query } },
       ];
     }
 
@@ -65,10 +70,16 @@ export async function POST(req: Request) {
 
     const userId = (session.user as any).id;
     const body = await req.json();
-    const { name, description, type, department, batchYear } = body;
+    const { name, description, type, department, batchYear, section, allowMemberPosts } = body;
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json({ error: "Group name is required" }, { status: 400 });
+    }
+    if (name.trim().length > 80) {
+      return NextResponse.json({ error: "Group name is too long (max 80 characters)" }, { status: 400 });
+    }
+    if (type === "class" && !department) {
+      return NextResponse.json({ error: "Class groups need a department" }, { status: 400 });
     }
 
     const group = await prisma.group.create({
@@ -78,6 +89,8 @@ export async function POST(req: Request) {
         type: type || "custom",
         department: department || null,
         batchYear: batchYear || null,
+        section: section?.trim() || null,
+        allowMemberPosts: allowMemberPosts !== false,
         createdById: userId,
         memberCount: 1,
       },

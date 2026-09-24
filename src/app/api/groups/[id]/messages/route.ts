@@ -22,10 +22,10 @@ async function requireMember(req: Request, groupId: string) {
   return { userId };
 }
 
-// GET /api/groups/[id]/messages — last 50 messages, members only
+// GET /api/groups/[id]/messages — last 50 messages, members only (marks read)
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireMember(req, params.id);
+    const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
 
     const messages = await prisma.groupMessage.findMany({
@@ -35,6 +35,12 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       take: 50,
     });
 
+    // Opening the chat marks it read for the unread badge
+    await prisma.groupMember.updateMany({
+      where: { groupId: params.id, userId },
+      data: { lastReadAt: new Date() },
+    });
+
     return NextResponse.json(messages.reverse());
   } catch (error) {
     console.error("Group messages GET error:", error);
@@ -42,7 +48,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-// POST /api/groups/[id]/messages — send a message, members only
+// POST /api/groups/[id]/messages — send text or an attachment, members only
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const { userId, error } = await requireMember(req, params.id);
@@ -50,13 +56,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     const body = await req.json();
     const content = sanitize(typeof body?.content === "string" ? body.content.trim() : "");
-    if (!content) {
-      return NextResponse.json({ error: "Content required" }, { status: 400 });
+    const fileUrl = typeof body?.fileUrl === "string" && body.fileUrl ? body.fileUrl : null;
+    const fileType = typeof body?.fileType === "string" && body.fileType ? body.fileType : null;
+    const fileName = typeof body?.fileName === "string" && body.fileName ? body.fileName : null;
+
+    if (!content && !fileUrl) {
+      return NextResponse.json({ error: "Content or file required" }, { status: 400 });
+    }
+    if (content.length > 5000) {
+      return NextResponse.json({ error: "Message too long (max 5000 characters)" }, { status: 400 });
     }
 
     const message = await prisma.groupMessage.create({
-      data: { content, groupId: params.id, senderId: userId },
+      data: { content, fileUrl, fileType, fileName, groupId: params.id, senderId: userId },
       include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
+    });
+
+    // Sender has by definition read up to their own message
+    await prisma.groupMember.updateMany({
+      where: { groupId: params.id, userId },
+      data: { lastReadAt: new Date() },
     });
 
     // WebSocket deployments get it pushed to the room (no-op elsewhere —
@@ -66,6 +85,43 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
     console.error("Group messages POST error:", error);
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
+  }
+}
+
+// DELETE /api/groups/[id]/messages — remove a message (sender or group admin)
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const { userId, error } = await requireMember(req, params.id);
+    if (error) return error;
+
+    let body: { messageId?: string } = {};
+    try {
+      body = await req.json();
+    } catch { /* fall through to 400 below */ }
+    if (!body.messageId) {
+      return NextResponse.json({ error: "messageId required" }, { status: 400 });
+    }
+
+    const message = await prisma.groupMessage.findUnique({ where: { id: body.messageId } });
+    if (!message || message.groupId !== params.id) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+
+    const membership = await prisma.groupMember.findUnique({
+      where: { groupId_userId: { groupId: params.id, userId } },
+    });
+    const canDelete = message.senderId === userId || membership?.role === "admin";
+    if (!canDelete) {
+      return NextResponse.json({ error: "You can only delete your own messages" }, { status: 403 });
+    }
+
+    await prisma.groupMessage.delete({ where: { id: message.id } });
+    emitToGroup(params.id, "group-message-deleted", { messageId: message.id, groupId: params.id });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Group messages DELETE error:", error);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

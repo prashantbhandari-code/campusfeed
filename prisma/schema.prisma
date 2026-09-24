@@ -283,6 +283,8 @@ model Group {
   type        String   @default("custom")
   department  String?
   batchYear   Int?
+  section     String? // class section label, e.g. "A" for CSE-2027-Sec-A
+  allowMemberPosts Boolean @default(true) // false = announcement mode (admins only)
   createdById String
   memberCount Int      @default(0)
   createdAt   DateTime @default(now())
@@ -305,6 +307,7 @@ model GroupMember {
   groupId String
   userId  String
   role    String   @default("member")
+  lastReadAt DateTime? // group chat read marker for the unread badge
   joinedAt DateTime @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -319,7 +322,10 @@ model GroupMember {
 
 model GroupMessage {
   id        String   @id @default(uuid())
-  content   String
+  content   String   @default("")
+  fileUrl   String?
+  fileType  String?
+  fileName  String?
   groupId   String
   senderId  String
   createdAt DateTime @default(now())
