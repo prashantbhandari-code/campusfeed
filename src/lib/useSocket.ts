@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { subscribe } from "./realtime/bus";
-import { startPolling, stopPolling } from "./realtime/polling";
+import { startRealtime, stopRealtime } from "./realtime";
 import { canTryWebSocket, currentSocket, getSocket, markSocketBroken } from "./realtime/socket";
 
 export function useSocket(userId?: string) {
@@ -13,20 +13,20 @@ export function useSocket(userId?: string) {
     if (!userId) return;
 
     let mounted = true;
-    let polling = false;
-    const engagePolling = () => {
-      if (!polling) {
-        polling = true;
-        startPolling();
+    let fallbackEngaged = false;
+    const engageFallback = () => {
+      if (!fallbackEngaged) {
+        fallbackEngaged = true;
+        startRealtime(); // SSE where supported, JSON polling otherwise
       }
       if (mounted) setIsConnected(true);
     };
 
-    // No WebSocket ahead (Vercel, or one already proven broken) — poll now.
+    // No WebSocket ahead (Vercel, or one already proven broken) — SSE/poll now.
     if (!canTryWebSocket()) {
-      engagePolling();
+      engageFallback();
       return () => {
-        if (polling) stopPolling();
+        if (fallbackEngaged) stopRealtime();
       };
     }
 
@@ -41,8 +41,8 @@ export function useSocket(userId?: string) {
     const onFail = () => {
       const firstFailure = markSocketBroken(s); // latch regardless of lifecycle
       if (mounted) {
-        if (firstFailure) console.log("🔌 WebSocket unavailable — falling back to polling mode");
-        engagePolling();
+        if (firstFailure) console.log("🔌 WebSocket unavailable — falling back to SSE mode");
+        engageFallback();
       }
     };
 
@@ -56,7 +56,7 @@ export function useSocket(userId?: string) {
       s.off("connect", onConnect);
       s.off("users-online", onUsers);
       s.off("connect_error", onFail);
-      if (polling) stopPolling();
+      if (fallbackEngaged) stopRealtime();
     };
   }, [userId]);
 
