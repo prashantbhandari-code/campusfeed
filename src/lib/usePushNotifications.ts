@@ -14,6 +14,22 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+/** navigator.serviceWorker.ready never rejects — it hangs if registration failed. */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof Error) {
+    const name = error.name && error.name !== "Error" ? `${error.name}: ` : "";
+    return `${name}${error.message}`;
+  }
+  return String(error);
+}
+
 export function usePushNotifications() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,11 +40,33 @@ export function usePushNotifications() {
       return false;
     }
 
+    // iOS Safari only allows web push for sites added to the Home Screen.
+    const isIOS =
+      /iP(hone|ad|od)/.test(navigator.userAgent) &&
+      !(navigator as any).standalone &&
+      !window.matchMedia("(display-mode: standalone)").matches;
+    if (isIOS) {
+      toast.error(
+        "On iPhone/iPad, tap Share → Add to Home Screen, then open Campusfeed from your home screen to enable notifications",
+        { duration: 8000 }
+      );
+      return false;
+    }
+
+    if (typeof Notification === "undefined") {
+      toast.error("This browser doesn't support notifications — try Chrome or Safari");
+      return false;
+    }
+
     setLoading(true);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast.error("Notification permission denied");
+        toast.error(
+          permission === "denied"
+            ? "Notifications are blocked — allow them in your browser's site settings"
+            : "Notification permission was not granted"
+        );
         setLoading(false);
         return false;
       }
@@ -40,14 +78,18 @@ export function usePushNotifications() {
         return false;
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await withTimeout(
+        navigator.serviceWorker.ready,
+        10000,
+        "Service worker did not start — reload the page and try again"
+      );
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
       const sub = subscription.toJSON();
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -56,6 +98,15 @@ export function usePushNotifications() {
           auth: sub.keys?.auth,
         }),
       });
+      if (!res.ok) {
+        let serverError = `server responded ${res.status}`;
+        try {
+          const data = await res.json();
+          if (data?.error) serverError = data.error;
+        } catch { /* keep status message */ }
+        if (res.status === 401) serverError = "session expired — log in again and retry";
+        throw new Error(serverError);
+      }
 
       setIsSubscribed(true);
       toast.success("Push notifications enabled!");
@@ -63,7 +114,7 @@ export function usePushNotifications() {
       return true;
     } catch (error) {
       console.error("Push subscription failed:", error);
-      toast.error("Failed to enable push notifications");
+      toast.error(`Couldn't enable notifications — ${describeError(error)}`, { duration: 8000 });
       setLoading(false);
       return false;
     }
@@ -72,7 +123,11 @@ export function usePushNotifications() {
   const unsubscribe = useCallback(async () => {
     setLoading(true);
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await withTimeout(
+        navigator.serviceWorker.ready,
+        10000,
+        "Service worker did not start — reload the page and try again"
+      );
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         const endpoint = subscription.endpoint;
@@ -87,7 +142,8 @@ export function usePushNotifications() {
       toast.success("Push notifications disabled");
       setLoading(false);
     } catch (error) {
-      toast.error("Failed to disable push notifications");
+      console.error("Push unsubscribe failed:", error);
+      toast.error(`Couldn't disable notifications — ${describeError(error)}`, { duration: 8000 });
       setLoading(false);
     }
   }, []);
@@ -95,8 +151,8 @@ export function usePushNotifications() {
   const checkSubscription = useCallback(async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
       setIsSubscribed(!!subscription);
     } catch (error) { console.error("Operation failed:", error); }
   }, []);
