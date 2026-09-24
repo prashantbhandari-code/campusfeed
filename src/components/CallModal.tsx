@@ -2,8 +2,30 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath } from "react-icons/hi2";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
+import { attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
 
-const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
+// STUN discovers reflexive addresses; the TURN relay is the fallback when
+// both peers sit behind symmetric NATs or UDP is blocked (common on mobile
+// carriers) — without it those pairs can never connect. Open Relay's public
+// instance is free; swap in a self-hosted coturn before heavy production use.
+const ICE_SERVERS: RTCIceServer[] = [
+  {
+    urls: [
+      "stun:stun.l.google.com:19302",
+      "stun:stun1.l.google.com:19302",
+      "stun:stun.cloudflare.com:3478",
+    ],
+  },
+  {
+    urls: [
+      "turn:openrelay.metered.ca:80",
+      "turn:openrelay.metered.ca:443",
+      "turn:openrelay.metered.ca:443?transport=tcp",
+    ],
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+];
 
 interface CallModalProps {
   isOpen: boolean;
@@ -131,11 +153,23 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   }, [callType, otherUser, offer, emit, setupPC]);
 
   useSocketEvent("call-accepted", async (d: { answer: RTCSessionDescriptionInit }) => { stopRing(); setCallState("connecting"); if (pcRef.current) { await pcRef.current.setRemoteDescription(new RTCSessionDescription(d.answer)); await deliverPendingIce(); } }, []);
-  useSocketEvent("ice-candidate", (d: { candidate: RTCIceCandidateInit }) => {
-    const pc = pcRef.current;
-    if (!pc || !pc.remoteDescription) { pendingIceRef.current.push(d.candidate); return; }
-    pc.addIceCandidate(new RTCIceCandidate(d.candidate)).catch((e) => console.warn("ICE candidate failed:", e));
-  }, []);
+  // ICE does NOT arrive via a direct subscription: candidates published in
+  // the same transport frame as the offer fire before this modal mounts and
+  // are never re-sent (transport dedupes by id). The always-mounted
+  // IncomingCallListener parks them in call-signals.ts instead — attach on
+  // open, drain what accumulated, then get everything live from there.
+  useEffect(() => {
+    if (!isOpen || !otherUser?.id) return;
+    const buffered = attachIceConsumer(otherUser.id, (c) => {
+      const pc = pcRef.current;
+      if (!pc || !pc.remoteDescription) { pendingIceRef.current.push(c); return; }
+      pc.addIceCandidate(new RTCIceCandidate(c)).catch((e) => console.warn("ICE candidate failed:", e));
+    });
+    buffered.forEach((c) => pendingIceRef.current.push(c));
+    deliverPendingIce(); // no-op until the remote description is set
+    return () => detachIceConsumer(otherUser.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, otherUser?.id]);
   useSocketEvent("call-rejected", () => { stopRing(); setCallState("ended"); setTimeout(onClose, 1500); }, []);
   useSocketEvent("call-ended", () => { endCall(); }, []);
   useEffect(() => {

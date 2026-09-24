@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession } from "@/lib/appwrite-session";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
+import { stashIceCandidate } from "@/lib/call-signals";
 import CallModal from "./CallModal";
 
 export default function IncomingCallListener() {
@@ -18,6 +19,14 @@ export default function IncomingCallListener() {
     console.log("📞 Incoming call from", data.callerName);
     setCallData(data);
     setShowCall(true);
+  }, []);
+
+  // This listener is mounted from page load, so it sees EVERY ice-candidate
+  // — including the caller's burst that ships in the same frame as the offer,
+  // which lands before <CallModal> has mounted and subscribed. Park them in
+  // the shared buffer; CallModal drains on open and receives the rest live.
+  useSocketEvent("ice-candidate", (d: any) => {
+    stashIceCandidate(d.fromUserId, d.candidate);
   }, []);
 
   if (!showCall || !callData || !user) return null;
