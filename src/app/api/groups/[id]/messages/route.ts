@@ -5,6 +5,7 @@ import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToGroup } from "@/lib/socket";
+import { withRateLimit } from "@/lib/rateLimit";
 
 const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
 
@@ -49,7 +50,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST /api/groups/[id]/messages — send text or an attachment, members only
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export const POST = withRateLimit(async (req: Request, { params }: { params: { id: string } }) => {
   try {
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
@@ -87,7 +88,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     console.error("Group messages POST error:", error);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
-}
+}, { windowMs: 60000, maxRequests: 60 }); // 60 sends per minute
 
 // DELETE /api/groups/[id]/messages — remove a message (sender or group admin)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {

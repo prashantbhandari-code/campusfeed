@@ -29,6 +29,9 @@ function PostCard({ post, onDelete }: PostCardProps) {
   const [heartAnimation, setHeartAnimation] = useState(false);
   const [doubleTapHeart, setDoubleTapHeart] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [commentMenuId, setCommentMenuId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || "");
   const lastTapRef = useRef(0);
@@ -87,12 +90,54 @@ function PostCard({ post, onDelete }: PostCardProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: commentText }),
       });
+      if (res.status === 429) {
+        toast.error("You're commenting too fast — wait a moment");
+        return;
+      }
       const newComment = await res.json();
       if (!res.ok) throw new Error(newComment?.error || `HTTP ${res.status}`);
       setComments([newComment, ...comments]);
       setCommentText("");
     } catch {
       toast.error("Failed to comment");
+    }
+  };
+
+  const saveCommentEdit = async () => {
+    if (!editingCommentId || !editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/posts/${post.id}/comment`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId: editingCommentId, content: editCommentText }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      const updated = await res.json();
+      setComments(comments.map((c: any) => (c.id === updated.id ? updated : c)));
+      setEditingCommentId(null);
+      toast.success("Comment updated");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : "Couldn't edit comment");
+    }
+  };
+
+  const removeComment = async (commentId: string) => {
+    setCommentMenuId(null);
+    if (!confirm("Delete this comment?")) return;
+    try {
+      const res = await fetch(`/api/posts/${post.id}/comment`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId }),
+      });
+      if (!res.ok) throw new Error();
+      setComments(comments.filter((c: any) => c.id !== commentId));
+      toast.success("Comment deleted");
+    } catch {
+      toast.error("Couldn't delete comment");
     }
   };
 
@@ -248,18 +293,72 @@ function PostCard({ post, onDelete }: PostCardProps) {
       {/* Comments Section */}
       {showComments && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-100 dark:border-white/[0.06] pt-3">
-          {comments.slice(0, 5).map((comment: any) => (
-            <div key={comment.id} className="flex gap-3">
-              <UserAvatar user={comment.author} size="sm" />
-              <div className="flex-1">
-                <p className="text-sm">
-                  <span className="font-semibold mr-1 text-gray-900 dark:text-white">{comment.author.name}</span>
-                  {comment.content}
-                </p>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(comment.createdAt)}</p>
+          {comments.slice(0, 5).map((comment: any) => {
+            const canManageComment = comment.author.id === user?.id || post.authorId === user?.id;
+            return (
+              <div key={comment.id} className="flex gap-3 relative">
+                <UserAvatar user={comment.author} size="sm" />
+                <div className="flex-1 min-w-0">
+                  {editingCommentId === comment.id ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveCommentEdit(); if (e.key === "Escape") setEditingCommentId(null); }}
+                        maxLength={2000}
+                        autoFocus
+                        className="w-full bg-gray-100 dark:bg-dark-700 rounded-full px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500/50"
+                      />
+                      <div className="flex gap-3 mt-1 text-[11px]">
+                        <button onClick={() => setEditingCommentId(null)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Cancel</button>
+                        <button onClick={saveCommentEdit} className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">Save</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm">
+                        <span className="font-semibold mr-1 text-gray-900 dark:text-white">{comment.author.name}</span>
+                        {comment.content}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                          {formatDate(comment.createdAt)}{comment.editedAt && " · edited"}
+                        </p>
+                        {canManageComment && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setCommentMenuId(commentMenuId === comment.id ? null : comment.id); }}
+                            aria-label="Comment actions"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <HiDotsHorizontal className="text-xs" />
+                          </button>
+                        )}
+                      </div>
+                      {commentMenuId === comment.id && (
+                        <div className="absolute right-0 top-7 z-40 w-36 bg-white dark:bg-dark-700 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl py-1 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                          {comment.author.id === user?.id && (
+                            <button
+                              onClick={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); setCommentMenuId(null); }}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5"
+                            >
+                              <HiOutlinePencil className="w-3.5 h-3.5" /> Edit
+                            </button>
+                          )}
+                          <button
+                            onClick={() => removeComment(comment.id)}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-white/5"
+                          >
+                            <HiOutlineTrash className="w-3.5 h-3.5" /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <form onSubmit={handleComment} className="flex gap-2 mt-3">
             <UserAvatar user={user} size="sm" />

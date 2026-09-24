@@ -153,6 +153,15 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(
+          res.status === 429
+            ? "You're sending too fast — wait a moment"
+            : data.error || "Failed to send"
+        );
+        return;
+      }
       const msg = await res.json();
       setMessages((prev) => [...prev, msg]);
       setNewMessage("");

@@ -56,12 +56,14 @@ export function getClientIp(request: Request): string {
   return "unknown";
 }
 
-// Higher-order function to wrap API handlers with rate limiting
-export function withRateLimit(
-  handler: (req: Request) => Promise<NextResponse>,
+// Higher-order function to wrap API handlers with rate limiting.
+// ctx (Next.js route params) passes through untouched so handlers on
+// dynamic segments keep receiving { params }.
+export function withRateLimit<T = any>(
+  handler: (req: Request, ctx: T) => Promise<NextResponse>,
   options?: RateLimitOptions
 ) {
-  return async (req: Request): Promise<NextResponse> => {
+  return async (req: Request, ctx?: T): Promise<NextResponse> => {
     const ip = getClientIp(req);
     const endpoint = new URL(req.url).pathname;
     const key = `${ip}:${endpoint}`;
@@ -86,7 +88,7 @@ export function withRateLimit(
       );
     }
 
-    const response = await handler(req);
+    const response = await handler(req, ctx as T);
     response.headers.set("X-RateLimit-Limit", String(options?.maxRequests || 60));
     response.headers.set("X-RateLimit-Remaining", String(remaining));
     response.headers.set("X-RateLimit-Reset", String(Math.ceil(resetTime / 1000)));

@@ -5,6 +5,7 @@ import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { withRateLimit } from "@/lib/rateLimit";
+import { getBlockedIds } from "@/lib/blocking";
 
 // Simple HTML sanitizer — strip tags
 
@@ -22,6 +23,12 @@ export const GET = withRateLimit(async (req: Request) => {
     const skip = (page - 1) * limit;
 
     let where: any = {};
+
+    // Blocking applies to every feed mode: own posts, saved, and following
+    const blockedIds = await getBlockedIds((session.user as any).id);
+    if (blockedIds.length > 0) {
+      where.AND = [{ authorId: { notIn: blockedIds } }];
+    }
 
     if (searchParams.get("saved")) {
       // Saved-posts view: everything the current user has bookmarked

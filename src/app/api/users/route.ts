@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { getBlockedIds } from "@/lib/blocking";
 
 export async function GET(req: Request) {
   try {
@@ -16,13 +17,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Blocked users never appear in search or profile lookups
+    const blockedIds = await getBlockedIds(currentUserId);
+
     let where: any = {};
-    // Exclude current user from results
-    if (currentUserId) {
-      where.id = { not: currentUserId };
-    }
+    // Exclude current user and blocked users from results
+    where.id = { notIn: [currentUserId, ...blockedIds] };
 
   if (userId) {
+      // Direct profile lookup: blocked pair → treat as nonexistent
+      if (blockedIds.includes(userId)) {
+        return NextResponse.json([]);
+      }
       where.id = userId;
     } else if (query) {
       where.OR = [

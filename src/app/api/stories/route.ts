@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { getBlockedIds } from "@/lib/blocking";
 
 export async function GET(req: Request) {
   try {
@@ -17,11 +18,12 @@ export async function GET(req: Request) {
       select: { followingId: true },
     });
     const followingIds = following.map((f) => f.followingId);
+    const blockedIds = await getBlockedIds(userId);
 
     const stories = await prisma.story.findMany({
       where: {
         expiresAt: { gt: new Date() },
-        authorId: { in: [...followingIds, userId] },
+        authorId: { in: [...followingIds, userId], notIn: blockedIds },
       },
       select: {
         id: true,

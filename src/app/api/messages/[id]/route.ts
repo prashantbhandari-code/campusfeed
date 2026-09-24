@@ -5,6 +5,7 @@ import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
+import { isBlockedPair } from "@/lib/blocking";
 
 export async function GET(
   req: Request,
@@ -18,6 +19,11 @@ export async function GET(
 
     const userId = (session.user as any).id;
     const otherUserId = params.id;
+
+    // Blocked either way — present an empty thread instead of the history
+    if (await isBlockedPair(userId, otherUserId)) {
+      return NextResponse.json({ messages: [], total: 0, page: 1, hasMore: false });
+    }
 
     // Add pagination support
     const { searchParams } = new URL(req.url);

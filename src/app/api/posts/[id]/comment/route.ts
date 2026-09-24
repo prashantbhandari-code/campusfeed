@@ -5,6 +5,8 @@ import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { sendPush } from "@/lib/push";
+import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
+import { withRateLimit } from "@/lib/rateLimit";
 
 // Strip HTML tags to prevent stored XSS
 
@@ -13,8 +15,18 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getAppwriteSession(req);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
+    const blockedIds = await getBlockedIds(userId);
+
     const comments = await prisma.comment.findMany({
-      where: { postId: params.id },
+      where: {
+        postId: params.id,
+        authorId: { notIn: blockedIds },
+      },
       include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
       orderBy: { createdAt: "desc" },
     });
@@ -24,7 +36,69 @@ export async function GET(
   }
 }
 
-export async function POST(
+export const POST = withRateLimit(
+  async (req: Request, { params }: { params: { id: string } }) => {
+    try {
+      const session = await getAppwriteSession(req);
+      if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const userId = (session.user as any).id;
+
+      const post = await prisma.post.findUnique({ where: { id: params.id } });
+      if (!post) {
+        return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      }
+      if (await isBlockedPair(userId, post.authorId)) {
+        return NextResponse.json({ error: "You can't comment on this post" }, { status: 403 });
+      }
+
+      const { content } = await req.json();
+      if (!content) {
+        return NextResponse.json({ error: "Content required" }, { status: 400 });
+      }
+
+      const sanitizedContent = sanitize(content);
+      if (!sanitizedContent) {
+        return NextResponse.json({ error: "Content required" }, { status: 400 });
+      }
+
+      const comment = await prisma.comment.create({
+        data: {
+          content: sanitizedContent,
+          postId: params.id,
+          authorId: userId,
+        },
+        include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
+      });
+
+      if (post.authorId !== userId) {
+        await prisma.notification.create({
+          data: {
+            type: "comment",
+            userId: post.authorId,
+            fromUserId: userId,
+            postId: params.id,
+          },
+        });
+        void sendPush(post.authorId, {
+          title: comment.author?.name || "Someone",
+          body: `commented: ${sanitizedContent.slice(0, 80)}`,
+          url: `/posts/${params.id}`,
+        });
+      }
+
+      return NextResponse.json(comment, { status: 201 });
+    } catch (error) {
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+  },
+  { windowMs: 60000, maxRequests: 30 } // 30 comments per minute
+);
+
+/** Edit your own comment. body { commentId, content } */
+export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
@@ -33,44 +107,78 @@ export async function POST(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const userId = (session.user as any).id;
 
-    const { content } = await req.json();
-    if (!content) {
-      return NextResponse.json({ error: "Content required" }, { status: 400 });
+    const { commentId, content } = await req.json();
+    if (!commentId) {
+      return NextResponse.json({ error: "commentId required" }, { status: 400 });
     }
 
-    const sanitizedContent = sanitize(content);
-    if (!sanitizedContent) {
-      return NextResponse.json({ error: "Content required" }, { status: 400 });
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment || comment.postId !== params.id) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+    }
+    if (comment.authorId !== userId) {
+      return NextResponse.json({ error: "You can only edit your own comments" }, { status: 403 });
     }
 
-    const comment = await prisma.comment.create({
-      data: {
-        content: sanitizedContent,
-        postId: params.id,
-        authorId: (session.user as any).id,
-      },
+    const sanitized = content ? sanitize(content) : "";
+    if (!sanitized) {
+      return NextResponse.json({ error: "Comment can't be empty" }, { status: 400 });
+    }
+    if (sanitized === comment.content) {
+      return NextResponse.json({ error: "No changes" }, { status: 400 });
+    }
+
+    const updated = await prisma.comment.update({
+      where: { id: commentId },
+      data: { content: sanitized, editedAt: new Date() },
       include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
     });
 
-    const post = await prisma.post.findUnique({ where: { id: params.id } });
-    if (post && post.authorId !== (session.user as any).id) {
-      await prisma.notification.create({
-        data: {
-          type: "comment",
-          userId: post.authorId,
-          fromUserId: (session.user as any).id,
-          postId: params.id,
-        },
-      });
-      void sendPush(post.authorId, {
-        title: comment.author?.name || "Someone",
-        body: `commented: ${sanitizedContent.slice(0, 80)}`,
-        url: `/posts/${params.id}`,
-      });
+    return NextResponse.json(updated);
+  } catch (error) {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/** Delete a comment — allowed for the comment author or the post author. body { commentId } */
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getAppwriteSession(req);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
+
+    const { commentId } = await req.json().catch(() => ({} as any));
+    if (!commentId) {
+      return NextResponse.json({ error: "commentId required" }, { status: 400 });
     }
 
-    return NextResponse.json(comment, { status: 201 });
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment || comment.postId !== params.id) {
+      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: params.id },
+      select: { authorId: true },
+    });
+    const isCommentAuthor = comment.authorId === userId;
+    const isPostAuthor = post?.authorId === userId;
+    if (!isCommentAuthor && !isPostAuthor) {
+      return NextResponse.json(
+        { error: "You can only delete your own comments" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.comment.delete({ where: { id: commentId } });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

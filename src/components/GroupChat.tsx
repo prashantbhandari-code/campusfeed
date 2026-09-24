@@ -126,7 +126,14 @@ export default function GroupChat({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        res.status === 429
+          ? "You're sending too fast — wait a moment"
+          : data.error || ""
+      );
+    }
     const msg = await res.json();
     setMessages((prev) => (prev.find((m) => m.id === msg.id) ? prev : [...prev, msg]));
   };
@@ -145,8 +152,8 @@ export default function GroupChat({
       });
       setText("");
       setPreviewFile(null);
-    } catch {
-      toast.error("Failed to send");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : "Failed to send");
     } finally {
       setSending(false);
     }
@@ -162,8 +169,8 @@ export default function GroupChat({
         return;
       }
       await sendPayload({ content: "", fileUrl: data.url, fileType: data.fileType, fileName: data.fileName });
-    } catch {
-      toast.error("Voice upload failed");
+    } catch (error) {
+      toast.error(error instanceof Error && error.message ? error.message : "Voice upload failed");
     } finally {
       setUploading(false);
     }
