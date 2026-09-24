@@ -10,10 +10,10 @@ let refs = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 let since = 0; // server timestamps; lags real time by a skew window (dedup absorbs re-sends)
 let inFlight = false; // never stack ticks — each one holds 5 DB connections
-let typingFrom: string | null = null;
 let lastUnreadNotifs: number | null = null;
 let lastUnreadMsgs: number | null = null;
 const seenSignals = new Set<string>(); // call signals re-scan the skew window — drop repeats by id
+let typingFromSet = new Set<string>(); // everyone seen typing in the previous tick
 
 // Mobile browsers freeze timers in background tabs, so the loop stalls there.
 // When the tab wakes (or the network switches), force a catch-up poll
@@ -100,14 +100,18 @@ async function pollOnce(): Promise<void> {
       }
 
       // Typing comes back on the same response — one round trip per tick.
-      const typing = data.typing;
-      if (typing) {
-        typingFrom = typing.senderId;
-        publish("user-typing", typing);
-      } else if (typingFrom) {
-        publish("user-stop-typing", { senderId: typingFrom });
-        typingFrom = null;
+      // The server sends everyone currently typing to this user (fresh entries
+      // only — stale ones are pruned server-side); diff against the previous
+      // tick so listeners can show/hide who is typing.
+      const typingList: Array<{ senderId: string; senderName?: string }> = data.typing || [];
+      const freshSet = new Set(typingList.map((t) => t.senderId));
+      for (const t of typingList) {
+        if (!typingFromSet.has(t.senderId)) publish("user-typing", t);
       }
+      typingFromSet.forEach((gone: string) => {
+        if (!freshSet.has(gone)) publish("user-stop-typing", { senderId: gone });
+      });
+      typingFromSet = freshSet;
     }
   } catch (error) {
     if (!(error instanceof DOMException && error.name === "AbortError")) {
@@ -133,7 +137,7 @@ export function stopPolling(): void {
   if (refs === 0 && timer) {
     clearInterval(timer);
     timer = null;
-    typingFrom = null;
+    typingFromSet = new Set();
     disarmWake?.();
     disarmWake = null;
   }

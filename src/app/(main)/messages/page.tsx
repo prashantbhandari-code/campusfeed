@@ -16,6 +16,7 @@ export default function MessagesPage() {
   const { onlineUsers } = useSocket(user?.id);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [typingIds, setTypingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchConversations();
@@ -24,6 +25,26 @@ export default function MessagesPage() {
     // background — otherwise this list went stale until a manual reload.
     const offMessage = subscribe("new-message", () => fetchConversations());
     const offBadge = subscribe("messages-unread", () => fetchConversations());
+    // Live typing indicators straight off the realtime bus (works in both
+    // WebSocket and polling modes) — no refetch needed, pure UI state.
+    const offTyping = subscribe("user-typing", (data: { senderId: string }) => {
+      if (!data?.senderId) return;
+      setTypingIds((prev) => {
+        if (prev.has(data.senderId)) return prev;
+        const next = new Set(prev);
+        next.add(data.senderId);
+        return next;
+      });
+    });
+    const offStopTyping = subscribe("user-stop-typing", (data: { senderId: string }) => {
+      if (!data?.senderId) return;
+      setTypingIds((prev) => {
+        if (!prev.has(data.senderId)) return prev;
+        const next = new Set(prev);
+        next.delete(data.senderId);
+        return next;
+      });
+    });
     const wake = () => {
       if (document.visibilityState === "visible") fetchConversations();
     };
@@ -33,6 +54,8 @@ export default function MessagesPage() {
     return () => {
       offMessage();
       offBadge();
+      offTyping();
+      offStopTyping();
       document.removeEventListener("visibilitychange", wake);
       window.removeEventListener("focus", wake);
       window.removeEventListener("online", wake);
@@ -117,19 +140,32 @@ export default function MessagesPage() {
                     )}
                   </div>
 
-                  {/* Name + preview */}
+                  {/* Name + preview (or live typing indicator) */}
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{conv.otherUser.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {isMine && <span className="text-gray-400 dark:text-gray-500">You: </span>}
-                      {preview}
-                      {lastMsg && <span className="text-gray-400 dark:text-gray-600"> · {formatDate(lastMsg.createdAt)}</span>}
-                    </p>
+                    {typingIds.has(conv.otherUser.id) ? (
+                      <p className="text-xs text-primary-600 dark:text-primary-400 font-medium truncate flex items-center gap-1">
+                        typing
+                        <span className="inline-flex gap-0.5 items-end pb-0.5">
+                          <span className="w-1 h-1 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-1 h-1 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-1 h-1 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {isMine && <span className="text-gray-400 dark:text-gray-500">You: </span>}
+                        {preview}
+                        {lastMsg && <span className="text-gray-400 dark:text-gray-600"> · {formatDate(lastMsg.createdAt)}</span>}
+                      </p>
+                    )}
                   </div>
 
-                  {/* Unread badge */}
+                  {/* Unread count badge */}
                   {conv.unread > 0 && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                    <div className="min-w-[20px] h-5 px-1.5 bg-primary-600 text-white text-[11px] font-semibold rounded-full flex items-center justify-center flex-shrink-0">
+                      {conv.unread > 99 ? "99+" : conv.unread}
+                    </div>
                   )}
                 </div>
               );

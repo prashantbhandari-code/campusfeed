@@ -3,15 +3,22 @@ import { getUserIdFromCookieHeader } from '@/lib/session-token';
 import prisma from '@/lib/prisma';
 import { getBlockedIds } from '@/lib/blocking';
 
-// In-memory typing state (ephemeral, per-instance — fine for typing hints)
-const typingUsers = new Map<string, { senderId: string; senderName: string; timestamp: number }>();
+// In-memory typing state (ephemeral, per-instance — fine for typing hints).
+// Keyed receiverId → senderId → entry so several people can type to the same
+// user at once (e.g. two group DMs open) without overwriting each other.
+const typingUsers = new Map<string, Map<string, { senderId: string; senderName: string; timestamp: number }>>();
 
 // Cleanup stale typing entries
 setInterval(() => {
   const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  Array.from(typingUsers.entries()).forEach(([userId, typing]) => {
-    if (typing.timestamp < fiveMinutesAgo) {
-      typingUsers.delete(userId);
+  Array.from(typingUsers.entries()).forEach(([receiverId, senders]) => {
+    Array.from(senders.entries()).forEach(([senderId, typing]) => {
+      if (typing.timestamp < fiveMinutesAgo) {
+        senders.delete(senderId);
+      }
+    });
+    if (senders.size === 0) {
+      typingUsers.delete(receiverId);
     }
   });
 }, 60 * 1000);
@@ -20,6 +27,18 @@ const USER_SELECT = { id: true, name: true, username: true, avatar: true, verifi
 // Re-scan the last 3s on each poll so a message written between query and
 // timestamp can't be missed; client dedupes by id.
 const POLL_SKEW_MS = 3000;
+
+// Entries older than this are dropped at read time — a typist who closes
+// their tab never sends stop-typing, so freshness comes from keystroke pings
+// (clients re-ping every 2s while typing).
+const TYPING_FRESH_MS = 8000;
+
+function freshTypingFor(receiverId: string) {
+  const cutoff = Date.now() - TYPING_FRESH_MS;
+  const senders = typingUsers.get(receiverId);
+  if (!senders) return [];
+  return Array.from(senders.values()).filter((t) => t.timestamp >= cutoff);
+}
 
 // POST: typing indicators (messages go through /api/messages → DB)
 export async function POST(request: NextRequest) {
@@ -35,16 +54,22 @@ export async function POST(request: NextRequest) {
     const { action, receiverId, senderName } = body;
 
     if (action === 'typing' && receiverId) {
-      typingUsers.set(receiverId, {
+      const senders = typingUsers.get(receiverId) ?? new Map();
+      senders.set(userId, {
         senderId: userId,
         senderName: senderName || 'User',
         timestamp: Date.now(),
       });
+      typingUsers.set(receiverId, senders);
       return NextResponse.json({ success: true });
     }
 
     if (action === 'stop-typing' && receiverId) {
-      typingUsers.delete(receiverId);
+      const senders = typingUsers.get(receiverId);
+      if (senders) {
+        senders.delete(userId);
+        if (senders.size === 0) typingUsers.delete(receiverId);
+      }
       return NextResponse.json({ success: true });
     }
 
@@ -102,8 +127,7 @@ export async function GET(request: NextRequest) {
     const type = url.searchParams.get('type') || 'messages';
 
     if (type === 'typing') {
-      const typing = typingUsers.get(userId);
-      return NextResponse.json({ typing: typing || null });
+      return NextResponse.json({ typing: freshTypingFor(userId) });
     }
 
     const gt = new Date(Math.max(0, since));
@@ -238,7 +262,9 @@ export async function GET(request: NextRequest) {
       reactions: reactionPayload,
       callSignals: callSignalsOut,
       // Typing rides the same response so each tick is one round trip, not two.
-      typing: typingUsers.get(userId) || null,
+      // Array of everyone currently typing to this user; the client diffs it
+      // against the previous tick to raise user-typing / user-stop-typing.
+      typing: freshTypingFor(userId),
       unreadNotifications,
       unreadMessages,
       timestamp: Date.now() - POLL_SKEW_MS,
