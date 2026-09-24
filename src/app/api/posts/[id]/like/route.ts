@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { sendPush } from "@/lib/push";
 
 export async function POST(
   req: Request,
@@ -41,6 +42,12 @@ export async function POST(
     if (post && post.authorId !== userId) {
       await prisma.notification.create({
         data: { type: "like", userId: post.authorId, fromUserId: userId, postId },
+      });
+      const from = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+      void sendPush(post.authorId, {
+        title: from?.name || "Someone",
+        body: "liked your post",
+        url: `/posts/${postId}`,
       });
     }
 

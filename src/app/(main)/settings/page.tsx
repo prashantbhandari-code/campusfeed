@@ -117,7 +117,7 @@ export default function SettingsPage() {
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider px-1 mb-2">{section.title}</h3>
           <div className="glass-card rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-white/[0.04]">
             {section.items.map((item) => (
-              <Link key={item.label} href={item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-all">
+              <Link key={item.label} href={item.href === "/profile/me" && session?.user ? `/profile/${(session.user as any).username}` : item.href} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-all">
                 <item.icon className="text-xl text-gray-500 dark:text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm text-gray-900 dark:text-white">{item.label}</p>

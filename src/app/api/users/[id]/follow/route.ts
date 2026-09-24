@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { emitToUser } from "@/lib/socket";
+import { sendPush } from "@/lib/push";
 
 export async function GET(
   req: Request,
@@ -83,6 +84,11 @@ export async function POST(
     if (!recentNotif) {
       await prisma.notification.create({
         data: { type: "follow", userId: followingId, fromUserId: followerId },
+      });
+      void sendPush(followingId, {
+        title: fromUser?.name || "Someone",
+        body: "started following you",
+        url: `/profile/${fromUser?.username || ""}`,
       });
     }
 

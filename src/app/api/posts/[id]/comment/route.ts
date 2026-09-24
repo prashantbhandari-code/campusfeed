@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
+import { sendPush } from "@/lib/push";
 
 // Strip HTML tags to prevent stored XSS
 
@@ -61,6 +62,11 @@ export async function POST(
           fromUserId: (session.user as any).id,
           postId: params.id,
         },
+      });
+      void sendPush(post.authorId, {
+        title: comment.author?.name || "Someone",
+        body: `commented: ${sanitizedContent.slice(0, 80)}`,
+        url: `/posts/${params.id}`,
       });
     }
 

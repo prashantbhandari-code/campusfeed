@@ -23,7 +23,10 @@ export const GET = withRateLimit(async (req: Request) => {
 
     let where: any = {};
 
-    if (userId) {
+    if (searchParams.get("saved")) {
+      // Saved-posts view: everything the current user has bookmarked
+      where.saves = { some: { userId: (session.user as any).id } };
+    } else if (userId) {
       where.authorId = userId;
     } else {
       const following = await prisma.follow.findMany({
