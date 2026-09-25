@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { parseBody, updateProfileSchema } from "@/lib/validation";
 
 export async function PUT(req: Request) {
   try {
@@ -12,7 +13,9 @@ export async function PUT(req: Request) {
     }
 
     const userId = session.user.id;
-    const { name, username, bio, department, batchYear, rollNumber, avatar, coverPhoto } = await req.json();
+    const parsed = await parseBody(req, updateProfileSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, username, bio, department, batchYear, rollNumber, avatar, coverPhoto } = parsed.data;
 
     // Check if username is taken by someone else
     if (username) {
@@ -47,7 +50,7 @@ export async function PUT(req: Request) {
         ...(username !== undefined && { username }),
         ...(bio !== undefined && { bio }),
         ...(department !== undefined && { department }),
-        ...(batchYear !== undefined && { batchYear: batchYear ? parseInt(batchYear) : null }),
+        ...(batchYear !== undefined && { batchYear }),
         ...(rollNumber !== undefined && { rollNumber: rollNumber || null }),
         ...(avatar !== undefined && { avatar }),
         ...(coverPhoto !== undefined && { coverPhoto }),

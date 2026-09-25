@@ -7,6 +7,7 @@ import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
 import { sendPush } from "@/lib/push";
+import { parseBody, sendMessageSchema } from "@/lib/validation";
 import { withRateLimit } from "@/lib/rateLimit";
 
 // Strip HTML tags to prevent stored XSS
@@ -86,10 +87,9 @@ export const POST = withRateLimit(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { receiverId, content, fileUrl, fileType, fileName, replyToId } = await req.json();
-    if (!receiverId) {
-      return NextResponse.json({ error: "Receiver required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, sendMessageSchema);
+    if (!parsed.ok) return parsed.response;
+    const { receiverId, content, fileUrl, fileType, fileName, replyToId } = parsed.data;
     if (!content && !fileUrl) {
       return NextResponse.json({ error: "Content or file required" }, { status: 400 });
     }

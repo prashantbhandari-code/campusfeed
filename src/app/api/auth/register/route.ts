@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withRateLimit } from "@/lib/rateLimit";
+import { parseBody, registerSchema } from "@/lib/validation";
 
 function generateUsername(fullName: string): string {
   const base = fullName
@@ -19,26 +20,15 @@ function generateUsername(fullName: string): string {
 
 async function handler(req: Request) {
   try {
-    const body = await req.json();
-    const { name, username, email, password, phone, department, batchYear } = body;
+    const parsed = await parseBody(req, registerSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, username, email, password, phone, department, batchYear } = parsed.data;
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "Name, email, and password are required" },
-        { status: 400 }
-      );
-    }
-
+    // Business rule stays in the handler: schema validates shape/length,
+    // this validates the campus-domain policy.
     if (!email.endsWith("@kiit.ac.in")) {
       return NextResponse.json(
         { error: "Only @kiit.ac.in emails are allowed" },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
         { status: 400 }
       );
     }
@@ -85,7 +75,7 @@ async function handler(req: Request) {
           password: hashedPassword,
           phone: phone || null,
           department: department || null,
-          batchYear: batchYear ? parseInt(batchYear) : null,
+          batchYear: batchYear ?? null,
           collegeEmail: email,
           verified: true,
         },
@@ -104,7 +94,7 @@ async function handler(req: Request) {
         password: hashedPassword,
         phone: phone || null,
         department: department || null,
-        batchYear: batchYear ? parseInt(batchYear) : null,
+        batchYear: batchYear ?? null,
         collegeEmail: email,
         verified: true,
       },

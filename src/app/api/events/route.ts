@@ -11,6 +11,7 @@ export async function GET() {
         creator: { select: { id: true, name: true, username: true, avatar: true } },
       },
       orderBy: { startTime: "asc" },
+      take: 100,
     });
     return NextResponse.json(events);
   } catch (error) {

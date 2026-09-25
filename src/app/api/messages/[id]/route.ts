@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 import { isBlockedPair } from "@/lib/blocking";
+import { parseBody, editMessageSchema } from "@/lib/validation";
 
 export async function GET(
   req: Request,
@@ -130,8 +131,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Attachments can't be edited" }, { status: 400 });
     }
 
-    const { content } = await req.json();
-    const sanitized = content ? sanitize(content) : "";
+    const parsed = await parseBody(req, editMessageSchema);
+    if (!parsed.ok) return parsed.response;
+    const sanitized = sanitize(parsed.data.content);
     if (!sanitized) {
       return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
     }

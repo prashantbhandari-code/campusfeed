@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import { emitToUser } from "@/lib/socket";
+import { parseBody, messageReactionSchema } from "@/lib/validation";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -13,10 +14,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const messageId = params.id;
-    const { emoji } = await req.json();
-    if (!emoji) {
-      return NextResponse.json({ error: "Emoji required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, messageReactionSchema);
+    if (!parsed.ok) return parsed.response;
+    const { emoji } = parsed.data;
 
     // Toggle reaction: if exists, remove; if not, add
     const existing = await prisma.messageReaction.findUnique({
@@ -35,6 +35,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const reactions = await prisma.messageReaction.findMany({
       where: { messageId },
       include: { user: { select: { id: true, name: true, username: true } } },
+      take: 100,
     });
 
     // Bump the message's change marker so other devices' polls pick this up —
@@ -70,6 +71,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const reactions = await prisma.messageReaction.findMany({
       where: { messageId: params.id },
       include: { user: { select: { id: true, name: true, username: true } } },
+      take: 100,
     });
     return NextResponse.json(reactions);
   } catch (error) {

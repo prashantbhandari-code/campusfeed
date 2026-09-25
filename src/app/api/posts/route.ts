@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getBlockedIds } from "@/lib/blocking";
+import { parseBody, createPostSchema } from "@/lib/validation";
 
 // Simple HTML sanitizer — strip tags
 
@@ -96,7 +97,9 @@ export const POST = withRateLimit(async (req: Request) => {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { content, images } = await req.json();
+    const parsed = await parseBody(req, createPostSchema);
+    if (!parsed.ok) return parsed.response;
+    const { content, images } = parsed.data;
 
     // Sanitize content
     const sanitizedContent = content ? sanitize(content) : null;

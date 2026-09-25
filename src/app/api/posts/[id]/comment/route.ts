@@ -7,6 +7,7 @@ import { sanitize } from "@/lib/sanitize";
 import { sendPush } from "@/lib/push";
 import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
 import { withRateLimit } from "@/lib/rateLimit";
+import { parseBody, createCommentSchema, editCommentSchema, commentActionSchema } from "@/lib/validation";
 
 // Strip HTML tags to prevent stored XSS
 
@@ -29,6 +30,7 @@ export async function GET(
       },
       include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
     return NextResponse.json(comments);
   } catch (error) {
@@ -54,10 +56,9 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: "You can't comment on this post" }, { status: 403 });
       }
 
-      const { content } = await req.json();
-      if (!content) {
-        return NextResponse.json({ error: "Content required" }, { status: 400 });
-      }
+      const parsed = await parseBody(req, createCommentSchema);
+      if (!parsed.ok) return parsed.response;
+      const { content } = parsed.data;
 
       const sanitizedContent = sanitize(content);
       if (!sanitizedContent) {
@@ -109,10 +110,9 @@ export async function PATCH(
     }
     const userId = session.user.id;
 
-    const { commentId, content } = await req.json();
-    if (!commentId) {
-      return NextResponse.json({ error: "commentId required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, editCommentSchema);
+    if (!parsed.ok) return parsed.response;
+    const { commentId, content } = parsed.data;
 
     const comment = await prisma.comment.findUnique({ where: { id: commentId } });
     if (!comment || comment.postId !== params.id) {
@@ -154,10 +154,9 @@ export async function DELETE(
     }
     const userId = session.user.id;
 
-    const { commentId } = await req.json().catch(() => ({} as any));
-    if (!commentId) {
-      return NextResponse.json({ error: "commentId required" }, { status: 400 });
-    }
+    const parsedDel = await parseBody(req, commentActionSchema);
+    if (!parsedDel.ok) return parsedDel.response;
+    const { commentId } = parsedDel.data;
 
     const comment = await prisma.comment.findUnique({ where: { id: commentId } });
     if (!comment || comment.postId !== params.id) {

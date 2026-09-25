@@ -31,6 +31,7 @@ export async function GET(request: Request) {
         createdAt: true,
         _count: { select: { posts: true, followers: true, following: true } },
       },
+      take: 200,
     });
 
     return NextResponse.json({ users });

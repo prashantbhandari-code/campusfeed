@@ -7,6 +7,7 @@ import { sanitize } from "@/lib/sanitize";
 import { emitToGroup } from "@/lib/socket";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getBlockedIds } from "@/lib/blocking";
+import { parseBody, groupMessageSchema } from "@/lib/validation";
 
 const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
 
@@ -64,11 +65,12 @@ export const POST = withRateLimit(async (req: Request, { params }: { params: { i
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
 
-    const body = await req.json();
-    const content = sanitize(typeof body?.content === "string" ? body.content.trim() : "");
-    const fileUrl = typeof body?.fileUrl === "string" && body.fileUrl ? body.fileUrl : null;
-    const fileType = typeof body?.fileType === "string" && body.fileType ? body.fileType : null;
-    const fileName = typeof body?.fileName === "string" && body.fileName ? body.fileName : null;
+    const parsed = await parseBody(req, groupMessageSchema);
+    if (!parsed.ok) return parsed.response;
+    const content = sanitize((parsed.data.content || "").trim());
+    const fileUrl = parsed.data.fileUrl || null;
+    const fileType = parsed.data.fileType || null;
+    const fileName = parsed.data.fileName || null;
 
     if (!content && !fileUrl) {
       return NextResponse.json({ error: "Content or file required" }, { status: 400 });

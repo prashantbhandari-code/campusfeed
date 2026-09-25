@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
 import { getBlockedIds } from "@/lib/blocking";
+import { parseBody, createStorySchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   try {
@@ -35,6 +36,7 @@ export async function GET(req: Request) {
         _count: { select: { likes: true, comments: true } },
       },
       orderBy: { createdAt: "desc" },
+      take: 60,
     });
 
     return NextResponse.json(stories);
@@ -50,10 +52,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { images } = await req.json();
-    if (!images || images.length === 0) {
-      return NextResponse.json({ error: "Images required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, createStorySchema);
+    if (!parsed.ok) return parsed.response;
+    const { images } = parsed.data;
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);

@@ -79,6 +79,9 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     stopStatsPolling();
     setIceState("new"); setPairType(""); setPktStats("");
     const tick = async () => {
+      // Skip work while the tab is hidden — getStats on a background tab is
+      // pure waste (M4). The next visible tick resumes with fresh values.
+      if (typeof document !== "undefined" && document.hidden) return;
       const pc = pcRef.current;
       if (!pc) { stopStatsPolling(); return; }
       setIceState(pc.iceConnectionState);

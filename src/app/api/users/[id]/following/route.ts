@@ -40,6 +40,7 @@ export async function GET(
         },
       },
       orderBy: { id: "desc" },
+      take: 500,
     });
 
     return NextResponse.json(following.map((f: any) => f.following));

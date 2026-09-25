@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { parseBody, createGroupSchema } from "@/lib/validation";
 
 // GET /api/groups — list all groups with membership info
 export async function GET(req: Request) {
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
         _count: { select: { members: true, posts: true } },
       },
       orderBy: { memberCount: "desc" },
+      take: 100,
     });
 
     const result = groups.map((g) => ({
@@ -69,8 +71,9 @@ export async function POST(req: Request) {
     }
 
     const userId = session.user.id;
-    const body = await req.json();
-    const { name, description, type, department, batchYear, section, allowMemberPosts } = body;
+    const parsed = await parseBody(req, createGroupSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, description, type, department, batchYear, section, allowMemberPosts } = parsed.data;
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json({ error: "Group name is required" }, { status: 400 });

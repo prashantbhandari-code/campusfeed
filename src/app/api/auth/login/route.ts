@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSessionCookie } from "@/lib/session-cookie";
 import { withRateLimit } from "@/lib/rateLimit";
+import { parseBody, loginSchema } from "@/lib/validation";
 
 /**
  * Direct login endpoint: verifies email/password against PostgreSQL,
@@ -12,11 +13,9 @@ import { withRateLimit } from "@/lib/rateLimit";
  */
 async function handler(req: Request) {
   try {
-    const { email: identifier, password } = await req.json();
-
-    if (!identifier || !password) {
-      return NextResponse.json({ error: "Email/username and password required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, loginSchema);
+    if (!parsed.ok) return parsed.response;
+    const { email: identifier, password } = parsed.data;
 
     // 1. Find user by email OR username (diagram: "Username / KIIT mail")
     const user = await prisma.user.findFirst({
