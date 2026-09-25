@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const userId = searchParams.get("userId");
 
     const session = await getAppwriteSession(req);
-    const currentUserId = (session?.user as any)?.id;
+    const currentUserId = session?.user?.id;
     if (!currentUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

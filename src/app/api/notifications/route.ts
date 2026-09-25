@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     const notifications = await prisma.notification.findMany({
       // Message alerts live in the Messages badge — hide legacy message rows
-      where: { userId: (session.user as any).id, NOT: { type: "message" } },
+      where: { userId: session.user.id, NOT: { type: "message" } },
       include: {
         fromUser: { select: { id: true, name: true, username: true, avatar: true } },
       },
@@ -35,7 +35,7 @@ export async function PUT(req: Request) {
     }
 
     await prisma.notification.updateMany({
-      where: { userId: (session.user as any).id, read: false },
+      where: { userId: session.user.id, read: false },
       data: { read: true },
     });
 

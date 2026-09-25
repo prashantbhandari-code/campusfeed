@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
+import { sendPush } from "@/lib/push";
 import { withRateLimit } from "@/lib/rateLimit";
 
 // Strip HTML tags to prevent stored XSS
@@ -17,18 +18,35 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
-    // Hide conversations with blocked users (either direction)
+    // Hide conversations with blocked users (either direction).
+    // This route runs on every conversation-list render AND on every
+    // new-message event — an unbounded scan of the user's whole history
+    // was a latency bomb at scale. Unread counts stay exact because the
+    // count query is NOT capped; only last-message previews can fall back
+    // to "older than the window" for conversations idle beyond it.
     const blockedIds = await getBlockedIds(userId);
-    const conversations = await prisma.message.findMany({
-      where: { OR: [{ senderId: userId }, { receiverId: userId }] },
-      include: {
-        sender: { select: { id: true, name: true, username: true, avatar: true } },
-        receiver: { select: { id: true, name: true, username: true, avatar: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const CONVERSATION_WINDOW = 500;
+    const [conversations, unreadRows] = await Promise.all([
+      prisma.message.findMany({
+        where: { OR: [{ senderId: userId }, { receiverId: userId }] },
+        include: {
+          sender: { select: { id: true, name: true, username: true, avatar: true } },
+          receiver: { select: { id: true, name: true, username: true, avatar: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: CONVERSATION_WINDOW,
+      }),
+      prisma.message.groupBy({
+        by: ["senderId"],
+        where: { receiverId: userId, read: false, senderId: { notIn: blockedIds } },
+        _count: { _all: true },
+      }),
+    ]);
+    const unreadBySender = new Map<string, number>(
+      unreadRows.map((r) => [r.senderId, r._count._all])
+    );
 
     const conversationMap = new Map<string, any>();
     conversations.forEach((msg) => {
@@ -41,12 +59,15 @@ export async function GET(req: Request) {
         conversationMap.set(otherUserId, {
           otherUser: msg.senderId === userId ? msg.receiver : msg.sender,
           lastMessage: msg,
-          unread: msg.receiverId === userId && !msg.read ? 1 : 0,
+          // Exact per-sender unread from the groupBy; the per-row fallback
+          // below only applies to senders whose unread rows exist but whose
+          // recent window is somehow empty (defensive — shouldn't happen).
+          unread: unreadBySender.get(otherUserId) ?? 0,
         });
       } else {
         const existing = conversationMap.get(otherUserId);
-        if (msg.receiverId === userId && !msg.read) {
-          existing.unread += 1;
+        if (existing.unread === 0 && msg.receiverId === userId && !msg.read) {
+          existing.unread = 1;
         }
       }
     });
@@ -72,7 +93,7 @@ export const POST = withRateLimit(
     if (!content && !fileUrl) {
       return NextResponse.json({ error: "Content or file required" }, { status: 400 });
     }
-    if (await isBlockedPair((session.user as any).id, receiverId)) {
+    if (await isBlockedPair(session.user.id, receiverId)) {
       return NextResponse.json({ error: "You can't send messages to this user" }, { status: 403 });
     }
 
@@ -82,8 +103,8 @@ export const POST = withRateLimit(
         where: {
           id: replyToId,
           OR: [
-            { senderId: (session.user as any).id, receiverId },
-            { senderId: receiverId, receiverId: (session.user as any).id },
+            { senderId: session.user.id, receiverId },
+            { senderId: receiverId, receiverId: session.user.id },
           ],
         },
         select: { id: true },
@@ -96,7 +117,7 @@ export const POST = withRateLimit(
     const message = await prisma.message.create({
       data: {
         content: content ? sanitize(content) : "",
-        senderId: (session.user as any).id,
+        senderId: session.user.id,
         receiverId,
         fileUrl: fileUrl || null,
         fileType: fileType || null,
@@ -124,6 +145,14 @@ export const POST = withRateLimit(
     // Message alerts belong to the Messages badge (conversation unread count),
     // not the notifications bell — no Notification row, no new-notification emit.
     emitToUser(receiverId, "new-message", message);
+
+    // Push was never wired for DMs — recipients only learned about messages
+    // when the app was open. Fire-and-forget: never delay or fail the send.
+    void sendPush(receiverId, {
+      title: message.sender?.name ? `Message from ${message.sender.name}` : "New message",
+      body: message.content ? message.content.slice(0, 120) : message.fileName ? `📎 ${message.fileName}` : "Sent an attachment",
+      url: `/messages/${message.senderId}`,
+    }).catch(() => {});
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

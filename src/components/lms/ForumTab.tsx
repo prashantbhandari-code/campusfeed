@@ -16,7 +16,7 @@ interface ForumReply {
 }
 
 export default function ForumTab({ courseId }: { courseId: string }) {
-  const { data: session } = useSession() as any;
+  const { data: session } = useSession();
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -42,7 +42,7 @@ export default function ForumTab({ courseId }: { courseId: string }) {
     });
     if (res.ok) {
       const post = await res.json();
-      setPosts([{ ...post, author: { id: session?.user?.id, name: session?.user?.name, avatar: session?.user?.image }, _count: { replies: 0 } }, ...posts]);
+      setPosts([{ ...post, author: { id: session?.user?.id, name: session?.user?.name, avatar: session?.user?.avatar }, _count: { replies: 0 } }, ...posts]);
       setNewTitle(""); setNewContent(""); setShowNew(false);
     }
   };
@@ -66,7 +66,7 @@ export default function ForumTab({ courseId }: { courseId: string }) {
     });
     if (res.ok) {
       const reply = await res.json();
-      setReplies({ ...replies, [postId]: [...(replies[postId] || []), { ...reply, author: { id: session?.user?.id, name: session?.user?.name, avatar: session?.user?.image } }] });
+      setReplies({ ...replies, [postId]: [...(replies[postId] || []), { ...reply, author: { id: session?.user?.id, name: session?.user?.name, avatar: session?.user?.avatar } }] });
       setReplyTexts({ ...replyTexts, [postId]: "" });
       setPosts(posts.map(p => p.id === postId ? { ...p, _count: { replies: p._count.replies + 1 } } : p));
     }

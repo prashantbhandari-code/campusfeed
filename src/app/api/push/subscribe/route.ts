@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!endpoint || !p256dh || !auth) {
       return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const existing = await prisma.pushSubscription.findFirst({ where: { endpoint, userId } });
     if (existing) {
       await prisma.pushSubscription.update({ where: { id: existing.id }, data: { p256dh, auth } });
@@ -34,7 +34,7 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const { endpoint } = await req.json();
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     await prisma.pushSubscription.deleteMany({ where: { endpoint, userId } });
     return NextResponse.json({ success: true });
   } catch (error) {

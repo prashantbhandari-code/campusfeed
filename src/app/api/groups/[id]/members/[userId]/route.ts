@@ -24,7 +24,7 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const callerId = (session.user as any).id;
+    const callerId = session.user.id;
 
     if (!(await requireGroupAdmin(params.id, callerId))) {
       return NextResponse.json({ error: "Only admins can change roles" }, { status: 403 });
@@ -78,7 +78,7 @@ export async function DELETE(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const callerId = (session.user as any).id;
+    const callerId = session.user.id;
 
     if (!(await requireGroupAdmin(params.id, callerId))) {
       return NextResponse.json({ error: "Only admins can remove members" }, { status: 403 });

@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const session = await getAppwriteSession(req);
-    const currentUserId = (session?.user as any)?.id;
+    const currentUserId = session?.user?.id;
     const targetUserId = params.id;
 
     // Privacy check: can only see followers list if:

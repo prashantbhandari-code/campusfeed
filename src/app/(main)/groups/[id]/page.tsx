@@ -26,7 +26,7 @@ function timeAgo(date: string) { const s = Math.floor((Date.now() - new Date(dat
 
 export default function GroupDetailPage() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const params = useParams();
   const router = useRouter();
   const groupId = params.id as string;
@@ -265,7 +265,7 @@ export default function GroupDetailPage() {
             {canPost && (
               <div className="glass-card rounded-2xl p-4">
                 <div className="flex gap-3">
-                  <UserAvatar user={user} size="sm" />
+                  <UserAvatar user={user ?? { name: "" }} size="sm" />
                   <div className="flex-1">
                     <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder={"Post in " + group.name + "..."} className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[60px]" rows={2} />
                     <div className="flex justify-end mt-2">
@@ -341,7 +341,7 @@ export default function GroupDetailPage() {
                 {canPost && (
                   <div className="glass-card rounded-2xl p-4 mb-4">
                     <div className="flex gap-3">
-                      <UserAvatar user={user} size="sm" />
+                      <UserAvatar user={user ?? { name: "" }} size="sm" />
                       <div className="flex-1">
                         <textarea value={sectionPostContent} onChange={(e) => setSectionPostContent(e.target.value)} placeholder="Post in this section..." className="w-full bg-gray-100 dark:bg-dark-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-1 focus:ring-primary-500 min-h-[60px]" rows={2} />
                         <div className="flex justify-end mt-2">

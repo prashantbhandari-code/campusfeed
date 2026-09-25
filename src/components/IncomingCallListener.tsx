@@ -8,7 +8,7 @@ import CallModal from "./CallModal";
 
 export default function IncomingCallListener() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   // Anchors the shared realtime loop (ref-counted polling) on every (main)
   // page — unread badges, group chat, and incoming calls all ride it.
   useSocket(user?.id);

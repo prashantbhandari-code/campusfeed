@@ -15,7 +15,7 @@ export async function POST(
     }
 
     const postId = params.id;
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const existing = await prisma.save.findUnique({
       where: { postId_userId: { postId, userId } },

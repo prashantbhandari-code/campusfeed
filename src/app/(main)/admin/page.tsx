@@ -50,7 +50,7 @@ const REACH_LABEL: Record<string, string> = {
 
 export default function AdminDashboard() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<User[]>([]);

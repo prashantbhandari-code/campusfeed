@@ -25,23 +25,23 @@ export const GET = withRateLimit(async (req: Request) => {
     let where: any = {};
 
     // Blocking applies to every feed mode: own posts, saved, and following
-    const blockedIds = await getBlockedIds((session.user as any).id);
+    const blockedIds = await getBlockedIds(session.user.id);
     if (blockedIds.length > 0) {
       where.AND = [{ authorId: { notIn: blockedIds } }];
     }
 
     if (searchParams.get("saved")) {
       // Saved-posts view: everything the current user has bookmarked
-      where.saves = { some: { userId: (session.user as any).id } };
+      where.saves = { some: { userId: session.user.id } };
     } else if (userId) {
       where.authorId = userId;
     } else {
       const following = await prisma.follow.findMany({
-        where: { followerId: (session.user as any).id },
+        where: { followerId: session.user.id },
         select: { followingId: true },
       });
       const followingIds = following.map((f) => f.followingId);
-      where.authorId = { in: [...followingIds, (session.user as any).id] };
+      where.authorId = { in: [...followingIds, session.user.id] };
     }
 
     const posts = await prisma.post.findMany({
@@ -54,8 +54,8 @@ export const GET = withRateLimit(async (req: Request) => {
         authorId: true,
         author: { select: { id: true, name: true, username: true, avatar: true } },
         _count: { select: { likes: true, comments: true, saves: true } },
-        likes: { where: { userId: (session.user as any).id }, select: { userId: true } },
-        saves: { where: { userId: (session.user as any).id }, select: { userId: true } },
+        likes: { where: { userId: session.user.id }, select: { userId: true } },
+        saves: { where: { userId: session.user.id }, select: { userId: true } },
         comments: {
           select: {
             id: true,
@@ -119,7 +119,7 @@ export const POST = withRateLimit(async (req: Request) => {
       data: {
         content: sanitizedContent || null,
         images: JSON.stringify(images || []),
-        authorId: (session.user as any).id,
+        authorId: session.user.id,
       },
       include: {
         author: { select: { id: true, name: true, username: true, avatar: true } },

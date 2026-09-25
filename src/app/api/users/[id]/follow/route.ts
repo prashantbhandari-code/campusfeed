@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const followerId = (session.user as any).id;
+    const followerId = session.user.id;
     const followingId = params.id;
 
     const follow = await prisma.follow.findUnique({
@@ -44,7 +44,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const followerId = (session.user as any).id;
+    const followerId = session.user.id;
     const followingId = params.id;
 
     if (followerId === followingId) {

@@ -12,7 +12,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type"); // department, batch, class, custom, null=all
     const query = searchParams.get("q") || "";
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const body = await req.json();
     const { name, description, type, department, batchYear, section, allowMemberPosts } = body;
 

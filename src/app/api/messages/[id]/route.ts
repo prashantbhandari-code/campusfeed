@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const otherUserId = params.id;
 
     // Blocked either way — present an empty thread instead of the history
@@ -114,7 +114,7 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const message = await prisma.message.findUnique({ where: { id: params.id } });
     if (!message) {
@@ -177,7 +177,7 @@ export async function DELETE(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const message = await prisma.message.findUnique({ where: { id: params.id } });
     if (!message) {

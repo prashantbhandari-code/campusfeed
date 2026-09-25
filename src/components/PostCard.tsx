@@ -35,7 +35,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || "");
   const lastTapRef = useRef(0);
-  const user = session?.user as any;
+  const user = session?.user;
   const images = parseImages(post.images);
 
   // Double-tap to like
@@ -361,7 +361,7 @@ function PostCard({ post, onDelete }: PostCardProps) {
           })}
 
           <form onSubmit={handleComment} className="flex gap-2 mt-3">
-            <UserAvatar user={user} size="sm" />
+            <UserAvatar user={user ?? { name: "" }} size="sm" />
             <input
               type="text"
               value={commentText}

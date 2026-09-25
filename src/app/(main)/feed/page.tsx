@@ -16,7 +16,7 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const user = session?.user as any;
+  const user = session?.user;
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 

@@ -17,7 +17,7 @@ const EVENT_TYPES = [
 
 export default function EventsPage() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const [events, setEvents] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [activeTab, setActiveTab] = useState<"upcoming"|"past"|"all">("upcoming");

@@ -12,7 +12,7 @@ import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch
 export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-    const user = session?.user as any;
+    const user = session?.user;
   const unreadCount = useUnreadMessages();
   const notifUnread = useUnreadNotifications();
 

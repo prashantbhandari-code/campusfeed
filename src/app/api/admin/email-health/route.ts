@@ -14,7 +14,7 @@ async function handler(request: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: (session.user as any).id },
+      where: { id: session.user.id },
       select: { role: true },
     });
 

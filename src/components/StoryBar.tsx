@@ -19,7 +19,7 @@ function timeAgo(dateStr: string): string {
 
 function StoryBar() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const [stories, setStories] = useState<any[]>([]);
   const [viewingStory, setViewingStory] = useState<any>(null);
   const [storyData, setStoryData] = useState<any>(null);
@@ -266,7 +266,7 @@ function StoryBar() {
           {/* My Story */}
           <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group" onClick={() => { const m = confirm("Choose an option:\n\nOK = Take Photo\nCancel = Choose from Gallery"); if (m) openCamera(); else fileRef.current?.click(); }}>
             <div className="relative">
-              <UserAvatar user={user} size="lg" />
+              <UserAvatar user={user ?? { name: "" }} size="lg" />
               <div className="absolute -bottom-0.5 -right-0.5 bg-primary-600 rounded-full p-0.5 border-2 border-white dark:border-dark-900 group-hover:bg-primary-700 transition-colors">
                 <HiPlus className="text-[10px] text-white" />
               </div>

@@ -36,7 +36,7 @@ export default function GroupChat({
   onRead?: () => void;
 }) {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);

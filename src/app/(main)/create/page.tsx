@@ -11,7 +11,7 @@ import { useFileUpload } from "@/lib/useFileUpload";
 export default function CreatePage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const user = session?.user as any;
+  const user = session?.user;
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const { uploadFile, uploading } = useFileUpload();
@@ -56,7 +56,7 @@ export default function CreatePage() {
 
       <div className="glass-card rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         <div className="flex items-center gap-3 mb-4">
-          <UserAvatar user={user} />
+          <UserAvatar user={user ?? { name: "" }} />
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">{user?.name}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500">@{user?.username}</p>

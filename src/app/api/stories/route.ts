@@ -12,7 +12,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const following = await prisma.follow.findMany({
       where: { followerId: userId },
       select: { followingId: true },
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const story = await prisma.story.create({
       data: {
         images: JSON.stringify(images),
-        authorId: (session.user as any).id,
+        authorId: session.user.id,
         expiresAt,
       },
       select: {

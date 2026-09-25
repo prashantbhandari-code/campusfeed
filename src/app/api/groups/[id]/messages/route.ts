@@ -12,7 +12,7 @@ const USER_SELECT = { id: true, name: true, username: true, avatar: true, verifi
 
 async function requireMember(req: Request, groupId: string) {
   const session = await getAppwriteSession(req);
-  const userId = session?.user ? (session.user as any).id : null;
+  const userId = session?.user ? session.user.id : null;
   if (!userId) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
 
   const membership = await prisma.groupMember.findUnique({

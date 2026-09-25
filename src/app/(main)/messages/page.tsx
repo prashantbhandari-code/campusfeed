@@ -12,7 +12,7 @@ import { HiPencilSquare, HiArrowsPointingOut, HiXMark } from "react-icons/hi2";
 export default function MessagesPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const user = session?.user as any;
+  const user = session?.user;
   const { onlineUsers } = useSocket(user?.id);
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

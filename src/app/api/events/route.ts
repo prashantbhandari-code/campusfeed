@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         endTime: endTime ? new Date(endTime) : null,
         type: type || "meetup",
         imageUrl,
-        createdBy: (session.user as any).id,
+        createdBy: session.user.id,
       },
       include: {
         creator: { select: { id: true, name: true, username: true, avatar: true } },

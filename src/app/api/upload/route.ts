@@ -50,7 +50,7 @@ export const POST = withRateLimit(async (req: Request) => {
     const bucketId = "posts";
 
     // Appwrite caps fileId at 36 chars: short user prefix + base36 time + random
-    const fileId = `${(session.user as any).id.slice(0, 8)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}-${ext}`;
+    const fileId = `${session.user.id.slice(0, 8)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}-${ext}`;
     const buffer = await file.arrayBuffer();
 
     // Upload to Appwrite Storage via REST API. API-key auth requires the

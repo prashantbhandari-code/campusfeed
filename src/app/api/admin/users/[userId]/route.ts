@@ -13,7 +13,7 @@ export async function DELETE(
     }
 
     const admin = await prisma.user.findUnique({
-      where: { id: (session.user as any).id },
+      where: { id: session.user.id },
       select: { role: true },
     });
 
@@ -24,7 +24,7 @@ export async function DELETE(
     const { userId } = params;
 
     // Don't allow deleting yourself
-    if (userId === (session.user as any).id) {
+    if (userId === session.user.id) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
     }
 

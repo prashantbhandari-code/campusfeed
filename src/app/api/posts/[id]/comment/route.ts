@@ -19,7 +19,7 @@ export async function GET(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const blockedIds = await getBlockedIds(userId);
 
     const comments = await prisma.comment.findMany({
@@ -44,7 +44,7 @@ export const POST = withRateLimit(
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      const userId = (session.user as any).id;
+      const userId = session.user.id;
 
       const post = await prisma.post.findUnique({ where: { id: params.id } });
       if (!post) {
@@ -107,7 +107,7 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const { commentId, content } = await req.json();
     if (!commentId) {
@@ -152,7 +152,7 @@ export async function DELETE(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const { commentId } = await req.json().catch(() => ({} as any));
     if (!commentId) {

@@ -19,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const blockedIds = await getBlockedIds((session.user as any).id);
+    const blockedIds = await getBlockedIds(session.user.id);
     const posts = await prisma.groupPost.findMany({
       where: { groupId: params.id, authorId: { notIn: blockedIds } },
       include: {
@@ -49,7 +49,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const groupId = params.id;
 
     // Check membership

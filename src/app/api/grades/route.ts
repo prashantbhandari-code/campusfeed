@@ -5,8 +5,8 @@ import prisma from '@/lib/prisma';
 export async function GET(req: NextRequest) {
   try {
     const session = await getAppwriteSession(req);
-    if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const userId = (session?.user as any).id;
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = session?.user.id;
 
     const grades = await prisma.grade.findMany({ where: { studentId: userId }, orderBy: { createdAt: 'desc' } });
     const quizAttempts = await prisma.quizAttempt.findMany({

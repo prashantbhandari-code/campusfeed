@@ -35,7 +35,7 @@ function statusIcon(s: string) {
 }
 
 export default function AttendanceTab({ courseId, createdBy }: { courseId: string; createdBy?: string }) {
-  const { data: session } = useSession() as any;
+  const { data: session } = useSession();
   const isTeacher = !!(createdBy && session?.user?.id === createdBy);
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);

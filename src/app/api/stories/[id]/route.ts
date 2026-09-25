@@ -8,7 +8,7 @@ import prisma from "@/lib/prisma";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getAppwriteSession(req);
-    const userId = (session?.user as any)?.id;
+    const userId = session?.user?.id;
     const story = await prisma.story.findUnique({
       where: { id: params.id },
       include: {
@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   try {
     const session = await getAppwriteSession(req);
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const body = await req.json();
 
     if (body.action === "like") {
@@ -74,7 +74,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     const story = await prisma.story.findUnique({ where: { id: params.id } });
     if (!story) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (story.authorId !== (session.user as any).id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (story.authorId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await prisma.storyComment.deleteMany({ where: { storyId: params.id } });
     await prisma.storyLike.deleteMany({ where: { storyId: params.id } });

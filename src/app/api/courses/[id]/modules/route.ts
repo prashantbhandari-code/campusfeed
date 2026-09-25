@@ -5,8 +5,8 @@ import prisma from '@/lib/prisma';
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getAppwriteSession(req);
-    if (!(session?.user as any)?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const userId = (session?.user as any).id;
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const userId = session?.user.id;
 
     const body = await req.json();
     const { name, description } = body;
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       select: { order: true },
     });
 
-    const module = await prisma.courseModule.create({
+    const created = await prisma.courseModule.create({
       data: {
         name,
         description,
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
 
-    return NextResponse.json(module, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     console.error("POST error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

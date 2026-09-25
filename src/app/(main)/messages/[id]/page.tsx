@@ -15,7 +15,7 @@ export default function ChatPage() {
   const { data: session } = useSession();
   const params = useParams();
   const userId = params.id as string;
-  const user = session?.user as any;
+  const user = session?.user;
   const [messages, setMessages] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [newMessage, setNewMessage] = useState("");

@@ -16,7 +16,7 @@ export const POST = withRateLimit(
       }
 
       const postId = params.id;
-      const userId = (session.user as any).id;
+      const userId = session.user.id;
 
       const post = await prisma.post.findUnique({
         where: { id: postId },

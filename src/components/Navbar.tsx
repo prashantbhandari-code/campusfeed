@@ -12,7 +12,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const unread = useUnreadNotifications();
   const { theme, toggleTheme } = useTheme();
-  const user = session?.user as any;
+  const user = session?.user;
 
   // Desktop: no top navbar (sidebar handles everything)
   // Mobile: logo + theme toggle + bell + sign out

@@ -17,7 +17,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"people" | "posts">("people");
   const { data: session } = useSession();
-  const currentUser = session?.user as any;
+  const currentUser = session?.user;
   const [followStates, setFollowStates] = useState<Record<string, { isFollowing: boolean; doesFollowYou: boolean }>>({});
 
   useEffect(() => {
@@ -158,7 +158,7 @@ export default function ExplorePage() {
                       <span className="text-[10px] px-1.5 py-0.5 bg-campus-600/20 text-campus-400 rounded-full">{u.department}</span>
                     )}
                     {u.batchYear && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded-full">'{String(u.batchYear).slice(-2)}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-purple-600/20 text-purple-400 rounded-full">&apos;{String(u.batchYear).slice(-2)}</span>
                     )}
                   </div>
                   {u.bio && <p className="text-sm text-gray-400 mt-1 truncate">{u.bio}</p>}

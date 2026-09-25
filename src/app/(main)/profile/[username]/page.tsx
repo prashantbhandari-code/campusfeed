@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
-  const currentUser = session?.user as any;
+  const currentUser = session?.user;
 
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);

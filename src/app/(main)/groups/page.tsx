@@ -68,7 +68,7 @@ const GROUP_EMOJIS: Record<string, string> = {
 
 export default function GroupsPage() {
   const { data: session } = useSession();
-  const user = session?.user as any;
+  const user = session?.user;
   const [groups, setGroups] = useState<Group[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");

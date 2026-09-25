@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const [group, myMembership] = await Promise.all([
       prisma.group.findUnique({
@@ -78,7 +78,7 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const membership = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId: params.id, userId } },
@@ -115,7 +115,7 @@ export async function DELETE(
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const membership = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId: params.id, userId } },

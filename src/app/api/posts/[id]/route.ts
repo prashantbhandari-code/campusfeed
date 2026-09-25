@@ -18,7 +18,7 @@ export async function DELETE(
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
-    if (post.authorId !== (session.user as any).id) {
+    if (post.authorId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

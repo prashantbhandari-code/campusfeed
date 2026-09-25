@@ -12,7 +12,7 @@ export default function BottomNav() {
   const { data: session } = useSession();
   const unreadMessages = useUnreadMessages();
   const pathname = usePathname();
-  const user = session?.user as any;
+  const user = session?.user;
   const router = useRouter();
 
   const navItems = [
