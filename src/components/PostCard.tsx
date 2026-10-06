@@ -4,6 +4,7 @@ import { useState, useRef, memo } from "react";
 import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import Lightbox from "./Lightbox";
+import PostImage from "./PostImage";
 import UserAvatar from "./UserAvatar";
 import { HiOutlineHeart, HiHeart, HiOutlineChat, HiOutlineShare, HiBookmark, HiDotsHorizontal, HiOutlineTrash, HiOutlinePencil, HiOutlineBan } from "react-icons/hi";
 import { formatDate, parseImages } from "@/lib/utils";
@@ -221,13 +222,13 @@ function PostCard({ post, onDelete }: PostCardProps) {
         >
           {images.length === 1 ? (
             <div className="relative aspect-square">
-              <img src={images[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <PostImage src={images[0]} className="w-full h-full object-cover" />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-0.5">
               {images.slice(0, 4).map((img, i) => (
                 <div key={i} className="relative aspect-square">
-                  <img src={img} alt="" className="w-full h-auto rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => { setLightboxImages(parsedImages); setLightboxIndex(i); }} />
+                  <PostImage src={img} className="w-full h-full rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => { setLightboxImages(parsedImages); setLightboxIndex(i); }} />
                   {i === 3 && images.length > 4 && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <span className="text-white text-2xl font-bold">+{images.length - 4}</span>

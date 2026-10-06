@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "@/lib/session";
 import { useParams, useRouter } from "next/navigation";
+import PostImage from "@/components/PostImage";
 import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";
 import EditProfile from "@/components/EditProfile";
@@ -353,7 +354,7 @@ export default function ProfilePage() {
                   }}
                 >
                   {firstImage ? (
-                    <img src={firstImage} alt="" className="w-full h-full object-cover" />
+                    <PostImage src={firstImage} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center p-2">
                       <p className="text-xs text-gray-500 text-center line-clamp-3">{post.content}</p>
