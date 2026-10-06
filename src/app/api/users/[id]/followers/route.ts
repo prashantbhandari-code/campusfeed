@@ -10,13 +10,18 @@ export async function GET(
 ) {
   try {
     const session = await getAppwriteSession(req);
-    const currentUserId = session?.user?.id;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const currentUserId = session.user.id;
     const targetUserId = params.id;
 
     // Privacy check: can only see followers list if:
     // 1. It's your own profile, OR
     // 2. You follow them AND they follow you back (mutual followers)
-    if (currentUserId && currentUserId !== targetUserId) {
+    // (an absent session is rejected above — skipping the check for
+    // anonymous callers leaked the full list)
+    if (currentUserId !== targetUserId) {
       const iFollowThem = await prisma.follow.findUnique({
         where: { followerId_followingId: { followerId: currentUserId, followingId: targetUserId } },
       });

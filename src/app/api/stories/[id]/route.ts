@@ -7,7 +7,8 @@ import { parseBody, storyActionSchema } from "@/lib/validation";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getAppwriteSession(req);
-    const userId = session?.user?.id;
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = session.user.id;
     const story = await prisma.story.findUnique({
       where: { id: params.id },
       include: {
@@ -22,7 +23,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!story) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({
       ...story,
-      isLiked: userId ? story.likes.some((l) => l.userId === userId) : false,
+      isLiked: story.likes.some((l) => l.userId === userId),
       likeCount: story.likes.length,
     });
   } catch {

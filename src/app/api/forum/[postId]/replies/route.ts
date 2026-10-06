@@ -33,6 +33,9 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
 
 export async function GET(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
+    const session = await getAppwriteSession(req);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const replies = await prisma.forumReply.findMany({
       where: { postId: params.postId },
       include: {

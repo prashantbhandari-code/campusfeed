@@ -18,6 +18,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!parsed.ok) return parsed.response;
     const { emoji } = parsed.data;
 
+    // Only the two conversation participants may react (or read reactions) —
+    // mirrors the sender/receiver check in messages/[id].
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      select: { senderId: true, receiverId: true },
+    });
+    if (!message) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+    if (message.senderId !== session.user.id && message.receiverId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // Toggle reaction: if exists, remove; if not, add
     const existing = await prisma.messageReaction.findUnique({
       where: { messageId_userId_emoji: { messageId, userId: session.user.id, emoji } },
@@ -47,16 +60,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     // Push live update to both chat participants (WebSocket deployments;
     // on Vercel the polling fallback in /api/socketio delivers it instead)
-    const message = await prisma.message.findUnique({
-      where: { id: messageId },
-      select: { senderId: true, receiverId: true },
-    });
-    if (message) {
-      const payload = { messageId, reactions };
-      emitToUser(message.senderId, "message-reaction", payload);
-      if (message.receiverId !== message.senderId) {
-        emitToUser(message.receiverId, "message-reaction", payload);
-      }
+    const payload = { messageId, reactions };
+    emitToUser(message.senderId, "message-reaction", payload);
+    if (message.receiverId !== message.senderId) {
+      emitToUser(message.receiverId, "message-reaction", payload);
     }
 
     return NextResponse.json(reactions);
@@ -68,6 +75,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    const session = await getAppwriteSession(req);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const message = await prisma.message.findUnique({
+      where: { id: params.id },
+      select: { senderId: true, receiverId: true },
+    });
+    if (!message) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
+    if (message.senderId !== session.user.id && message.receiverId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const reactions = await prisma.messageReaction.findMany({
       where: { messageId: params.id },
       include: { user: { select: { id: true, name: true, username: true } } },
