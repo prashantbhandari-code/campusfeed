@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAppwriteSession } from '@/lib/appwrite-server-auth';
+import { parseBody, adminRoleSchema } from '@/lib/validation';
 
 export async function PATCH(
   request: NextRequest,
@@ -22,11 +23,12 @@ export async function PATCH(
     }
 
     const { userId } = params;
-    const body = await request.json();
+    const parsed = await parseBody(request, adminRoleSchema);
+    if (!parsed.ok) return parsed.response;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: body.role },
+      data: { role: parsed.data.role },
       select: { id: true, name: true, role: true },
     });
 

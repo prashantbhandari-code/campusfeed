@@ -31,12 +31,27 @@ function limitFor(pathname: string): number {
 
 export async function middleware(request: NextRequest) {
   const method = request.method;
-  if (method !== "POST" && method !== "PUT" && method !== "PATCH" && method !== "DELETE") {
+  const pathname = request.nextUrl.pathname;
+  if (!pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
-  const pathname = request.nextUrl.pathname;
-  if (!pathname.startsWith("/api/")) {
+  // The SSE stream holds a serverless invocation open ~9s per connection and
+  // nothing limited re-opens before. Cap (re)connects per IP; a normal client
+  // reconnects every ~9s (~7/min), several tabs stay well under 60.
+  if (method === "GET" && pathname === "/api/realtime") {
+    const key = `${getClientIp(request)}:${pathname}`;
+    const { success, resetTime } = rateLimit(key, { windowMs: WINDOW_MS, maxRequests: 60 });
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later.", retryAfter: Math.ceil((resetTime - Date.now()) / 1000) },
+        { status: 429, headers: { "Retry-After": String(Math.ceil((resetTime - Date.now()) / 1000)) } }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  if (method !== "POST" && method !== "PUT" && method !== "PATCH" && method !== "DELETE") {
     return NextResponse.next();
   }
 
@@ -64,7 +79,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Only API routes — pages, static assets, and the SSE stream (GET) pass
-  // through untouched (GET is never limited above anyway).
+  // Only API routes — pages and static assets pass through untouched.
+  // GETs are never limited above except the SSE stream (/api/realtime).
   matcher: ["/api/:path*"],
 };
