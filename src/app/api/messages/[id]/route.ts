@@ -26,10 +26,10 @@ export async function GET(
       return NextResponse.json({ messages: [], total: 0, page: 1, hasMore: false });
     }
 
-    // Add pagination support
+    // Add pagination support (limit clamped — callers could request 100000)
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "50") || 50, 1), 100);
     const skip = (page - 1) * limit;
 
     const conversationFilter = {

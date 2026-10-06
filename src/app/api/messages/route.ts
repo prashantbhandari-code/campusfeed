@@ -22,56 +22,58 @@ export async function GET(req: Request) {
     const userId = session.user.id;
 
     // Hide conversations with blocked users (either direction).
-    // This route runs on every conversation-list render AND on every
-    // new-message event — an unbounded scan of the user's whole history
-    // was a latency bomb at scale. Unread counts stay exact because the
-    // count query is NOT capped; only last-message previews can fall back
-    // to "older than the window" for conversations idle beyond it.
     const blockedIds = await getBlockedIds(userId);
-    const CONVERSATION_WINDOW = 500;
-    const [conversations, unreadRows] = await Promise.all([
-      prisma.message.findMany({
-        where: { OR: [{ senderId: userId }, { receiverId: userId }] },
-        include: {
-          sender: { select: { id: true, name: true, username: true, avatar: true } },
-          receiver: { select: { id: true, name: true, username: true, avatar: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: CONVERSATION_WINDOW,
-      }),
-      prisma.message.groupBy({
-        by: ["senderId"],
-        where: { receiverId: userId, read: false, senderId: { notIn: blockedIds } },
-        _count: { _all: true },
-      }),
-    ]);
+
+    // Last message per conversation straight from Postgres (DISTINCT ON) —
+    // replaces materializing up to 500 full rows (two user joins each) and
+    // reducing in JS on every list render. The senderId/receiverId indexes
+    // keep the inner scan cheap regardless of history size; unread counts
+    // stay exact via the uncapped groupBy below.
+    const lastRows = await prisma.$queryRaw<{ partner: string; id: string }[]>`
+      SELECT DISTINCT ON (partner) partner, "id"
+      FROM (
+        SELECT "id", "createdAt",
+               CASE WHEN "senderId" = ${userId} THEN "receiverId" ELSE "senderId" END AS partner
+        FROM "messages"
+        WHERE ("senderId" = ${userId} AND "deletedForSender" = false)
+           OR ("receiverId" = ${userId} AND "deletedForReceiver" = false)
+      ) t
+      WHERE partner <> ALL(${blockedIds}::text[])
+      ORDER BY partner, "createdAt" DESC
+    `;
+
+    const lastMessages = lastRows.length
+      ? await prisma.message.findMany({
+          where: { id: { in: lastRows.map((r) => r.id) } },
+          include: {
+            sender: { select: { id: true, name: true, username: true, avatar: true } },
+            receiver: { select: { id: true, name: true, username: true, avatar: true } },
+          },
+        })
+      : [];
+
+    const unreadRows = await prisma.message.groupBy({
+      by: ["senderId"],
+      where: { receiverId: userId, read: false, senderId: { notIn: blockedIds } },
+      _count: { _all: true },
+    });
     const unreadBySender = new Map<string, number>(
       unreadRows.map((r) => [r.senderId, r._count._all])
     );
+    const partnerById = new Map(lastRows.map((r) => [r.id, r.partner]));
 
     const conversationMap = new Map<string, any>();
-    conversations.forEach((msg) => {
-      // Skip messages the viewer deleted for themselves
-      const hiddenForMe = msg.senderId === userId ? msg.deletedForSender : msg.deletedForReceiver;
-      if (hiddenForMe) return;
-      const otherUserId = msg.senderId === userId ? msg.receiverId : msg.senderId;
-      if (blockedIds.includes(otherUserId)) return;
-      if (!conversationMap.has(otherUserId)) {
+    lastMessages
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .forEach((msg) => {
+        const otherUserId = partnerById.get(msg.id);
+        if (!otherUserId) return;
         conversationMap.set(otherUserId, {
           otherUser: msg.senderId === userId ? msg.receiver : msg.sender,
           lastMessage: msg,
-          // Exact per-sender unread from the groupBy; the per-row fallback
-          // below only applies to senders whose unread rows exist but whose
-          // recent window is somehow empty (defensive — shouldn't happen).
           unread: unreadBySender.get(otherUserId) ?? 0,
         });
-      } else {
-        const existing = conversationMap.get(otherUserId);
-        if (existing.unread === 0 && msg.receiverId === userId && !msg.read) {
-          existing.unread = 1;
-        }
-      }
-    });
+      });
 
     return NextResponse.json(Array.from(conversationMap.values()));
   } catch (error) {
