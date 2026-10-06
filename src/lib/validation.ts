@@ -131,6 +131,29 @@ export const updateProfileSchema = z.object({
   coverPhoto: z.string().max(2048).nullable().optional(),
 });
 
+// ---- LMS ----
+export const quizTakeSchema = z.object({
+  answers: z.array(z.string().max(2000)).max(200).default([]),
+});
+
+export const markAttendanceSchema = z.object({
+  studentId: id.optional(),
+  status: z.enum(["present", "absent", "late", "excused"]).optional(),
+  date: z.string().max(40).optional(),
+  notes: z.string().max(500).nullable().optional(),
+});
+
+// ---- Admin ----
+// User.role is a plain string column (student/teacher/admin comment) — the
+// enum here is the only guard against writing arbitrary role strings.
+export const adminRoleSchema = z.object({
+  role: z.enum(["student", "teacher", "admin"]),
+});
+
+export const adminVerifySchema = z.object({
+  verified: z.boolean(),
+});
+
 // ---- Validation helper ----
 type ParseResult<T> = { ok: true; data: T } | { ok: false; response: NextResponse };
 

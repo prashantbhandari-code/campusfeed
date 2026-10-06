@@ -36,7 +36,9 @@ export default function QuizPage({ params }: { params: { courseId: string; quizI
     if (submitted) return; setSubmitted(true);
     if (timerRef.current) clearTimeout(timerRef.current);
     const res = await fetch("/api/quizzes/" + quizId + "/take", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }) });
-    setResult(await res.json());
+    const data = await res.json();
+    if (!res.ok) { setResult({ error: data.error || data.message || "Submission failed" }); return; }
+    setResult(data);
   };
 
   const fmt = (s: number) => Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
@@ -44,6 +46,17 @@ export default function QuizPage({ params }: { params: { courseId: string; quizI
   if (!quiz) return <div className="max-w-4xl mx-auto p-4">Loading...</div>;
 
   if (submitted && result) {
+    if (result.error) {
+      return (
+        <div className="max-w-4xl mx-auto p-4 space-y-6">
+          <button onClick={() => router.push("/lms/" + courseId)} className="flex items-center gap-2 text-gray-500 dark:text-gray-400"><HiArrowLeft className="w-4 h-4" /> Back</button>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-red-300 dark:border-red-700 text-center space-y-3">
+            <HiXCircle className="w-14 h-14 mx-auto text-red-500" />
+            <h1 className="text-xl font-bold dark:text-white">{result.error}</h1>
+          </div></div>
+      );
+    }
+    const review: Array<{ correct: boolean; userAnswer: string; correctAnswer: string }> = result.review || [];
     const ga = JSON.parse(result.attempt.answers);
     return (
       <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -52,7 +65,7 @@ export default function QuizPage({ params }: { params: { courseId: string; quizI
           <HiCheckCircle className="w-16 h-16 mx-auto text-green-500" />
           <h1 className="text-2xl font-bold dark:text-white">Quiz Complete!</h1>
           <p className="text-4xl font-bold text-blue-600">{result.score} / {result.total}</p>
-          <p className="text-gray-500 dark:text-gray-400">{Math.round((result.score / result.total) * 100)}% score</p>
+          <p className="text-gray-500 dark:text-gray-400">{result.total > 0 ? Math.round((result.score / result.total) * 100) : 0}% score</p>
         </div>
         <div className="space-y-3">
           {quiz.questions.map((q: any, i: number) => (
@@ -61,7 +74,7 @@ export default function QuizPage({ params }: { params: { courseId: string; quizI
                 {ga[i]?.correct ? <HiCheckCircle className="w-5 h-5 text-green-500 mt-0.5" /> : <HiXCircle className="w-5 h-5 text-red-500 mt-0.5" />}
                 <div className="flex-1"><p className="font-medium dark:text-white">Q{i+1}: {q.question}</p>
                   <p className="text-sm text-gray-500">Your: {ga[i]?.userAnswer || "(empty)"}</p>
-                  {!ga[i]?.correct && <p className="text-sm text-green-600">Correct: {q.answer}</p>}</div>
+                  {!ga[i]?.correct && review[i]?.correctAnswer && <p className="text-sm text-green-600">Correct: {review[i].correctAnswer}</p>}</div>
               </div></div>
           ))}</div></div>
     );
