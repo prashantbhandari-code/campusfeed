@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // forks pool fails to spawn workers on this Windows/pi-node setup
+    pool: "threads",
   },
   resolve: {
     alias: {
