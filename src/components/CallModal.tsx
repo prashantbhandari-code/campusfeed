@@ -3,43 +3,22 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath } from "react-icons/hi2";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import { attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
+import { DEFAULT_ICE_SERVERS } from "@/lib/ice-servers";
 
-// STUN discovers reflexive addresses; the TURN relay is the fallback when
-// both peers sit behind symmetric NATs or UDP is blocked (common on mobile
-// carriers) — without it those pairs can never connect. Open Relay's public
-// instance is free; swap in a self-hosted coturn before heavy production use.
-const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
-  {
-    urls: [
-      "stun:stun.l.google.com:19302",
-      "stun:stun1.l.google.com:19302",
-      "stun:stun.cloudflare.com:3478",
-    ],
-  },
-  {
-    urls: [
-      "turn:openrelay.metered.ca:80",
-      "turn:openrelay.metered.ca:443",
-      "turn:openrelay.metered.ca:443?transport=tcp",
-    ],
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-];
-
-// Cross-network calls die when both sides sit behind CGNAT (mobile data,
-// campus WiFi) and the free relay rejects them. Override the whole list from
-// Vercel env with a JSON array of RTCIceServer — provider swap without deploy.
-const ICE_SERVERS: RTCIceServer[] = (() => {
-  const raw = process.env.NEXT_PUBLIC_ICE_SERVERS;
-  if (!raw) return DEFAULT_ICE_SERVERS;
+// STUN discovers reflexive addresses; a TURN relay is the only path when both
+// peers sit behind CGNAT (mobile data, campus WiFi). Credentials are signed
+// per call by /api/ice-servers (the provider secret stays server-side); the
+// static list is the offline fallback so a dead endpoint never blocks a call.
+const fetchIceServers = async (): Promise<RTCIceServer[]> => {
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ICE_SERVERS;
-  } catch {
-    return DEFAULT_ICE_SERVERS;
-  }
-})();
+    const res = await fetch("/api/ice-servers");
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.iceServers) && data.iceServers.length > 0) return data.iceServers;
+    }
+  } catch { /* endpoint unreachable — static fallback */ }
+  return DEFAULT_ICE_SERVERS;
+};
 
 interface CallModalProps {
   isOpen: boolean;
@@ -189,7 +168,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       // Only create PC after permission is granted
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({ iceServers: await fetchIceServers() });
       pcRef.current = pc;
       retriedIceRef.current = false;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
@@ -214,7 +193,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: callType === "video" });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({ iceServers: await fetchIceServers() });
       pcRef.current = pc;
       retriedIceRef.current = false;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
