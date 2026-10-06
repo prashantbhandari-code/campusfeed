@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { invalidateBlockedIdsCache } from "@/lib/blocking";
 
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
@@ -14,6 +15,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const existing = await prisma.blockedUser.findUnique({ where: { blockerId_blockedId: { blockerId: userId, blockedId } } });
     if (existing) return NextResponse.json({ error: "Already blocked" }, { status: 400 });
     await prisma.blockedUser.create({ data: { blockerId: userId, blockedId } });
+    invalidateBlockedIdsCache(userId, blockedId);
     return NextResponse.json({ success: true });
   } catch (error) { return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }
@@ -23,6 +25,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const session = await getAppwriteSession(req);
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     await prisma.blockedUser.deleteMany({ where: { blockerId: session.user.id, blockedId: params.id } });
+    invalidateBlockedIdsCache(session.user.id, params.id);
     return NextResponse.json({ success: true });
   } catch (error) { return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }

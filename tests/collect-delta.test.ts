@@ -10,6 +10,7 @@ vi.mock("@/lib/prisma", () => {
     default: {
       message: { findMany: vi.fn(), count: vi.fn() },
       groupMessage: { findMany: vi.fn() },
+      groupMember: { findMany: vi.fn() },
       messageReaction: { findMany: vi.fn() },
       notification: { count: vi.fn() },
       callSignal: { findMany: vi.fn() },
@@ -27,6 +28,7 @@ import { collectDelta, SKEW_MS } from "@/lib/realtime/collect-delta";
 
 const messageFindMany = prisma.message.findMany as ReturnType<typeof vi.fn>;
 const groupMessageFindMany = prisma.groupMessage.findMany as ReturnType<typeof vi.fn>;
+const groupMemberFindMany = prisma.groupMember.findMany as ReturnType<typeof vi.fn>;
 const reactionFindMany = prisma.messageReaction.findMany as ReturnType<typeof vi.fn>;
 const notificationCount = prisma.notification.count as ReturnType<typeof vi.fn>;
 const messageCount = prisma.message.count as ReturnType<typeof vi.fn>;
@@ -36,6 +38,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   messageFindMany.mockResolvedValue([]);
   groupMessageFindMany.mockResolvedValue([]);
+  groupMemberFindMany.mockResolvedValue([]);
   reactionFindMany.mockResolvedValue([]);
   notificationCount.mockResolvedValue(0);
   messageCount.mockResolvedValue(0);

@@ -15,6 +15,30 @@ export const USER_SELECT = { id: true, name: true, username: true, avatar: true,
 // timestamp can't be missed; client dedupes by id.
 export const SKEW_MS = 3000;
 
+// The group-membership relation join ran twice per tick per stream. Cache the
+// member's group ids for 5s: joining a group delays fresh delivery by at most
+// one cache window — imperceptible for a rare action.
+const GROUP_TTL_MS = 5000;
+const groupIdsCache = new Map<string, { ids: string[]; expires: number }>();
+
+async function getMyGroupIds(userId: string): Promise<string[]> {
+  const now = Date.now();
+  const hit = groupIdsCache.get(userId);
+  if (hit && hit.expires > now) return hit.ids;
+  const memberships = await prisma.groupMember.findMany({
+    where: { userId },
+    select: { groupId: true },
+  });
+  const ids = memberships.map((m) => m.groupId);
+  groupIdsCache.set(userId, { ids, expires: now + GROUP_TTL_MS });
+  if (groupIdsCache.size > 10_000) {
+    groupIdsCache.forEach((v, k) => {
+      if (v.expires <= now) groupIdsCache.delete(k);
+    });
+  }
+  return ids;
+}
+
 export interface Delta {
   messages: any[];
   changedMessages: any[];
@@ -36,8 +60,10 @@ export async function collectDelta(
   // Call signals expire: never replay a ring older than 30s (first tick has since=0).
   const signalFloor = new Date(Math.max(since, Date.now() - 30_000));
 
-  // Blocked users never deliver into any transport (either direction)
+  // Blocked users never deliver into any transport (either direction).
+  // getBlockedIds is TTL-cached in blocking.ts; group membership likewise.
   const blockedIds = await getBlockedIds(userId);
+  const myGroupIds = await getMyGroupIds(userId);
 
   // Newest-first + take 50 so a first tick (since=0) can't skip recent
   // messages behind a full page of older history.
@@ -53,7 +79,7 @@ export async function collectDelta(
         createdAt: { gt },
         senderId: { notIn: blockedIds },
         deletedForEveryone: false, // fresh history hides tombstones; the changed-rows scan delivers them
-        group: { members: { some: { userId } } },
+        groupId: { in: myGroupIds },
       },
       include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
@@ -108,7 +134,7 @@ export async function collectDelta(
         updatedAt: { gt },
         id: { notIn: freshIds },
         senderId: { notIn: blockedIds },
-        group: { members: { some: { userId } } },
+        groupId: { in: myGroupIds },
       },
       include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
       orderBy: { updatedAt: "desc" },
