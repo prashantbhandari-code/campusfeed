@@ -38,28 +38,9 @@ public/uploads/*
 # vercel
 .vercel
 
-# freebuff tooling
-.freebuff/
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-test-db.js
-seed-prod.js
 
-# Temp build scripts
-debug-render.js
-fix-db.js
-fix-google.bat
-update-render.js
-check-env.js
-check-render.js
-check-env2.js
-check-env.js
-render-fix.js
-update-render.js
-.freebuff/
-
-.vercel
-
+# misc artifacts
 screenshots/
