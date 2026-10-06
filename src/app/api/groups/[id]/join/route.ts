@@ -34,14 +34,17 @@ export async function POST(
       return NextResponse.json({ error: "Already a member" }, { status: 400 });
     }
 
-    await prisma.groupMember.create({
-      data: { groupId, userId },
-    });
-
-    await prisma.group.update({
-      where: { id: groupId },
-      data: { memberCount: { increment: 1 } },
-    });
+    // Membership insert + counter bump are atomic — separate statements
+    // drift memberCount under concurrent joins.
+    await prisma.$transaction([
+      prisma.groupMember.create({
+        data: { groupId, userId },
+      }),
+      prisma.group.update({
+        where: { id: groupId },
+        data: { memberCount: { increment: 1 } },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -91,12 +94,15 @@ export async function DELETE(
       }
     }
 
-    await prisma.groupMember.delete({ where: { id: membership.id } });
-
-    await prisma.group.update({
-      where: { id: groupId },
-      data: { memberCount: { decrement: 1 } },
-    });
+    // Membership delete + counter decrement are atomic (mirrors the join path
+    // and members/[userId]) so memberCount can't drift under concurrent leaves.
+    await prisma.$transaction([
+      prisma.groupMember.delete({ where: { id: membership.id } }),
+      prisma.group.update({
+        where: { id: groupId },
+        data: { memberCount: { decrement: 1 } },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
