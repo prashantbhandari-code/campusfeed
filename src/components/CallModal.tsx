@@ -8,7 +8,7 @@ import { attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
 // both peers sit behind symmetric NATs or UDP is blocked (common on mobile
 // carriers) — without it those pairs can never connect. Open Relay's public
 // instance is free; swap in a self-hosted coturn before heavy production use.
-const ICE_SERVERS: RTCIceServer[] = [
+const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   {
     urls: [
       "stun:stun.l.google.com:19302",
@@ -26,6 +26,20 @@ const ICE_SERVERS: RTCIceServer[] = [
     credential: "openrelayproject",
   },
 ];
+
+// Cross-network calls die when both sides sit behind CGNAT (mobile data,
+// campus WiFi) and the free relay rejects them. Override the whole list from
+// Vercel env with a JSON array of RTCIceServer — provider swap without deploy.
+const ICE_SERVERS: RTCIceServer[] = (() => {
+  const raw = process.env.NEXT_PUBLIC_ICE_SERVERS;
+  if (!raw) return DEFAULT_ICE_SERVERS;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_ICE_SERVERS;
+  } catch {
+    return DEFAULT_ICE_SERVERS;
+  }
+})();
 
 interface CallModalProps {
   isOpen: boolean;
@@ -46,6 +60,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const retriedIceRef = useRef(false);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -149,7 +164,19 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     // Also watch ICE connection state for more granular failure detection
     pc.oniceconnectionstatechange = () => {
       setIceState(pc.iceConnectionState); // HUD reflects ICE progress within a second
-      if (pc.iceConnectionState === "failed") endCall();
+      if (pc.iceConnectionState === "failed") {
+        // One automatic retry: a fresh gather recovers transient drops (a
+        // candidate that died mid-check, brief Wi-Fi roam). A persistent
+        // NAT/firewall failure fails again within seconds — then we explain
+        // instead of bouncing the user back to chat with no reason.
+        if (!retriedIceRef.current) {
+          retriedIceRef.current = true;
+          try { pc.restartIce(); } catch { /* restartIce unsupported */ }
+          return;
+        }
+        setErrorMsg("Call connection failed — the two networks couldn't establish a path. Try switching between Wi-Fi and mobile data, then call again.");
+        setTimeout(() => endCall(), 3000);
+      }
       // Don't end on 'disconnected' — allow for brief interruptions and reconnection
     };
     startStatsPolling(); // 1s HUD poll: ICE state, selected pair, packet loss
@@ -164,6 +191,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       // Only create PC after permission is granted
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       pcRef.current = pc;
+      retriedIceRef.current = false;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
       setupPC(pc);
       const sdp = await pc.createOffer();
@@ -188,6 +216,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       pcRef.current = pc;
+      retriedIceRef.current = false;
       stream.getTracks().forEach(t => pc.addTrack(t, stream));
       setupPC(pc);
       // Set the remote offer
