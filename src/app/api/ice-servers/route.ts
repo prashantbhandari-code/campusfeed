@@ -7,5 +7,5 @@ import { getIceServers } from "@/lib/ice-servers";
 export async function GET(req: Request) {
   const auth = await requireUser(req);
   if (!auth.ok) return auth.response;
-  return NextResponse.json({ iceServers: getIceServers() });
+  return NextResponse.json({ iceServers: await getIceServers() });
 }

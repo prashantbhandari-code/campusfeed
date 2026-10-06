@@ -8,10 +8,17 @@ import crypto from "crypto";
 // why cross-network calls died at "Connecting...". Resolution order:
 //
 // 1. NEXT_PUBLIC_ICE_SERVERS → verbatim JSON array (explicit full override)
-// 2. CLOUDFLARE_TURN_TOKEN_ID + CLOUDFLARE_TURN_TOKEN_SECRET → signed,
-//    time-limited Cloudflare Calls TURN credentials (1TB/month free tier;
-//    the secret never leaves the server)
+// 2. CLOUDFLARE_TURN_TOKEN_ID (key uid) + CLOUDFLARE_TURN_TOKEN_SECRET →
+//    proxy Cloudflare's official credentials endpoint: it returns ready-to-use
+//    iceServers (stun.cloudflare.com + turn.cloudflare.com, all transports)
+//    with an opaque username/password valid for the requested ttl. The key
+//    secret is the Bearer for this call and never reaches the browser.
+//    NOTE: the credentials endpoint lives on rtc.live.cloudflare.com (the
+//    Realtime data plane) and only accepts the TURN key secret — regular API
+//    tokens are rejected there, and the old standard.turn host is dead.
 // 3. Static defaults: Google/Cloudflare STUN + the legacy free relay
+
+const TURN_TTL_SECONDS = 86_400; // 24h — comfortably longer than any session
 
 export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   {
@@ -32,37 +39,8 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
-// Cloudflare Calls TURN endpoints (from the TURN app in the CF dashboard)
-export const CLOUDFLARE_TURN_URLS = [
-  "turn:standard.turn.cloudflare.com:3478?transport=udp",
-  "turn:standard.turn.cloudflare.com:443?transport=tcp",
-  "turns:standard.turn.cloudflare.com:443?transport=tcp",
-];
-
-// Credentials stay valid 6h — far longer than any call, short enough that a
-// leaked client credential is worthless.
-export const TURN_TTL_SECONDS = 6 * 60 * 60;
-
-// Cloudflare scheme: username = "<unix-expiry>.<key-id>", credential =
-// base64(HMAC-SHA256(key, username)). The dashboard/API secret is a 64-char
-// hex string (32 bytes) — decode hex when it looks like hex, base64 otherwise.
-export function signTurnCredential(
-  keyId: string,
-  secret: string,
-  now = Date.now()
-): { username: string; credential: string } {
-  const expiry = Math.floor(now / 1000) + TURN_TTL_SECONDS;
-  const username = `${expiry}.${keyId}`;
-  const key = /^[0-9a-fA-F]{64}$/.test(secret)
-    ? Buffer.from(secret, "hex")
-    : Buffer.from(secret, "base64");
-  const credential = crypto.createHmac("sha256", key).update(username).digest("base64");
-  return { username, credential };
-}
-
-export function getIceServers(): RTCIceServer[] {
-  // Explicit full-list override wins — it's the "I know exactly what I want"
-  // escape hatch (also lets a static provider list beat the signed default).
+export async function getIceServers(): Promise<RTCIceServer[]> {
+  // Explicit full-list override wins without touching the network.
   const override = process.env.NEXT_PUBLIC_ICE_SERVERS;
   if (override) {
     try {
@@ -76,9 +54,35 @@ export function getIceServers(): RTCIceServer[] {
   const keyId = process.env.CLOUDFLARE_TURN_TOKEN_ID || "";
   const secret = process.env.CLOUDFLARE_TURN_TOKEN_SECRET || "";
   if (keyId && secret) {
-    const { username, credential } = signTurnCredential(keyId, secret);
-    return [{ urls: CLOUDFLARE_TURN_URLS, username, credential }];
+    try {
+      const res = await fetch(
+        `https://rtc.live.cloudflare.com/v1/turn/keys/${keyId}/credentials/generate-ice-servers`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${secret}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ttl: TURN_TTL_SECONDS }),
+          signal: AbortSignal.timeout(8_000),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const servers = data?.iceServers;
+        if (Array.isArray(servers) && servers.length > 0) return servers;
+      }
+      // non-OK or unexpected shape — fall through to defaults
+    } catch {
+      // network/timeout — fall through to defaults
+    }
   }
 
   return DEFAULT_ICE_SERVERS;
+}
+
+// Kept for the crypto import contract used by tests (hex/base64 handling of
+// provider secrets); no longer used for credential signing itself.
+export function hmacSha1Base64(key: Buffer, message: string): string {
+  return crypto.createHmac("sha1", key).update(message).digest("base64");
 }
