@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { getBlockedIds } from "@/lib/blocking";
 
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const query = searchParams.get("q") || "";
     const userId = searchParams.get("userId");
 
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     const currentUserId = session?.user?.id;
     if (!currentUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

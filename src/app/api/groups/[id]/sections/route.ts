@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/groups/[id]/sections — list sections in a group
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -37,7 +37,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

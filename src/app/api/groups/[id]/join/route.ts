@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 
 // POST /api/groups/[id]/join — join a group
@@ -10,10 +10,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const userId = session.user.id;
     const groupId = params.id;
@@ -59,10 +58,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const userId = session.user.id;
     const groupId = params.id;

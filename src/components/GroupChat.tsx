@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import UserAvatar from "@/components/UserAvatar";
 import {
   HiPaperAirplane,

@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from '@/lib/prisma';
 import { getCourseMembership, canManageCourse } from '@/lib/lms-auth';
+import { parseBody, createModuleSchema } from '@/lib/validation';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session?.user.id;
 
-    const body = await req.json();
-    const { name, description } = body;
+    const parsed = await parseBody(req, createModuleSchema);
+    if (!parsed.ok) return parsed.response;
+    const { name, description } = parsed.data;
 
     const course = await prisma.course.findUnique({ where: { id: params.id } });
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { getCourseMembership, canManageCourse } from "@/lib/lms-auth";
 import { parseBody, markAttendanceSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const courseId = params.id;
     const parsed = await parseBody(req, markAttendanceSchema);
@@ -56,8 +57,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId") || session.user.id;

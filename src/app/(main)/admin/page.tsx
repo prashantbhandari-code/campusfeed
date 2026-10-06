@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/lib/appwrite-session';
+import { useSession } from '@/lib/session';
 
 interface User {
   id: string;

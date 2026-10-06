@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOutAppwrite as signOut } from "@/lib/appwrite-session";
+import { useSession, signOut } from "@/lib/session";
 import { useParams, useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import PostCard from "@/components/PostCard";

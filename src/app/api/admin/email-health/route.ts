@@ -2,13 +2,13 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import { withRateLimit } from "@/lib/rateLimit";
 import { checkEmailHealth } from "@/lib/email";
 
 async function handler(request: Request) {
   try {
-    const session = await getAppwriteSession(request);
+    const session = await getServerSession(request);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

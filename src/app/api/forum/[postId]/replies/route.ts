@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
+import { parseBody, createForumReplySchema } from "@/lib/validation";
 
 // Strip HTML tags to prevent stored XSS
 
 export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
-    const body = await req.json();
-    const sanitizedContent = sanitize(body.content || "");
+    const parsed = await parseBody(req, createForumReplySchema);
+    if (!parsed.ok) return parsed.response;
+    const sanitizedContent = sanitize(parsed.data.content || "");
     if (!sanitizedContent) {
       return NextResponse.json({ error: "Content required" }, { status: 400 });
     }
@@ -33,8 +36,9 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
 
 export async function GET(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const replies = await prisma.forumReply.findMany({
       where: { postId: params.postId },

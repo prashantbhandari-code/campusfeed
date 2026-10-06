@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import PostCard from "@/components/PostCard";
 import StoryBar from "@/components/StoryBar";
 import UserAvatar from "@/components/UserAvatar";

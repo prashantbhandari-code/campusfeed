@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from '@/lib/prisma';
 import { getCourseMembership, canParticipateInCourse } from '@/lib/lms-auth';
 import { parseBody, quizTakeSchema } from '@/lib/validation';
@@ -39,8 +39,9 @@ async function authorizeQuizAccess(courseId: string, userId: string) {
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session.user.id;
 
     const quiz = await loadQuizForStudent(params.id);
@@ -65,8 +66,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session.user.id;
 
     const parsed = await parseBody(req, quizTakeSchema);

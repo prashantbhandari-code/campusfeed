@@ -143,6 +143,80 @@ export const markAttendanceSchema = z.object({
   notes: z.string().max(500).nullable().optional(),
 });
 
+export const createCourseSchema = z.object({
+  name: z.string().min(1).max(120),
+  code: z.string().min(1).max(30),
+  description: z.string().max(2000).nullable().optional(),
+  department: z.string().max(100).nullable().optional(),
+  semester: z.coerce.number().int().min(1).max(20).nullable().optional(),
+  credits: z.coerce.number().int().min(0).max(30).optional(),
+});
+
+export const createModuleSchema = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(2000).nullable().optional(),
+});
+
+export const createAssignmentSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).nullable().optional(),
+  moduleId: id,
+  dueDate: z.string().max(40).nullable().optional(),
+  maxScore: z.coerce.number().int().min(0).max(1000).optional(),
+  allowLate: z.boolean().optional(),
+});
+
+export const createForumPostSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().min(1).max(5000),
+});
+
+// The route still enforces non-empty AFTER sanitize strips markup
+export const createForumReplySchema = z.object({
+  content: z.string().max(5000).optional(),
+});
+
+// Same shape as createPostSchema — group/section posts previously accepted
+// unbounded image arrays with no per-item length cap.
+export const createGroupPostSchema = z.object({
+  content: z.string().max(10000).optional(),
+  images: z.array(z.string().max(2048)).max(10).optional(),
+});
+
+// ---- Events ----
+export const createEventSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).nullable().optional(),
+  location: z.string().max(200).nullable().optional(),
+  startTime: z.string().min(1).max(40),
+  endTime: z.string().max(40).nullable().optional(),
+  type: z.string().max(30).optional(),
+  imageUrl: z.string().max(2048).nullable().optional(),
+});
+
+// ---- Push subscriptions ----
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(2048),
+  p256dh: z.string().min(1).max(512),
+  auth: z.string().min(1).max(512),
+});
+
+export const pushUnsubscribeSchema = z.object({
+  endpoint: z.string().min(1).max(2048),
+});
+
+// ---- Socket.IO REST relay ----
+// Call-signal payloads (offer/answer/ICE) are forwarded verbatim inside
+// `payload`, so unknown keys must survive — hence looseObject.
+export const socketioSchema = z.looseObject({
+  action: z.string().min(1).max(40),
+  receiverId: id.optional(),
+  senderName: z.string().max(80).optional(),
+  callerId: id.optional(),
+  otherUserId: id.optional(),
+  targetUserId: id.optional(),
+});
+
 // ---- Admin ----
 // User.role is a plain string column (student/teacher/admin comment) — the
 // enum here is the only guard against writing arbitrary role strings.

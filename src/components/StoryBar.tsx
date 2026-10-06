@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback , memo} from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import UserAvatar from "./UserAvatar";
 import { HiPlus, HiHeart, HiPaperAirplane, HiX, HiTrash } from "react-icons/hi";
 import toast from "react-hot-toast";

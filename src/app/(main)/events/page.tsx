@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import UserAvatar from "@/components/UserAvatar";
 import { HiOutlineCalendar, HiOutlineClock, HiOutlineLocationMarker, HiOutlinePlus, HiOutlineX } from "react-icons/hi";
 import toast from "react-hot-toast";

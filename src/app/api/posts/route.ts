@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { withRateLimit } from "@/lib/rateLimit";
@@ -12,7 +12,7 @@ import { parseBody, createPostSchema } from "@/lib/validation";
 
 export const GET = withRateLimit(async (req: Request) => {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -92,7 +92,7 @@ export const GET = withRateLimit(async (req: Request) => {
 
 export const POST = withRateLimit(async (req: Request) => {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

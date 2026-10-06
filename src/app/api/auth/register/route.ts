@@ -5,18 +5,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { withRateLimit } from "@/lib/rateLimit";
 import { parseBody, registerSchema } from "@/lib/validation";
-
-function generateUsername(fullName: string): string {
-  const base = fullName
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^[^a-z0-9]+/, "")
-    .replace(/[^a-z0-9]+$/, "")
-    .trim();
-  const short = base.slice(0, 16) || "user";
-  const suffix = Math.floor(1000 + Math.random() * 8999);
-  return `${short}_${suffix}`;
-}
+import { generateUsername } from "@/lib/user";
 
 async function handler(req: Request) {
   try {

@@ -1,14 +1,15 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { invalidateBlockedIdsCache } from "@/lib/blocking";
 
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session.user.id;
     const blockedId = params.id;
     if (userId === blockedId) return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
@@ -22,8 +23,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     await prisma.blockedUser.deleteMany({ where: { blockerId: session.user.id, blockedId: params.id } });
     invalidateBlockedIdsCache(session.user.id, params.id);
     return NextResponse.json({ success: true });

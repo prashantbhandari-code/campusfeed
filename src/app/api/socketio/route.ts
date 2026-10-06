@@ -3,6 +3,8 @@ import { getUserIdFromCookieHeader } from '@/lib/session-token';
 import prisma from '@/lib/prisma';
 import { collectDelta, SKEW_MS } from '@/lib/realtime/collect-delta';
 import { setTyping, clearTyping, freshTypingFor } from '@/lib/realtime/typing-store';
+import { parseBody, socketioSchema } from '@/lib/validation';
+import { Prisma } from '@prisma/client';
 
 // JSON polling fallback for the realtime transport. The primary client
 // transport is SSE (/api/realtime); this route stays for environments where
@@ -21,11 +23,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { action, receiverId, senderName } = body;
+    const parsed = await parseBody(request, socketioSchema);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
+    const { action, receiverId } = body;
 
     if (action === 'typing' && receiverId) {
-      setTyping(receiverId, userId, senderName);
+      // Display name comes from our DB, never the body — a spoofable
+      // senderName let any client type as any user.
+      const sender = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      setTyping(receiverId, userId, sender?.name ?? '');
       return NextResponse.json({ success: true });
     }
 
@@ -51,10 +61,16 @@ export async function POST(request: NextRequest) {
     };
     const targetKey = CALL_TARGET_KEY[action];
     if (targetKey) {
-      const targetId = body[targetKey];
+      const targetId = body[targetKey as 'receiverId' | 'callerId' | 'otherUserId' | 'targetUserId'];
       if (!targetId) return NextResponse.json({ error: 'Missing target' }, { status: 400 });
       await prisma.callSignal.create({
-        data: { senderId: userId, receiverId: targetId, type: action, payload: body },
+        data: {
+          senderId: userId,
+          receiverId: targetId,
+          type: action,
+          // Call payloads (offer/answer/ICE) pass through verbatim
+          payload: body as unknown as Prisma.InputJsonValue,
+        },
       });
       // Signals are only deliverable for 30s — sweep expired rows here.
       await prisma.callSignal.deleteMany({

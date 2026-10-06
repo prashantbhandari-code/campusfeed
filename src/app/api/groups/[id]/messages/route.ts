@@ -1,18 +1,17 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
 import { emitToGroup } from "@/lib/socket";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getBlockedIds } from "@/lib/blocking";
 import { parseBody, groupMessageSchema } from "@/lib/validation";
-
-const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
+import { USER_SELECT } from "@/lib/user";
 
 async function requireMember(req: Request, groupId: string) {
-  const session = await getAppwriteSession(req);
+  const session = await getServerSession(req);
   const userId = session?.user ? session.user.id : null;
   if (!userId) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
 

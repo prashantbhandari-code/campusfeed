@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signOutAppwrite as signOut } from "@/lib/appwrite-session";
+import { useSession, signOut } from "@/lib/session";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { HiBell, HiCog, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";

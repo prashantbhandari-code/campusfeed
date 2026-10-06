@@ -1,30 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAppwriteSession } from '@/lib/appwrite-server-auth';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getAppwriteSession(request);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const admin = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
+    const adminId = auth.userId;
 
     const { userId } = params;
 
     // Don't allow deleting yourself
-    if (userId === session.user.id) {
+    if (userId === adminId) {
       return NextResponse.json({ error: 'Cannot delete yourself' }, { status: 400 });
     }
 

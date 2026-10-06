@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { HiPlus, HiAcademicCap, HiBookOpen, HiCalendar, HiCheckBadge, HiUserGroup } from "react-icons/hi2";
 

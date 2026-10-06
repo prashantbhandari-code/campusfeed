@@ -1,9 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { sanitize } from "@/lib/sanitize";
+import { parseBody, createGroupPostSchema } from "@/lib/validation";
 import { getBlockedIds } from "@/lib/blocking";
 
 // Strip HTML tags to prevent stored XSS
@@ -14,7 +15,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -44,7 +45,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -75,8 +76,9 @@ export async function POST(
       }
     }
 
-    const body = await req.json();
-    const { content, images } = body;
+    const parsed = await parseBody(req, createGroupPostSchema);
+    if (!parsed.ok) return parsed.response;
+    const { content, images } = parsed.data;
 
     if (!content?.trim() && (!images || images.length === 0)) {
       return NextResponse.json({ error: "Content or images required" }, { status: 400 });

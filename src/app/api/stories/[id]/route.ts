@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { parseBody, storyActionSchema } from "@/lib/validation";
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session.user.id;
     const story = await prisma.story.findUnique({
       where: { id: params.id },
@@ -34,8 +35,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 // POST like/unlike or add comment
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session.user.id;
     const parsed = await parseBody(req, storyActionSchema);
     if (!parsed.ok) return parsed.response;
@@ -71,8 +73,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 // DELETE story (owner only)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const story = await prisma.story.findUnique({ where: { id: params.id } });
     if (!story) return NextResponse.json({ error: "Not found" }, { status: 404 });

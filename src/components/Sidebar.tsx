@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

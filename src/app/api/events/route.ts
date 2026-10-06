@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
+import { parseBody, createEventSchema } from "@/lib/validation";
 import prisma from "@/lib/prisma";
 
 export async function GET() {
@@ -21,15 +22,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, location, startTime, endTime, type, imageUrl } = await req.json();
-    if (!title || !startTime) {
-      return NextResponse.json({ error: "Title and start time required" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, createEventSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, description, location, startTime, endTime, type, imageUrl } = parsed.data;
 
     const event = await prisma.event.create({
       data: {

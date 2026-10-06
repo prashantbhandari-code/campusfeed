@@ -4,7 +4,7 @@ import { getUserIdFromCookieHeader } from "./session-token";
 const APPWRITE_ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
 
-export interface AppwriteServerSession {
+export interface ServerSession {
   user: {
     id: string;
     name: string;
@@ -19,11 +19,16 @@ export interface AppwriteServerSession {
 }
 
 /**
- * Drop-in replacement for getServerSession(authOptions) from next-auth.
- * Reads the Appwrite session from cookies and verifies it against the Appwrite API,
- * then looks up the user profile from the Prisma database.
+ * Server-side session resolver for every API route.
+ *
+ * Primary path: the signed `cc_session` HttpOnly cookie set by
+ * /api/auth/login and the Google callback — verified by HMAC, then resolved
+ * against the Prisma database. The Appwrite `a_session_*` cookie branch below
+ * is legacy compat for users who logged in before that migration; no new
+ * session is ever issued through Appwrite (email login is bcrypt against
+ * Postgres, Google OAuth talks to Google directly).
  */
-export async function getAppwriteSession(req?: Request): Promise<AppwriteServerSession | null> {
+export async function getServerSession(req?: Request): Promise<ServerSession | null> {
   try {
     // Extract session cookie from request
     const cookieHeader = req?.headers?.get("cookie") || "";

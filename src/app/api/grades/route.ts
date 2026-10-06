@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
 import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const userId = session?.user.id;
 

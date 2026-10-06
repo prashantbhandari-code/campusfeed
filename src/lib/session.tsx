@@ -37,7 +37,7 @@ const SessionContext = createContext<SessionContextValue>({
  * Identity comes from the signed HttpOnly cc_session cookie via /api/auth/me;
  * there is no client SDK or client-set credential involved.
  */
-export function AppwriteSessionProvider({ children }: { children: React.ReactNode }) {
+export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AppwriteSession | null>(null);
   const [status, setStatus] = useState<SessionStatus>("loading");
   const mountedRef = useRef(true);
@@ -118,7 +118,7 @@ export function useSession() {
 }
 
 // Drop-in replacement for signOut() from "next-auth/react"
-export async function signOutAppwrite() {
+export async function signOut() {
   try {
     await fetch("/api/auth/logout", { method: "POST" });
   } catch {

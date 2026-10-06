@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from '@/lib/prisma';
 import { getCourseMembership, canManageCourse, canParticipateInCourse } from '@/lib/lms-auth';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const membership = await getCourseMembership(params.id, session.user.id);
     if (!membership.courseExists) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     const course = await prisma.course.findUnique({ where: { id: params.id }, include: { creator: { select: { id: true, name: true, avatar: true } }, modules: { include: { assignments: true, quizzes: true }, orderBy: { order: 'asc' } }, materials: true, _count: { select: { modules: true, materials: true } } } });
@@ -26,8 +27,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const membership = await getCourseMembership(params.id, session.user.id);
     if (!membership.courseExists) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     if (!canManageCourse(membership)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

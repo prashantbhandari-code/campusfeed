@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from '@/lib/prisma';
 import { getCourseMembership, canManageCourse } from '@/lib/lms-auth';
+import { parseBody, createAssignmentSchema } from '@/lib/validation';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const userId = session?.user.id;
 
-    const body = await req.json();
-    if (!body.title || !body.moduleId) return NextResponse.json({ error: 'Title and module required' }, { status: 400 });
+    const parsed = await parseBody(req, createAssignmentSchema);
+    if (!parsed.ok) return parsed.response;
 
     // The moduleId in the body must belong to the course in the URL —
     // otherwise an assignment could land in an unrelated course's module.
     const courseModule = await prisma.courseModule.findUnique({
-      where: { id: body.moduleId },
+      where: { id: parsed.data.moduleId },
       select: { courseId: true },
     });
     if (!courseModule || courseModule.courseId !== params.id) {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Only the course teacher can create assignments' }, { status: 403 });
     }
 
-    const assignment = await prisma.assignment.create({ data: { title: body.title, description: body.description, moduleId: body.moduleId, dueDate: body.dueDate ? new Date(body.dueDate) : null, maxScore: body.maxScore ? parseInt(body.maxScore) : 100, allowLate: body.allowLate ?? false, createdBy: session?.user.id } });
+    const assignment = await prisma.assignment.create({ data: { title: parsed.data.title, description: parsed.data.description, moduleId: parsed.data.moduleId, dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null, maxScore: parsed.data.maxScore ?? 100, allowLate: parsed.data.allowLate ?? false, createdBy: session.user.id } });
     return NextResponse.json(assignment, { status: 201 });
   } catch (error) {
     console.error("POST error:", error);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import { useParams } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX, HiDotsHorizontal } from "react-icons/hi";

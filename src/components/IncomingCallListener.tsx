@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import { stashIceCandidate } from "@/lib/call-signals";
 import CallModal from "./CallModal";

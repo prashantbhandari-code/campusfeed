@@ -3,21 +3,10 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createSessionCookie } from "@/lib/session-cookie";
+import { generateUsername } from "@/lib/user";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-
-function generateUsername(name: string): string {
-  const base = name
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^[^a-z0-9]+/, "")
-    .replace(/[^a-z0-9]+$/, "")
-    .trim();
-  const short = base.slice(0, 16) || "user";
-  const suffix = Math.floor(1000 + Math.random() * 8999);
-  return `${short}_${suffix}`;
-}
 
 export async function GET(req: Request) {
   const url = new URL(req.url);

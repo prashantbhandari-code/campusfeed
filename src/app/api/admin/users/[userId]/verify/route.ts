@@ -1,26 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAppwriteSession } from '@/lib/appwrite-server-auth';
 import { parseBody, adminVerifySchema } from '@/lib/validation';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getAppwriteSession(request);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const admin = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
 
     const { userId } = params;
     const parsed = await parseBody(request, adminVerifySchema);

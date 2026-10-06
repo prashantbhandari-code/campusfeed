@@ -1,22 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAppwriteSession } from '@/lib/appwrite-server-auth';
+import { requireAdmin } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
   try {
-    const session = await getAppwriteSession(request);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.response;
 
     const [totalUsers, totalPosts, totalGroups, totalMessages, usersByRole, recentUsers] =
       await Promise.all([

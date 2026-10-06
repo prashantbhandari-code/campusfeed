@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";

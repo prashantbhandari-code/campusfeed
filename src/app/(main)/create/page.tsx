@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "@/lib/appwrite-session";
+import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiOutlinePhotograph, HiX } from "react-icons/hi";

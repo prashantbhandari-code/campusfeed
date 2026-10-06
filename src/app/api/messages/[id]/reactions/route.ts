@@ -2,16 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import { emitToUser } from "@/lib/socket";
 import { parseBody, messageReactionSchema } from "@/lib/validation";
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const messageId = params.id;
     const parsed = await parseBody(req, messageReactionSchema);
@@ -75,10 +74,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const message = await prisma.message.findUnique({
       where: { id: params.id },
       select: { senderId: true, receiverId: true },

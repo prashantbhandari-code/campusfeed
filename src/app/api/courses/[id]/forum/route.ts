@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { getCourseMembership, canParticipateInCourse } from "@/lib/lms-auth";
+import { parseBody, createForumPostSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
-    const body = await req.json();
-    const { title, content: postContent } = body;
+    const parsed = await parseBody(req, createForumPostSchema);
+    if (!parsed.ok) return parsed.response;
+    const { title, content: postContent } = parsed.data;
 
     const membership = await getCourseMembership(params.id, session.user.id);
     if (!membership.courseExists) {
@@ -37,8 +40,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
 
     const posts = await prisma.forumPost.findMany({
       where: { courseId: params.id },

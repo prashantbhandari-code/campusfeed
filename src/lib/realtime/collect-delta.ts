@@ -1,4 +1,7 @@
 import prisma from "@/lib/prisma";
+import { USER_SELECT } from "@/lib/user";
+
+export { USER_SELECT };
 import { getBlockedIds } from "@/lib/blocking";
 
 // Shared delta collector for both realtime transports (SSE stream and the
@@ -9,7 +12,6 @@ import { getBlockedIds } from "@/lib/blocking";
 // to use next tick; using the same `now` for every query in a tick keeps the
 // cursor monotonic even under concurrent writes.
 
-export const USER_SELECT = { id: true, name: true, username: true, avatar: true, verified: true } as const;
 
 // Re-scan the last 3s on each tick so a message written between query and
 // timestamp can't be missed; client dedupes by id.

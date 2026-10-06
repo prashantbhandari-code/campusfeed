@@ -1,19 +1,19 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { getServerSession } from "@/lib/server-auth";
+import { parseBody, pushSubscribeSchema, pushUnsubscribeSchema } from "@/lib/validation";
 import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { endpoint, p256dh, auth } = await req.json();
-    if (!endpoint || !p256dh || !auth) {
-      return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
-    }
+    const parsed = await parseBody(req, pushSubscribeSchema);
+    if (!parsed.ok) return parsed.response;
+    const { endpoint, p256dh, auth } = parsed.data;
     const userId = session.user.id;
     const existing = await prisma.pushSubscription.findFirst({ where: { endpoint, userId } });
     if (existing) {
@@ -29,11 +29,13 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const session = await getAppwriteSession(req);
+    const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const { endpoint } = await req.json();
+    const parsed = await parseBody(req, pushUnsubscribeSchema);
+    if (!parsed.ok) return parsed.response;
+    const { endpoint } = parsed.data;
     const userId = session.user.id;
     await prisma.pushSubscription.deleteMany({ where: { endpoint, userId } });
     return NextResponse.json({ success: true });

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
+import { parseBody, createCourseSchema } from '@/lib/validation';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const { searchParams } = new URL(req.url);
     const where: any = {};
     if (searchParams.get('department')) where.department = searchParams.get('department');
@@ -20,15 +22,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
     if (user?.role !== 'teacher' && user?.role !== 'admin') {
       return NextResponse.json({ error: 'Only teachers can create courses' }, { status: 403 });
     }
-    const body = await req.json();
-    if (!body.name || !body.code) return NextResponse.json({ error: 'Name and code required' }, { status: 400 });
-    const course = await prisma.course.create({ data: { name: body.name, code: body.code.toUpperCase(), description: body.description, department: body.department, semester: body.semester ? parseInt(body.semester) : null, credits: body.credits ? parseInt(body.credits) : 3, createdBy: session?.user.id } });
+    const parsed = await parseBody(req, createCourseSchema);
+    if (!parsed.ok) return parsed.response;
+    const course = await prisma.course.create({ data: { name: parsed.data.name, code: parsed.data.code.toUpperCase(), description: parsed.data.description, department: parsed.data.department, semester: parsed.data.semester ?? null, credits: parsed.data.credits ?? 3, createdBy: session.user.id } });
     return NextResponse.json(course, { status: 201 });
   } catch (error) {
     console.error("POST error:", error);

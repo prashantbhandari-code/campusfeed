@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getAppwriteSession } from "@/lib/appwrite-server-auth";
+import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 
 export async function GET(
@@ -9,10 +9,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getAppwriteSession(req);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await requireUser(req);
+    if (!auth.ok) return auth.response;
+    const session = auth.session;
     const currentUserId = session.user.id;
     const targetUserId = params.id;
 
