@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { getCourseMembership, canManageCourse } from "@/lib/lms-auth";
+import { parseBody, markAttendanceSchema } from "@/lib/validation";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -8,21 +10,36 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const courseId = params.id;
-    const body = await req.json();
-    const { studentId, status, date, notes } = body;
+    const parsed = await parseBody(req, markAttendanceSchema);
+    if (!parsed.ok) return parsed.response;
+    const { studentId: bodyStudentId, status, date, notes } = parsed.data;
+
+    // Marking someone else is a teacher/admin action; the client gates this
+    // behind isTeacher but the route is what actually enforces it.
+    const targetStudentId = bodyStudentId || session.user.id;
+    const membership = await getCourseMembership(courseId, session.user.id);
+    if (!membership.courseExists) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+    if (targetStudentId !== session.user.id && !canManageCourse(membership)) {
+      return NextResponse.json(
+        { error: "Only the course teacher can mark attendance for others" },
+        { status: 403 }
+      );
+    }
 
     const attendance = await prisma.attendance.upsert({
       where: {
         courseId_studentId_date: {
           courseId,
-          studentId: studentId || session.user.id,
+          studentId: targetStudentId,
           date: date ? new Date(date) : new Date()
         }
       },
       update: { status: status || "present", notes, markedBy: session.user.id },
       create: {
         courseId,
-        studentId: studentId || session.user.id,
+        studentId: targetStudentId,
         status: status || "present",
         date: date ? new Date(date) : new Date(),
         notes,
@@ -44,6 +61,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId") || session.user.id;
+    // Viewing another student's attendance record is teacher/admin only.
+    if (studentId !== session.user.id) {
+      const membership = await getCourseMembership(params.id, session.user.id);
+      if (!canManageCourse(membership)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
     const month = searchParams.get("month");
     const year = searchParams.get("year");
 

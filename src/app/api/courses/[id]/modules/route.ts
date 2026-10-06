@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from '@/lib/prisma';
+import { getCourseMembership, canManageCourse } from '@/lib/lms-auth';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -13,6 +14,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const course = await prisma.course.findUnique({ where: { id: params.id } });
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+
+    const membership = await getCourseMembership(params.id, userId);
+    if (!canManageCourse(membership)) {
+      return NextResponse.json({ error: 'Only the course teacher can add modules' }, { status: 403 });
+    }
 
     const maxOrder = await prisma.courseModule.findFirst({
       where: { courseId: params.id },

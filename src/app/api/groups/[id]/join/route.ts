@@ -18,6 +18,14 @@ export async function POST(
     const userId = session.user.id;
     const groupId = params.id;
 
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true },
+    });
+    if (!group) {
+      return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    }
+
     const existing = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId } },
     });

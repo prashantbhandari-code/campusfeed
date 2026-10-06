@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getAppwriteSession(req);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    if (user?.role !== 'teacher' && user?.role !== 'admin') {
+      return NextResponse.json({ error: 'Only teachers can create courses' }, { status: 403 });
+    }
     const body = await req.json();
     if (!body.name || !body.code) return NextResponse.json({ error: 'Name and code required' }, { status: 400 });
     const course = await prisma.course.create({ data: { name: body.name, code: body.code.toUpperCase(), description: body.description, department: body.department, semester: body.semester ? parseInt(body.semester) : null, credits: body.credits ? parseInt(body.credits) : 3, createdBy: session?.user.id } });

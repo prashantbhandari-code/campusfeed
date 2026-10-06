@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from "@/lib/prisma";
+import { getCourseMembership, canParticipateInCourse } from "@/lib/lms-auth";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -9,6 +10,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const body = await req.json();
     const { title, content: postContent } = body;
+
+    const membership = await getCourseMembership(params.id, session.user.id);
+    if (!membership.courseExists) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+    if (!canParticipateInCourse(membership)) {
+      return NextResponse.json({ error: "You are not enrolled in this course" }, { status: 403 });
+    }
 
     const post = await prisma.forumPost.create({
       data: {

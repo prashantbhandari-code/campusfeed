@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAppwriteSession } from "@/lib/appwrite-server-auth";
 import prisma from '@/lib/prisma';
+import { getCourseMembership, canManageCourse, canParticipateInCourse } from '@/lib/lms-auth';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getAppwriteSession(req);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const membership = await getCourseMembership(params.id, session.user.id);
+    if (!membership.courseExists) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
     const course = await prisma.course.findUnique({ where: { id: params.id }, include: { creator: { select: { id: true, name: true, avatar: true } }, modules: { include: { assignments: true, quizzes: true }, orderBy: { order: 'asc' } }, materials: true, _count: { select: { modules: true, materials: true } } } });
     if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    // Materials/assignments/quizzes are for enrolled students and staff. The
+    // detail page is also the join surface, so non-participants still get the
+    // course shell (metadata + empty lists) to render the Join button.
+    if (!canParticipateInCourse(membership)) {
+      return NextResponse.json({ ...course, modules: [], materials: [] });
+    }
     return NextResponse.json(course);
   } catch (error) {
     console.error("GET error:", error);
@@ -19,9 +28,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   try {
     const session = await getAppwriteSession(req);
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const course = await prisma.course.findUnique({ where: { id: params.id } });
-    if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
-    if (course.createdBy !== session?.user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const membership = await getCourseMembership(params.id, session.user.id);
+    if (!membership.courseExists) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    if (!canManageCourse(membership)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     await prisma.course.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
