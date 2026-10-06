@@ -37,6 +37,15 @@ describe("signTurnCredential", () => {
     expect(decoded.length).toBe(32);
   });
 
+  it("decodes 64-char hex secrets as hex (Cloudflare's format)", () => {
+    const hexSecret = Buffer.from("cf-turn-secret-bytes").toString("hex").padEnd(64, "0").slice(0, 64);
+    const { username, credential } = signTurnCredential("key123", hexSecret, 1_760_000_000_000);
+    // same key material as its base64 twin → identical signature
+    const twin = signTurnCredential("key123", Buffer.from(hexSecret, "hex").toString("base64"), 1_760_000_000_000);
+    expect(username).toBe(twin.username);
+    expect(credential).toBe(twin.credential);
+  });
+
   it("is deterministic per input and time-sensitive", () => {
     const a = signTurnCredential("k", "c2VjcmV0", 1_000_000_000);
     const b = signTurnCredential("k", "c2VjcmV0", 1_000_000_000);

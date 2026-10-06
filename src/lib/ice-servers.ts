@@ -44,7 +44,8 @@ export const CLOUDFLARE_TURN_URLS = [
 export const TURN_TTL_SECONDS = 6 * 60 * 60;
 
 // Cloudflare scheme: username = "<unix-expiry>.<key-id>", credential =
-// base64(HMAC-SHA256(base64-decoded(secret), username)).
+// base64(HMAC-SHA256(key, username)). The dashboard/API secret is a 64-char
+// hex string (32 bytes) — decode hex when it looks like hex, base64 otherwise.
 export function signTurnCredential(
   keyId: string,
   secret: string,
@@ -52,10 +53,10 @@ export function signTurnCredential(
 ): { username: string; credential: string } {
   const expiry = Math.floor(now / 1000) + TURN_TTL_SECONDS;
   const username = `${expiry}.${keyId}`;
-  const credential = crypto
-    .createHmac("sha256", Buffer.from(secret, "base64"))
-    .update(username)
-    .digest("base64");
+  const key = /^[0-9a-fA-F]{64}$/.test(secret)
+    ? Buffer.from(secret, "hex")
+    : Buffer.from(secret, "base64");
+  const credential = crypto.createHmac("sha256", key).update(username).digest("base64");
   return { username, credential };
 }
 
