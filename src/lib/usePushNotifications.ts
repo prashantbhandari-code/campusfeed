@@ -58,6 +58,15 @@ export function usePushNotifications() {
       return false;
     }
 
+    // Brave blocks Google's push-service bridge as part of its privacy model —
+    // pushManager.subscribe fails there with "push service error" regardless
+    // of site configuration. Fail fast with the real explanation.
+    if ((navigator as any).brave) {
+      toast.error("Brave doesn't support web push — use Chrome, Edge, or Firefox for notifications", { duration: 8000 });
+      setLoading(false);
+      return false;
+    }
+
     setLoading(true);
     try {
       const permission = await Notification.requestPermission();
