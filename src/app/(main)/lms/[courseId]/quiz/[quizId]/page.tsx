@@ -43,7 +43,13 @@ export default function QuizPage({ params }: { params: { courseId: string; quizI
 
   const fmt = (s: number) => Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
 
-  if (!quiz) return <div className="max-w-4xl mx-auto p-4">Loading...</div>;
+  if (!quiz) return (
+    <div className="max-w-4xl mx-auto p-4 space-y-4 animate-pulse">
+      <div className="h-40 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+      <div className="h-6 w-2/3 bg-gray-200 dark:bg-dark-700 rounded-lg" />
+      <div className="h-24 bg-gray-200 dark:bg-dark-700 rounded-xl" />
+    </div>
+  );
 
   if (submitted && result) {
     if (result.error) {

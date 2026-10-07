@@ -12,8 +12,10 @@ interface PostImageProps {
 // Image tile with a graceful fallback: a dead upload (paused storage
 // project, deleted file) must not blank out the whole post — it currently
 // renders as an empty dark card that looks like the post vanished.
+// Images fade in on load instead of popping.
 export default function PostImage({ src, className = "", onClick }: PostImageProps) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   if (failed) {
     return (
@@ -29,12 +31,19 @@ export default function PostImage({ src, className = "", onClick }: PostImagePro
     );
   }
 
+  const attach = (el: HTMLImageElement | null) => {
+    // Cached images can finish loading before React attaches onLoad
+    if (el?.complete && el.naturalWidth > 0) setLoaded(true);
+  };
+
   return (
     <img
+      ref={attach}
       src={src}
       alt=""
-      className={className}
+      className={className + " transition-opacity duration-300 " + (loaded ? "opacity-100" : "opacity-0")}
       loading="lazy"
+      onLoad={() => setLoaded(true)}
       onError={() => setFailed(true)}
       onClick={onClick}
     />

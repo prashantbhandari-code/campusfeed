@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "@/lib/session";
 import PostCard from "@/components/PostCard";
+import { StaggeredList, StaggeredItem } from "@/components/PageTransition";
 import StoryBar from "@/components/StoryBar";
 import UserAvatar from "@/components/UserAvatar";
 import Link from "next/link";
@@ -144,9 +145,11 @@ export default function FeedPage() {
             </div>
           </div>
         ) : (
-          <div>
+          <StaggeredList>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} onDelete={() => setPosts(posts.filter((p) => p.id !== post.id))} />
+              <StaggeredItem key={post.id}>
+                <PostCard post={post} onDelete={() => setPosts(posts.filter((p) => p.id !== post.id))} />
+              </StaggeredItem>
             ))}
             {/* Load more trigger */}
             <div ref={loadMoreRef} className="py-4">
@@ -166,7 +169,7 @@ export default function FeedPage() {
                 </div>
               )}
             </div>
-          </div>
+          </StaggeredList>
         )}
       </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -10,33 +11,32 @@ interface PageTransitionProps {
 const pageVariants = {
   initial: {
     opacity: 0,
-    y: 8,
+    y: 10,
   },
   animate: {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.3,
+      duration: 0.25,
       ease: "easeOut",
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -8,
-    transition: {
-      duration: 0.2,
-      ease: "easeIn",
     },
   },
 };
 
 export default function PageTransition({ children }: PageTransitionProps) {
+  // Keyed by route: the layout persists across navigations, so without the
+  // key the entrance animation plays exactly once (first load) and every
+  // route change after it is abrupt. Remounting per route replays it —
+  // pages remount on navigation anyway, so the cost is unchanged.
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.div
+      key={pathname}
       variants={pageVariants}
-      initial="initial"
+      initial={reduceMotion ? false : "initial"}
       animate="animate"
-      exit="exit"
     >
       {children}
     </motion.div>

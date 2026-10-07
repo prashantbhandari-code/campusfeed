@@ -44,7 +44,13 @@ export default function AssignmentPage({ params }: { params: { courseId: string;
     setSubmitting(false);
   };
 
-  if (!assignment) return <div className="max-w-4xl mx-auto p-4">Loading...</div>;
+  if (!assignment) return (
+    <div className="max-w-4xl mx-auto p-4 space-y-4 animate-pulse">
+      <div className="h-40 bg-gray-200 dark:bg-dark-700 rounded-2xl" />
+      <div className="h-6 w-2/3 bg-gray-200 dark:bg-dark-700 rounded-lg" />
+      <div className="h-24 bg-gray-200 dark:bg-dark-700 rounded-xl" />
+    </div>
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">

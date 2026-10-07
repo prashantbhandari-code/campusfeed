@@ -343,7 +343,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
         )}
         <div className="flex justify-center gap-4 mt-6">
           {(callState === "ringing" || callState === "connecting" || callState === "connected") && (
-            <button onClick={() => setMinimized(true)} aria-label="Minimize call" title="Minimize — keep chatting" className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20">
+            <button onClick={() => setMinimized(true)} aria-label="Minimize call" title="Minimize — keep chatting" className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all">
               <HiChevronDown className="text-xl" />
             </button>
           )}
