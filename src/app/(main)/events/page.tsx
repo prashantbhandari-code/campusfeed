@@ -54,7 +54,7 @@ export default function EventsPage() {
   const getTypeInfo = (t: string) => EVENT_TYPES.find(x => x.value === t) || EVENT_TYPES[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Events</h1>
