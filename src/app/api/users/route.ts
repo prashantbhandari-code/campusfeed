@@ -31,9 +31,11 @@ export async function GET(req: Request) {
       }
       where.id = userId;
     } else if (query) {
+      // Case-insensitive: profile URLs with different casing than the stored
+      // username must still resolve (e.g. /profile/SKG vs stored "skg").
       where.OR = [
-        { name: { contains: query } },
-        { username: { contains: query } },
+        { name: { contains: query, mode: "insensitive" } },
+        { username: { contains: query, mode: "insensitive" } },
       ];
     }
 

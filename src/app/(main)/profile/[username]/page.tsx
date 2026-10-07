@@ -42,7 +42,10 @@ export default function ProfilePage() {
       const isOwn = username === currentUser?.username;
       const usersRes = await fetch(isOwn ? `/api/users?userId=${currentUser?.id}` : `/api/users?q=${username}`);
       const users = await usersRes.json();
-      const userData = users[0];
+      // Prefer an exact username match (case-insensitive) over partial hits
+      const userData =
+        users.find((u: any) => (u.username || "").toLowerCase() === username.toLowerCase()) ||
+        users[0];
       if (!userData) { setLoading(false); return; }
 
       setProfile(userData);
