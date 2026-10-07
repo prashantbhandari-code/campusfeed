@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath, HiChevronDown } from "react-icons/hi2";
+import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath, HiChevronDown, HiSpeakerWave } from "react-icons/hi2";
+import toast from "react-hot-toast";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import { attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
 import { DEFAULT_ICE_SERVERS } from "@/lib/ice-servers";
@@ -37,6 +38,10 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [facingBusy, setFacingBusy] = useState(false);
+  const [audioOutputs, setAudioOutputs] = useState<MediaDeviceInfo[]>([]);
+  const [sinkIndex, setSinkIndex] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -260,6 +265,68 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   useEffect(() => { return () => { if (localStreamRef.current) { localStreamRef.current.getTracks().forEach(t => t.stop()); localStreamRef.current = null; } if (pcRef.current) { pcRef.current.close(); pcRef.current = null; } if (durationRef.current) { clearInterval(durationRef.current); durationRef.current = null; } stopStatsPolling(); stopRing(); }; }, [isOpen]);
   const toggleMute = () => { if (localStreamRef.current) { localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = isMuted; }); setIsMuted(!isMuted); } };
   const toggleVideo = () => { if (localStreamRef.current) { localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = isVideoOff; }); setIsVideoOff(!isVideoOff); } };
+
+  // Front/back camera switch: acquire the other facingMode and hot-swap the
+  // video track on the live RTCPeerConnection (replaceTrack — no renegotiation).
+  const flipCamera = useCallback(async () => {
+    if (facingBusy || callType !== "video") return;
+    setFacingBusy(true);
+    try {
+      const target = facingMode === "user" ? "environment" : "user";
+      const camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: target } },
+        audio: false,
+      });
+      const newTrack = camStream.getVideoTracks()[0];
+      const sender = pcRef.current?.getSenders().find((s) => s.track?.kind === "video");
+      if (sender && newTrack) {
+        await sender.replaceTrack(newTrack);
+        const oldTrack = localStreamRef.current?.getVideoTracks()[0];
+        if (oldTrack) {
+          localStreamRef.current?.removeTrack(oldTrack);
+          oldTrack.stop();
+        }
+        localStreamRef.current?.addTrack(newTrack);
+        setFacingMode(target);
+      } else {
+        camStream.getTracks().forEach((t) => t.stop());
+        toast("Camera switch not available on this device");
+      }
+    } catch {
+      toast("No second camera found");
+    } finally {
+      setFacingBusy(false);
+    }
+  }, [callType, facingBusy, facingMode]);
+
+  // Audio output routing (desktop browsers): cycle speakers/headphones via
+  // setSinkId on the playing media elements. Phone browsers expose only the
+  // OS-controlled default, so the control hides itself when there's <2 devices.
+  const cycleAudioOutput = useCallback(async () => {
+    if (audioOutputs.length < 2) return;
+    const next = (sinkIndex + 1) % audioOutputs.length;
+    setSinkIndex(next);
+    const device = audioOutputs[next];
+    let ok = false;
+    for (const el of [remoteAudioRef.current, remoteVideoRef.current]) {
+      const anyEl = el as HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> };
+      if (el && typeof anyEl.setSinkId === "function") {
+        try { await anyEl.setSinkId(device.deviceId); ok = true; } catch { /* device rejected */ }
+      }
+    }
+    toast(ok ? `Audio → ${device.label || "output device"}` : "Audio routing not supported here");
+  }, [audioOutputs, sinkIndex]);
+
+  // Output devices only become labeled once mic permission is granted —
+  // enumerate on every connecting/connected transition.
+  useEffect(() => {
+    if (callState !== "connected" && callState !== "connecting") return;
+    let cancelled = false;
+    navigator.mediaDevices?.enumerateDevices?.()
+      .then((devices) => { if (!cancelled) setAudioOutputs(devices.filter((d) => d.kind === "audiooutput")); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [callState]);
   const fmt = (s: number) => Math.floor(s/60).toString().padStart(2,"0") + ":" + (s%60).toString().padStart(2,"0");
   if (!isOpen) return null;
   callStateRef.current = callState;
@@ -306,7 +373,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
           <div className="relative rounded-2xl overflow-hidden bg-gray-900 dark:bg-dark-900 aspect-[3/4]">
             <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
             <div className="absolute top-4 right-4 w-32 h-24 rounded-xl overflow-hidden border-2 border-white/20">
-              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }} />
             </div>
             <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent">
               <div className="flex items-center gap-3">
@@ -348,7 +415,17 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
             </button>
           )}
           {isIncoming && callState === "ringing" && <button onClick={answerIncomingCall} aria-label="Accept call" className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
-          {(callState === "connected" || callState === "connecting") && <button onClick={toggleMute} className={isMuted ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isMuted ? <HiMicrophone className="text-xl" /> : <HiMicrophone className="text-xl" />}</button>}
+          {(callState === "connected" || callState === "connecting") && <button onClick={toggleMute} className={isMuted ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}><HiMicrophone className="text-xl" /></button>}
+          {(callState === "connected" || callState === "connecting") && callType === "video" && (
+            <button onClick={flipCamera} disabled={facingBusy} aria-label="Flip camera" title="Flip camera" className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all disabled:opacity-50">
+              <HiArrowPath className="text-xl" />
+            </button>
+          )}
+          {(callState === "connected" || callState === "connecting") && audioOutputs.length > 1 && (
+            <button onClick={cycleAudioOutput} aria-label="Change audio output" title="Audio output" className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all">
+              <HiSpeakerWave className="text-xl" />
+            </button>
+          )}
           {(callState === "connected" || callState === "connecting") && callType === "video" && <button onClick={toggleVideo} className={isVideoOff ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isVideoOff ? <HiVideoCameraSlash className="text-xl" /> : <HiVideoCamera className="text-xl" />}</button>}
           {callState !== "ended" && <button onClick={endCall} aria-label="End call" className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center"><HiPhoneXMark className="text-2xl text-white" /></button>}
         </div>
