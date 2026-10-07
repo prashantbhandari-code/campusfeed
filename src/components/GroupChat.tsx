@@ -250,7 +250,7 @@ export default function GroupChat({
           const mine = m.sender?.id === user?.id;
           const canDelete = mine || isAdmin;
           return (
-            <div key={m.id} className={`group/msg flex items-end gap-2 ${mine ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`group/msg flex items-end gap-2 animate-slide-in ${mine ? "justify-end" : "justify-start"}`}>
               {!mine && <UserAvatar user={m.sender} size="sm" />}
               <div className="max-w-[75%] min-w-0 relative">
                 {!mine && (

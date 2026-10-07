@@ -357,7 +357,7 @@ export default function ChatPage() {
           const isMine = msg.sender.id === user?.id;
           const newGroup = i === 0 || messages[i - 1].sender.id !== msg.sender.id;
           return (
-            <div key={msg.id} className={`flex gap-2 items-start ${isMine ? "justify-end" : "justify-start"} ${newGroup ? "mt-3" : "mt-0.5"}`}>
+            <div key={msg.id} className={`flex gap-2 items-start animate-slide-in ${isMine ? "justify-end" : "justify-start"} ${newGroup ? "mt-3" : "mt-0.5"}`}>
               {!isMine && (newGroup ? <UserAvatar user={msg.sender} size="sm" /> : <div className="w-8 flex-shrink-0" aria-hidden="true" />)}
               <div
                 className={`max-w-[75%] min-w-0 flex flex-col select-none ${isMine ? "items-end" : ""}`}

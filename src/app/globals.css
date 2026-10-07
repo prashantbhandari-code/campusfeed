@@ -216,3 +216,12 @@ button:focus-visible, a:focus-visible {
 html, body {
   overscroll-behavior: none;
 }
+
+/* ===== Respect reduced-motion preference ===== */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-in,
+  .animate-pulse,
+  .animate-bounce {
+    animation: none;
+  }
+}
