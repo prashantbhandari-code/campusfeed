@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath } from "react-icons/hi2";
+import { HiPhone, HiPhoneXMark, HiVideoCamera, HiVideoCameraSlash, HiMicrophone, HiArrowPath, HiChevronDown } from "react-icons/hi2";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import { attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
 import { DEFAULT_ICE_SERVERS } from "@/lib/ice-servers";
@@ -36,10 +36,12 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const [callType] = useState(initialCallType);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [callDuration, setCallDuration] = useState(0);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const retriedIceRef = useRef(false);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -132,6 +134,7 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
       // Voice calls have no <video> element — without attaching the remote
       // stream to *some* media element, its audio is never played.
       const stream = e.streams[0];
+      remoteStreamRef.current = stream;
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
       else if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
     };
@@ -160,6 +163,17 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
     };
     startStatsPolling(); // 1s HUD poll: ICE state, selected pair, packet loss
   }, [otherUser.id, emit, endCall, stopRing, startStatsPolling]);
+  // Media elements remount when the call is minimized/expanded — re-attach
+  // the streams so remote audio (and the video preview) keep playing.
+  useEffect(() => {
+    const stream = remoteStreamRef.current;
+    if (!stream) return;
+    if (callType === "video" && remoteVideoRef.current) remoteVideoRef.current.srcObject = stream;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = stream;
+    if (callType === "video" && localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+  }, [minimized, callType]);
   const requestPermissionAndCall = useCallback(async () => {
     setErrorMsg(null);
     setCallState("requesting-permission");
@@ -252,6 +266,37 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
   const stateText = errorMsg ? errorMsg : callState === "requesting-permission" ? "Requesting camera & microphone permission..." : callState === "ringing" ? (isIncoming ? "Incoming call..." : "Ringing...") : callState === "connecting" ? "Connecting..." : callState === "connected" ? fmt(callDuration) : "Call ended";
   const showHud = (callState === "connecting" || callState === "connected") && !errorMsg;
   const hudText = `ICE ${iceState} · pair ${pairType || "—"} · ${pktStats || "no media yet"}`;
+  // Minimized: a floating pill — the chat and page navigation stay usable
+  // while the call keeps running (media re-attaches via the effect above).
+  if (minimized) {
+    return (
+      <div className="fixed bottom-24 right-4 z-[95] flex items-center gap-2 rounded-full bg-gray-900/95 dark:bg-dark-800/95 shadow-2xl border border-white/10 pl-2 pr-3 py-2">
+        <audio ref={remoteAudioRef} autoPlay playsInline />
+        <button onClick={() => setMinimized(false)} className="flex items-center gap-3 text-left" aria-label="Expand call">
+          <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold shrink-0">{otherUser.name?.charAt(0)}</div>
+          <div className="max-w-[130px]">
+            <p className="text-sm font-semibold text-white leading-tight truncate">{otherUser.name}</p>
+            <p className={"text-xs leading-tight " + (errorMsg ? "text-red-400" : "text-gray-400")}>{callState === "connected" ? fmt(callDuration) : stateText}</p>
+          </div>
+        </button>
+        {isIncoming && callState === "ringing" && (
+          <button onClick={answerIncomingCall} aria-label="Accept call" className="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center shrink-0 animate-pulse">
+            <HiPhone className="text-lg text-white" />
+          </button>
+        )}
+        {(callState === "connecting" || callState === "connected") && (
+          <button onClick={toggleMute} aria-label="Toggle mute" className={"w-9 h-9 rounded-full flex items-center justify-center shrink-0 " + (isMuted ? "bg-red-500/25 text-red-400" : "bg-white/10 text-white")}>
+            <HiMicrophone className="text-sm" />
+          </button>
+        )}
+        {callState !== "ended" && (
+          <button onClick={endCall} aria-label="End call" className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shrink-0">
+            <HiPhoneXMark className="text-lg text-white" />
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-md mx-4">
@@ -297,6 +342,11 @@ export default function CallModal({ isOpen, onClose, otherUser, currentUser, cal
           </div>
         )}
         <div className="flex justify-center gap-4 mt-6">
+          {(callState === "ringing" || callState === "connecting" || callState === "connected") && (
+            <button onClick={() => setMinimized(true)} aria-label="Minimize call" title="Minimize — keep chatting" className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20">
+              <HiChevronDown className="text-xl" />
+            </button>
+          )}
           {isIncoming && callState === "ringing" && <button onClick={answerIncomingCall} aria-label="Accept call" className="w-16 h-16 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center animate-pulse"><HiPhone className="text-2xl text-white" /></button>}
           {(callState === "connected" || callState === "connecting") && <button onClick={toggleMute} className={isMuted ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isMuted ? <HiMicrophone className="text-xl" /> : <HiMicrophone className="text-xl" />}</button>}
           {(callState === "connected" || callState === "connecting") && callType === "video" && <button onClick={toggleVideo} className={isVideoOff ? "w-14 h-14 rounded-full flex items-center justify-center bg-red-500/20 text-red-400" : "w-14 h-14 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"}>{isVideoOff ? <HiVideoCameraSlash className="text-xl" /> : <HiVideoCamera className="text-xl" />}</button>}

@@ -1,24 +1,32 @@
 "use client";
 
-import { useState } from "react";
 import { useSession } from "@/lib/session";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
 import { stashIceCandidate } from "@/lib/call-signals";
-import CallModal from "./CallModal";
+import { useCall } from "./CallProvider";
 
+// Anchors the shared realtime loop (ref-counted polling) on every (main)
+// page — unread badges, group chat, and incoming calls all ride it — and
+// routes incoming calls + ICE candidates into the global CallProvider, so a
+// call keeps running across page navigation.
 export default function IncomingCallListener() {
   const { data: session } = useSession();
   const user = session?.user;
-  // Anchors the shared realtime loop (ref-counted polling) on every (main)
-  // page — unread badges, group chat, and incoming calls all ride it.
   useSocket(user?.id);
-  const [showCall, setShowCall] = useState(false);
-  const [callData, setCallData] = useState<any>(null);
+  const { receiveIncomingCall } = useCall();
 
   useSocketEvent("incoming-call", (data: any) => {
-    console.log("📞 Incoming call from", data.callerName);
-    setCallData(data);
-    setShowCall(true);
+    receiveIncomingCall({
+      otherUser: {
+        id: data.callerId,
+        name: data.callerName,
+        username: "",
+        avatar: data.callerAvatar,
+      },
+      callType: data.callType,
+      isIncoming: true,
+      offer: data.offer,
+    });
   }, []);
 
   // This listener is mounted from page load, so it sees EVERY ice-candidate
@@ -29,22 +37,5 @@ export default function IncomingCallListener() {
     stashIceCandidate(d.fromUserId, d.candidate);
   }, []);
 
-  if (!showCall || !callData || !user) return null;
-
-  return (
-    <CallModal
-      isOpen={showCall}
-      onClose={() => { setShowCall(false); setCallData(null); }}
-      otherUser={{
-        id: callData.callerId,
-        name: callData.callerName,
-        username: "",
-        avatar: callData.callerAvatar,
-      }}
-      currentUser={user}
-      callType={callData.callType}
-      isIncoming
-      offer={callData.offer}
-    />
-  );
+  return null;
 }

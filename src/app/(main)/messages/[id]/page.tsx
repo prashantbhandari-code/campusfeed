@@ -5,7 +5,7 @@ import { useSession } from "@/lib/session";
 import { useParams } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
 import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX, HiDotsHorizontal } from "react-icons/hi";
-import CallModal from "@/components/CallModal";
+import { useCall } from "@/components/CallProvider";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatDate } from "@/lib/utils";
@@ -36,8 +36,7 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
-  const [showOutgoingCall, setShowOutgoingCall] = useState(false);
-  const [outgoingCallType, setOutgoingCallType] = useState<"audio" | "video">("audio");
+  const { startCall } = useCall();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasTypedRef = useRef(false);
@@ -345,8 +344,8 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => { setOutgoingCallType("audio"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-green-500/20 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>
-              <button onClick={() => { setOutgoingCallType("video"); setShowOutgoingCall(true); }} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-blue-500/20 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all" title="Video call"><HiVideoCamera className="text-lg" /></button>
+              <button onClick={() => startCall(otherUser, "audio")} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-green-500/20 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>
+              <button onClick={() => startCall(otherUser, "video")} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-blue-500/20 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center justify-center transition-all" title="Video call"><HiVideoCamera className="text-lg" /></button>
             </div>
           </>
         )}
@@ -607,10 +606,6 @@ export default function ChatPage() {
             </button>
           </div>
         </div>
-      )}
-
-      {showOutgoingCall && otherUser && user && (
-        <CallModal isOpen={showOutgoingCall} onClose={() => setShowOutgoingCall(false)} otherUser={otherUser} currentUser={user} callType={outgoingCallType} />
       )}
 
     </div>

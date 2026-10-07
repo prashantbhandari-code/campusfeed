@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import PageTransition from "@/components/PageTransition";
 import IncomingCallListener from "@/components/IncomingCallListener";
+import { CallProvider } from "@/components/CallProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -41,7 +42,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </main>
       </div>
       <BottomNav />
-      <IncomingCallListener />
+      <CallProvider>
+        <IncomingCallListener />
+      </CallProvider>
     </div>
   );
 }
