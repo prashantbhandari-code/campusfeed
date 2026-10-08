@@ -323,8 +323,12 @@ export default function ChatPage() {
     setRecording(false);
   };
 
+  // Heights: below lg the fixed navbar (3.5rem) + bottom nav (4.125rem) are
+  // both visible, so the chat fills exactly what's left. The -mb cancels
+  // main's pb-24/lg:pb-6 so focusing the input can't scroll the window and
+  // push the header behind the navbar.
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-0rem)] flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
+    <div className="h-[calc(100dvh-3.5rem-4.125rem)] lg:h-[calc(100vh-1.5rem)] -mb-24 lg:-mb-6 flex flex-col max-w-3xl mx-auto bg-white dark:bg-dark-900 border-x border-gray-200 dark:border-white/5">
       {/* Header */}
       <div className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-white/10 p-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/messages" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white md:hidden">
@@ -505,7 +509,7 @@ export default function ChatPage() {
       )}
 
       {/* Input — pinned to bottom */}
-      <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0 mb-16 lg:mb-0">
+      <form onSubmit={handleSend} className="bg-white dark:bg-dark-900 border-t border-gray-200 dark:border-white/10 p-3 flex gap-2 items-center flex-shrink-0">
         <label htmlFor="file-upload-msg" className="cursor-pointer"><input id="file-upload-msg" type="file" ref={fileInputRef} className="sr-only" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
         <label htmlFor="audio-upload-msg" className="cursor-pointer"><input id="audio-upload-msg" type="file" ref={audioInputRef} className="sr-only" accept="audio/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }} /></label>
 
