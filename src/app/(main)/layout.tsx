@@ -8,6 +8,7 @@ import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import PageTransition from "@/components/PageTransition";
 import IncomingCallListener from "@/components/IncomingCallListener";
+import CapacitorCallListener from "@/components/CapacitorCallListener";
 import { CallProvider } from "@/components/CallProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -34,16 +35,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <CallProvider>
       <div className="h-dvh flex flex-col">
         <Navbar />
-        <div className="flex-1 flex pt-14 lg:pt-0 ">
+        {/* min-h-0 lets this wrapper shrink below content height so <main>
+            becomes the scroll container — without it the wrapper grows to
+            content height, the window scrolls instead, and the fixed bottom
+            nav covers the last row of content. */}
+        <div className="flex-1 flex pt-14 lg:pt-0 min-h-0">
           {/* Desktop sidebar */}
           <Sidebar />
-          {/* Main content — offset by sidebar width on desktop, bottom nav height on mobile */}
-          <main className="flex-1 lg:ml-64 min-h-0 flex-1 overflow-y-auto ">
+          {/* Main content — offset by sidebar width on desktop; pb-24 clears
+              the fixed mobile bottom nav so the last card is reachable. */}
+          <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto pb-24 lg:pb-6">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>
         <BottomNav />
         <IncomingCallListener />
+        <CapacitorCallListener />
       </div>
     </CallProvider>
   );
