@@ -6,7 +6,8 @@ import { parseBody, createForumReplySchema } from "@/lib/validation";
 
 // Strip HTML tags to prevent stored XSS
 
-export async function POST(req: NextRequest, { params }: { params: { postId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ postId: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest, { params }: { params: { postId: str
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { postId: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ postId: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;

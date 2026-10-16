@@ -5,7 +5,8 @@ import prisma from "@/lib/prisma";
 import { invalidateBlockedIdsCache } from "@/lib/blocking";
 
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -21,7 +22,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (error) { return NextResponse.json({ error: "Internal server error" }, { status: 500 }); }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;

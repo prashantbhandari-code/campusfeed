@@ -10,10 +10,8 @@ import { getBlockedIds } from "@/lib/blocking";
 // Strip HTML tags to prevent stored XSS
 
 // GET /api/groups/[id]/posts — list posts in a group
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -40,10 +38,8 @@ export async function GET(
 }
 
 // POST /api/groups/[id]/posts — create a post in a group
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

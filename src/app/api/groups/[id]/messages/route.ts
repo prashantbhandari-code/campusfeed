@@ -25,7 +25,8 @@ async function requireMember(req: Request, groupId: string) {
 }
 
 // GET /api/groups/[id]/messages — last 50 messages, members only (marks read)
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
@@ -59,7 +60,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST /api/groups/[id]/messages — send text or an attachment, members only
-export const POST = withRateLimit(async (req: Request, { params }: { params: { id: string } }) => {
+export const POST = withRateLimit(async (req: Request, props: { params: Promise<{ id: string }> }) => {
+  const params = await props.params;
   try {
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;
@@ -101,7 +103,8 @@ export const POST = withRateLimit(async (req: Request, { params }: { params: { i
 }, { windowMs: 60000, maxRequests: 60 }); // 60 sends per minute
 
 // DELETE /api/groups/[id]/messages — remove a message (sender or group admin)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const { userId, error } = await requireMember(req, params.id);
     if (error) return error;

@@ -5,10 +5,8 @@ import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/groups/[id]/sections — list sections in a group
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -32,10 +30,8 @@ export async function GET(
 }
 
 // POST /api/groups/[id]/sections — create a section
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

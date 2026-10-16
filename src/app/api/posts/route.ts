@@ -23,7 +23,7 @@ export const GET = withRateLimit(async (req: Request) => {
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    let where: any = {};
+    const where: any = {};
 
     // Blocking applies to every feed mode: own posts, saved, and following
     const blockedIds = await getBlockedIds(session.user.id);

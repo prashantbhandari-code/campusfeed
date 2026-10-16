@@ -5,10 +5,8 @@ import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 
 // POST /api/groups/[id]/join — join a group
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -53,10 +51,8 @@ export async function POST(
 }
 
 // DELETE /api/groups/[id]/join — leave a group (transfers admin, deletes orphaned groups)
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;

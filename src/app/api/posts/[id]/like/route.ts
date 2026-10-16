@@ -8,7 +8,8 @@ import { isBlockedPair } from "@/lib/blocking";
 import { withRateLimit } from "@/lib/rateLimit";
 
 export const POST = withRateLimit(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, props: { params: Promise<{ id: string }> }) => {
+    const params = await props.params;
     try {
       const session = await getServerSession(req);
       if (!session?.user) {

@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 import { parseBody, storyActionSchema } from "@/lib/validation";
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -33,7 +34,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST like/unlike or add comment
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -71,7 +73,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 // DELETE story (owner only)
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;

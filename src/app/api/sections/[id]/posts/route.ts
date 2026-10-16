@@ -7,10 +7,8 @@ import { getBlockedIds } from "@/lib/blocking";
 import { parseBody, createGroupPostSchema } from "@/lib/validation";
 
 // GET /api/sections/[id]/posts — list posts in a section
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -37,10 +35,8 @@ export async function GET(
 }
 
 // POST /api/sections/[id]/posts — create a post in a section
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

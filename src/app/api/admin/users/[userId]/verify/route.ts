@@ -3,10 +3,8 @@ import prisma from '@/lib/prisma';
 import { parseBody, adminVerifySchema } from '@/lib/validation';
 import { requireAdmin } from '@/lib/api-auth';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireAdmin(request);
     if (!auth.ok) return auth.response;

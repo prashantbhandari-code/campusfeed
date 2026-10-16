@@ -8,10 +8,8 @@ import { emitToUser } from "@/lib/socket";
 import { isBlockedPair } from "@/lib/blocking";
 import { parseBody, editMessageSchema } from "@/lib/validation";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -106,10 +104,8 @@ export async function GET(
 }
 
 /** Edit a message's text (own text messages only, like WhatsApp). */
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -170,10 +166,8 @@ export async function PATCH(
  *   body { scope: "everyone" } → unsend: content cleared, both sides see a tombstone.
  *   body { scope: "me" }       → hides it only for the caller.
  */
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

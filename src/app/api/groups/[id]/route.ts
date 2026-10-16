@@ -5,10 +5,8 @@ import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/groups/[id] — get group details
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -69,10 +67,8 @@ export async function GET(
 }
 
 // PATCH /api/groups/[id] — admin updates settings (announcement mode, name, etc.)
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -106,10 +102,8 @@ export async function PATCH(
 }
 
 // DELETE /api/groups/[id] — admin deletes the group (cascades members/posts/messages)
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

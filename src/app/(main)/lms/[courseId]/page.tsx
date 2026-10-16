@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import { HiPlus, HiDocumentText, HiAcademicCap, HiArrowLeft, HiCheckCircle, HiCheckBadge, HiUserGroup, HiUserMinus } from "react-icons/hi2";
@@ -26,7 +26,8 @@ interface EnrolledStudent {
   student: { id: string; name: string; username?: string; avatar?: string };
 }
 
-export default function CourseDetail({ params }: { params: { courseId: string } }) {
+export default function CourseDetail(props: { params: Promise<{ courseId: string }> }) {
+  const params = use(props.params);
   const courseId = params.courseId;
   const { data: session } = useSession() as any;
   const router = useRouter();

@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     // Blocked users never appear in search or profile lookups
     const blockedIds = await getBlockedIds(currentUserId);
 
-    let where: any = {};
+    const where: any = {};
     // Exclude current user and blocked users from results
     where.id = { notIn: [currentUserId, ...blockedIds] };
 

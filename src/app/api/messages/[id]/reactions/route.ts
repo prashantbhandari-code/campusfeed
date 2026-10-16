@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/api-auth";
 import { emitToUser } from "@/lib/socket";
 import { parseBody, messageReactionSchema } from "@/lib/validation";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
@@ -72,7 +73,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;

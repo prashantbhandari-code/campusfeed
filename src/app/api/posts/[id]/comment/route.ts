@@ -11,10 +11,8 @@ import { parseBody, createCommentSchema, editCommentSchema, commentActionSchema 
 
 // Strip HTML tags to prevent stored XSS
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -39,7 +37,8 @@ export async function GET(
 }
 
 export const POST = withRateLimit(
-  async (req: Request, { params }: { params: { id: string } }) => {
+  async (req: Request, props: { params: Promise<{ id: string }> }) => {
+    const params = await props.params;
     try {
       const session = await getServerSession(req);
       if (!session?.user) {
@@ -99,10 +98,8 @@ export const POST = withRateLimit(
 );
 
 /** Edit your own comment. body { commentId, content } */
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -143,10 +140,8 @@ export async function PATCH(
 }
 
 /** Delete a comment — allowed for the comment author or the post author. body { commentId } */
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

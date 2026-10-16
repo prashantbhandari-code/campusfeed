@@ -15,10 +15,8 @@ async function requireGroupAdmin(groupId: string, userId: string) {
  * PATCH /api/groups/[id]/members/[userId] — change a member's role.
  * body { role: "admin" | "member" }
  */
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string; userId: string } }
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string; userId: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {
@@ -69,10 +67,8 @@ export async function PATCH(
 }
 
 /** DELETE /api/groups/[id]/members/[userId] — admin kicks a member. */
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string; userId: string } }
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string; userId: string }> }) {
+  const params = await props.params;
   try {
     const session = await getServerSession(req);
     if (!session?.user) {

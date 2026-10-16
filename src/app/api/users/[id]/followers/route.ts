@@ -4,10 +4,8 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const auth = await requireUser(req);
     if (!auth.ok) return auth.response;
