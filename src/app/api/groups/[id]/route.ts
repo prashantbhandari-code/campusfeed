@@ -22,7 +22,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
           createdBy: { select: { id: true, name: true, username: true, avatar: true } },
           members: {
             include: {
-              user: { select: { id: true, name: true, username: true, avatar: true, department: true } },
+              user: { select: { id: true, name: true, username: true, avatar: true, department: true, lastSeen: true } },
             },
             orderBy: { joinedAt: "desc" },
             take: 100,

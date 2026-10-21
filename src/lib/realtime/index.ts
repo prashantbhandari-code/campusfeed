@@ -9,9 +9,9 @@ export function canUseSSE(): boolean {
   return typeof window !== "undefined" && typeof EventSource !== "undefined";
 }
 
-export function startRealtime(): void {
+export function startRealtime(groupId?: string): void {
   if (canUseSSE()) startSSE();
-  else startPolling();
+  else startPolling(groupId);
 }
 
 export function stopRealtime(): void {

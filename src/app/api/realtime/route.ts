@@ -4,7 +4,7 @@ export const maxDuration = 60; // Vercel cap; the stream self-closes well before
 import { NextRequest } from 'next/server';
 import { getUserIdFromCookieHeader } from '@/lib/session-token';
 import { collectDelta } from '@/lib/realtime/collect-delta';
-import { freshTypingFor } from '@/lib/realtime/typing-store';
+import { freshTypingFor, freshGroupTypingFor } from '@/lib/realtime/typing-store';
 
 // Server-Sent Events stream: the primary realtime transport on Vercel.
 //
@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   // Client sends back the cursor from the previous stream's bye frame.
   const since = parseInt(url.searchParams.get('since') || '0') || 0;
+  // Optional: groupId for group chat typing indicators
+  const groupId = url.searchParams.get('groupId') || null;
 
   const encoder = new TextEncoder();
   const startedAt = Date.now();
@@ -63,6 +65,7 @@ export async function GET(request: NextRequest) {
       // even when nothing else moved.
       let lastUnreadNotifications: number | null = null;
       let lastUnreadMessages: number | null = null;
+      let lastUnreadGroupMessages: number | null = null;
 
       const sendDelta = async () => {
         if (closed) return;
@@ -79,19 +82,21 @@ export async function GET(request: NextRequest) {
             delta.reactions.length > 0 ||
             delta.callSignals.length > 0 ||
             delta.unreadNotifications !== lastUnreadNotifications ||
-            delta.unreadMessages !== lastUnreadMessages;
+            delta.unreadMessages !== lastUnreadMessages ||
+            delta.unreadGroupMessages !== lastUnreadGroupMessages;
 
           if (hasContent) {
             idleTicks = 0;
             lastUnreadNotifications = delta.unreadNotifications;
             lastUnreadMessages = delta.unreadMessages;
-            controller.enqueue(encoder.encode(sseFrame("delta", { ...delta, typing: freshTypingFor(userId) })));
+            lastUnreadGroupMessages = delta.unreadGroupMessages;
+            controller.enqueue(encoder.encode(sseFrame("delta", { ...delta, typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] })));
           } else {
             idleTicks++;
             // Always send a typing frame on quiet ticks — even an empty one —
             // so the client's differ notices a typist going silent within a
             // second instead of whenever the next content frame happens.
-            controller.enqueue(encoder.encode(sseFrame("typing", { typing: freshTypingFor(userId) })));
+            controller.enqueue(encoder.encode(sseFrame("typing", { typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] })));
           }
         } catch (error) {
           console.error("SSE delta error:", error);

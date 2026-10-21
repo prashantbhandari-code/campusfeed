@@ -16,12 +16,16 @@ export default function QuizPage(props: { params: Promise<{ courseId: string; qu
   const [timeLeft, setTimeLeft] = useState(0);
   const [canAttempt, setCanAttempt] = useState(true);
   const [attemptsUsed, setAttemptsUsed] = useState(0);
+  // Distinguishes "still loading" (keep the skeleton) from "failed to load"
+  // (say so), so a deleted quiz or a server error doesn't hang forever.
+  const [loadFailed, setLoadFailed] = useState(false);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
     fetch("/api/quizzes/" + quizId + "/take").then(r => r.json()).then(data => {
       if (data.quiz) { setQuiz(data.quiz); setCanAttempt(data.canAttempt); setAttemptsUsed(data.attemptsUsed); setAnswers(new Array(data.quiz.questions.length).fill("")); }
-    });
+      else setLoadFailed(true);
+    }).catch(() => setLoadFailed(true));
   }, [quizId]);
 
   useEffect(() => {
@@ -43,6 +47,13 @@ export default function QuizPage(props: { params: Promise<{ courseId: string; qu
   };
 
   const fmt = (s: number) => Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+
+  if (loadFailed) return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <button onClick={() => router.push("/lms/" + courseId)} className="flex items-center gap-2 text-gray-500 dark:text-gray-400"><HiArrowLeft className="w-4 h-4" /> Back</button>
+      <p className="text-center text-gray-500 dark:text-gray-400 py-20">Quiz not found or you don&apos;t have access.</p>
+    </div>
+  );
 
   if (!quiz) return (
     <div className="max-w-4xl mx-auto p-4 space-y-4 animate-pulse">

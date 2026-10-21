@@ -272,7 +272,7 @@ function StoryBar() {
               </div>
             </div>
             <span className="text-[11px] text-gray-600 dark:text-gray-400 w-16 text-center truncate">Your Story</span>
-            <label htmlFor="file-upload-story" className="cursor-pointer absolute inset-0"><input id="file-upload-story" ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} className="sr-only" /></label>
+            <label htmlFor="file-upload-story" className="cursor-pointer absolute inset-0"><input id="file-upload-story" ref={fileRef} type="file" accept="image/*" onChange={handleCreateStory} aria-label="Add photo to your story" className="sr-only" /></label>
           </div>
           {Object.values(groupedStories).map((group: any) => (
             <div key={group.author.id} className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => openStory(group.stories[0])}>

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { sendPush } from "@/lib/push";
+import { pushTarget } from "@/lib/notification-target";
 import { isBlockedPair } from "@/lib/blocking";
 import { withRateLimit } from "@/lib/rateLimit";
 
@@ -57,7 +58,9 @@ export const POST = withRateLimit(
         void sendPush(post.authorId, {
           title: from?.name || "Someone",
           body: "liked your post",
-          url: `/posts/${postId}`,
+          // No post-detail page exists — land on the feed with the post
+          // highlighted, same as the in-app notification row.
+          url: pushTarget({ type: "like", postId }) || "/feed",
         });
       }
 

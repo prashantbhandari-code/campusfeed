@@ -3,12 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getBlockedIds } from "@/lib/blocking";
 import { parseBody, createPostSchema } from "@/lib/validation";
-
-// Simple HTML sanitizer — strip tags
 
 export const GET = withRateLimit(async (req: Request) => {
   try {
@@ -75,7 +72,7 @@ export const GET = withRateLimit(async (req: Request) => {
 
     const postsWithMeta = posts.map((post) => ({
       ...post,
-      content: post.content ? sanitize(post.content) : null,
+      content: post.content,
       isLiked: post.likes.length > 0,
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
@@ -101,15 +98,12 @@ export const POST = withRateLimit(async (req: Request) => {
     if (!parsed.ok) return parsed.response;
     const { content, images } = parsed.data;
 
-    // Sanitize content
-    const sanitizedContent = content ? sanitize(content) : null;
-
-    if (!sanitizedContent && (!images || images.length === 0)) {
+    if (!content?.trim() && (!images || images.length === 0)) {
       return NextResponse.json({ error: "Post must have content or images" }, { status: 400 });
     }
 
-    // Limit content length
-    if (sanitizedContent && sanitizedContent.length > 5000) {
+    // Limit content length (schema handles HTML stripping)
+    if (content && content.length > 5000) {
       return NextResponse.json({ error: "Content too long (max 5000 characters)" }, { status: 400 });
     }
 
@@ -120,7 +114,7 @@ export const POST = withRateLimit(async (req: Request) => {
 
     const post = await prisma.post.create({
       data: {
-        content: sanitizedContent || null,
+        content: content || null,
         images: JSON.stringify(images || []),
         authorId: session.user.id,
       },

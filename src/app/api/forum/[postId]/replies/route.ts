@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { parseBody, createForumReplySchema } from "@/lib/validation";
-
-// Strip HTML tags to prevent stored XSS
 
 export async function POST(req: NextRequest, props: { params: Promise<{ postId: string }> }) {
   const params = await props.params;
@@ -15,16 +12,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ postId: 
 
     const parsed = await parseBody(req, createForumReplySchema);
     if (!parsed.ok) return parsed.response;
-    const sanitizedContent = sanitize(parsed.data.content || "");
-    if (!sanitizedContent) {
-      return NextResponse.json({ error: "Content required" }, { status: 400 });
-    }
+    const content = parsed.data.content;
 
     const reply = await prisma.forumReply.create({
       data: {
         postId: params.postId,
         authorId: session.user.id,
-        content: sanitizedContent,
+        content,
       },
     });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "@/lib/session";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import { HiSearch, HiHeart } from "react-icons/hi";
 import { parseImages } from "@/lib/utils";
@@ -87,6 +88,20 @@ export default function ExplorePage() {
   return (
     <div className="max-w-2xl mx-auto px-0 md:px-4 py-6">
       <h1 className="text-2xl font-bold mb-4 px-4">Explore</h1>
+
+      {/* Blogs entry point — the mobile bar has no free slot for a 7th item,
+          so the blogs section is discovered here (and from the desktop sidebar). */}
+      <Link
+        href="/blogs"
+        className="mx-4 mb-4 glass-card rounded-xl p-4 flex items-center gap-3 hover:bg-white/5 transition-all"
+      >
+        <span className="text-2xl">✍️</span>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm">Blogs</p>
+          <p className="text-xs text-gray-500">Read what campus is writing — and publish your own</p>
+        </div>
+        <span className="text-gray-400">›</span>
+      </Link>
 
       {/* Search Bar */}
       <form onSubmit={handleSearch} className="mb-4 px-4">

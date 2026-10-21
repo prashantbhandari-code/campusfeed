@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("campusconnect-theme") as Theme | null;
+    const saved = localStorage.getItem("campusfeed-theme") as Theme | null;
     if (saved) {
       setTheme(saved);
       document.documentElement.classList.toggle("dark", saved === "dark");
@@ -35,7 +35,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     setTheme((prev) => {
       const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("campusconnect-theme", next);
+      localStorage.setItem("campusfeed-theme", next);
       document.documentElement.classList.remove("dark", "light");
       document.documentElement.classList.add(next);
       return next;

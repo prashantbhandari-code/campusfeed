@@ -32,6 +32,9 @@ export default function CourseDetail(props: { params: Promise<{ courseId: string
   const { data: session } = useSession() as any;
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
+  // Distinguishes "still loading" (keep the skeleton) from "failed to load"
+  // (say so), so a deleted course or a server error doesn't hang forever.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [tab, setTab] = useState<"modules"|"attendance"|"forum"|"resources"|"grades">("modules");
   const [showModule, setShowModule] = useState(false);
   const [moduleName, setModuleName] = useState("");
@@ -48,7 +51,16 @@ export default function CourseDetail(props: { params: Promise<{ courseId: string
   const isCreator = session?.user?.id === course?.createdBy;
 
   useEffect(() => {
-    fetch("/api/courses/" + courseId).then(r => r.json()).then(setCourse);
+    // A missing/failed course returns {error}, not a Course — accept it only
+    // when it's a real course, else mark the load failed so the page shows a
+    // message instead of an infinite skeleton (or a crash on modules.map).
+    fetch("/api/courses/" + courseId)
+      .then(r => r.json())
+      .then(d => {
+        if (d && typeof d === "object" && !d.error && Array.isArray(d.modules)) setCourse(d);
+        else setLoadFailed(true);
+      })
+      .catch(() => setLoadFailed(true));
     fetch("/api/courses/" + courseId + "/enroll").then(r => r.json()).then(d => {
       setIsEnrolled(d.isEnrolled || false);
       setEnrollmentCount(d.count || 0);
@@ -95,6 +107,12 @@ export default function CourseDetail(props: { params: Promise<{ courseId: string
     }
   };
 
+  if (loadFailed) return (
+    <div className="max-w-4xl mx-auto p-4">
+      <button onClick={() => router.push("/lms")} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400"><HiArrowLeft className="w-4 h-4" /> Back to Courses</button>
+      <p className="text-center text-gray-500 dark:text-gray-400 py-20">Course not found or you don&apos;t have access.</p>
+    </div>
+  );
   if (!course) return <div className="max-w-4xl mx-auto p-4 space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>;
 
   return (

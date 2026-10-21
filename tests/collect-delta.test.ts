@@ -9,7 +9,7 @@ vi.mock("@/lib/prisma", () => {
   return {
     default: {
       message: { findMany: vi.fn(), count: vi.fn() },
-      groupMessage: { findMany: vi.fn() },
+      groupMessage: { findMany: vi.fn(), count: vi.fn() },
       groupMember: { findMany: vi.fn() },
       messageReaction: { findMany: vi.fn() },
       notification: { count: vi.fn() },
@@ -28,6 +28,7 @@ import { collectDelta, SKEW_MS } from "@/lib/realtime/collect-delta";
 
 const messageFindMany = prisma.message.findMany as ReturnType<typeof vi.fn>;
 const groupMessageFindMany = prisma.groupMessage.findMany as ReturnType<typeof vi.fn>;
+const groupMessageCount = prisma.groupMessage.count as ReturnType<typeof vi.fn>;
 const groupMemberFindMany = prisma.groupMember.findMany as ReturnType<typeof vi.fn>;
 const reactionFindMany = prisma.messageReaction.findMany as ReturnType<typeof vi.fn>;
 const notificationCount = prisma.notification.count as ReturnType<typeof vi.fn>;
@@ -38,6 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   messageFindMany.mockResolvedValue([]);
   groupMessageFindMany.mockResolvedValue([]);
+  groupMessageCount.mockResolvedValue(0);
   groupMemberFindMany.mockResolvedValue([]);
   reactionFindMany.mockResolvedValue([]);
   notificationCount.mockResolvedValue(0);
@@ -135,6 +137,32 @@ describe("unread counters", () => {
     const where = notificationCount.mock.calls[0][0].where;
     expect(where.NOT).toEqual({ type: "message" });
     expect(where.read).toBe(false);
+  });
+
+  it("reports group unread as its own count, scoped per membership", async () => {
+    groupMemberFindMany.mockResolvedValue([
+      { groupId: "g1", lastReadAt: new Date(5000) },
+      { groupId: "g2", lastReadAt: null },
+    ]);
+    groupMessageCount.mockResolvedValue(4);
+
+    const delta = await collectDelta("u1", 0, 1000);
+
+    expect(delta.unreadGroupMessages).toBe(4);
+    const where = groupMessageCount.mock.calls[0][0].where;
+    expect(where.senderId).toEqual({ not: "u1" });
+    expect(where.deletedForEveryone).toBe(false);
+    expect(where.OR).toEqual([
+      { groupId: "g1", createdAt: { gt: new Date(5000) } },
+      { groupId: "g2", createdAt: { gt: new Date(0) } },
+    ]);
+  });
+
+  it("reports zero group unread for a user with no memberships", async () => {
+    groupMemberFindMany.mockResolvedValue([]);
+    const delta = await collectDelta("u1", 0, 1000);
+    expect(delta.unreadGroupMessages).toBe(0);
+    expect(groupMessageCount).not.toHaveBeenCalled();
   });
 });
 

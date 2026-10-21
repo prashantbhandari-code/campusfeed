@@ -15,18 +15,28 @@ export default function AssignmentPage(props: { params: Promise<{ courseId: stri
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Distinguishes "still loading" (keep the skeleton) from "failed to load"
+  // (say so), so a deleted assignment or a server error doesn't hang forever.
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     fetch("/api/courses/" + courseId).then(r => r.json()).then(course => {
+      // A failed load returns {error} with no modules — walk what's there and
+      // report a miss rather than leaving the skeleton up forever.
+      let found = false;
       course.modules?.forEach((m: any) => {
         m.assignments?.forEach((a: any) => {
-          if (a.id === assignmentId) setAssignment(a);
+          if (a.id === assignmentId) { setAssignment(a); found = true; }
         });
       });
-    });
+      if (!found) setLoadFailed(true);
+    }).catch(() => setLoadFailed(true));
     fetch("/api/assignments/" + assignmentId + "/submit").then(r => r.json()).then(s => {
-      if (s) { setSubmission(s); setContent(s.content || ""); setSubmitted(true); }
-    });
+      // A failed load returns {error}, and "no submission yet" returns null —
+      // only a real submission (with an id) counts, else the textarea would
+      // lock and a bogus timestamp appear.
+      if (s && typeof s === "object" && s.id) { setSubmission(s); setContent(s.content || ""); setSubmitted(true); }
+    }).catch(() => {});
   }, [courseId, assignmentId]);
 
   const handleSubmit = async () => {
@@ -44,6 +54,13 @@ export default function AssignmentPage(props: { params: Promise<{ courseId: stri
     }
     setSubmitting(false);
   };
+
+  if (loadFailed) return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <button onClick={() => router.push("/lms/" + courseId)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400"><HiArrowLeft className="w-4 h-4" /> Back to Course</button>
+      <p className="text-center text-gray-500 dark:text-gray-400 py-20">Assignment not found or you don&apos;t have access.</p>
+    </div>
+  );
 
   if (!assignment) return (
     <div className="max-w-4xl mx-auto p-4 space-y-4 animate-pulse">

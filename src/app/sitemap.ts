@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://campusconnect-osm1.onrender.com';
+  const baseUrl = 'https://campusfeed-prashantbhandari-code.vercel.app';
 
   return [
     {

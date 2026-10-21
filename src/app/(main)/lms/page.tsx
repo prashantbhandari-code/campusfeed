@@ -31,11 +31,14 @@ export default function LMSDashboard() {
 
   useEffect(() => {
     fetch("/api/courses").then(r => r.json()).then(async (d) => {
-      setCourses(d);
+      // A failed load returns {error}, not an array — guard it so
+      // courses.map below can't crash the page on a 401/500.
+      const list: Course[] = Array.isArray(d) ? d : [];
+      setCourses(list);
       setLoading(false);
       // Fetch enrollment status for each course
       const results: EnrollmentMap = {};
-      await Promise.all(d.map(async (c: Course) => {
+      await Promise.all(list.map(async (c: Course) => {
         try {
           const res = await fetch("/api/courses/" + c.id + "/enroll");
           if (res.ok) { const data = await res.json(); results[c.id] = { isEnrolled: data.isEnrolled, count: data.count }; }

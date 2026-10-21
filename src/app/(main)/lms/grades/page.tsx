@@ -11,7 +11,22 @@ export default function GradesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/grades").then(r => r.json()).then(d => { setData(d); setLoading(false); });
+    fetch("/api/grades")
+      .then(r => r.json())
+      .then(d => {
+        // A failed load returns {error} — normalize to empty arrays so the
+        // page shows "No grades yet" instead of crashing on submissions.map
+        // or hanging on the skeleton.
+        setData({
+          submissions: Array.isArray(d?.submissions) ? d.submissions : [],
+          quizAttempts: Array.isArray(d?.quizAttempts) ? d.quizAttempts : [],
+        });
+        setLoading(false);
+      })
+      .catch(() => {
+        setData({ submissions: [], quizAttempts: [] });
+        setLoading(false);
+      });
   }, []);
 
   const calcGPA = () => {

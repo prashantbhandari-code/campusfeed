@@ -85,6 +85,27 @@ describe("dispatchDelta", () => {
     expect(badgeEvents.map((e) => e.data)).toEqual([3, 4]);
     off();
   });
+
+  it("publishes the Groups badge count, and only when it changes", () => {
+    const { events, off } = capture();
+    dispatchDelta({ unreadGroupMessages: 2 });
+    dispatchDelta({ unreadGroupMessages: 2 });
+    dispatchDelta({ unreadGroupMessages: 5 });
+    const badgeEvents = events.filter((e) => e.event === "groups-unread");
+    expect(badgeEvents.map((e) => e.data)).toEqual([2, 5]);
+    off();
+  });
+
+  it("publishes the group count after the message that caused it", () => {
+    // The Groups badge increments on new-group-message and then adopts the
+    // absolute count from groups-unread — same tick. A frame in the other order
+    // would leave the badge one too high, so the order is part of the contract.
+    const { events, off } = capture();
+    dispatchDelta({ groupMessages: [{ id: "gm1", senderId: "u2" }], unreadGroupMessages: 7 });
+    const names = events.map((e) => e.event);
+    expect(names.indexOf("new-group-message")).toBeLessThan(names.indexOf("groups-unread"));
+    off();
+  });
 });
 
 describe("trackSignal", () => {

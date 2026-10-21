@@ -44,3 +44,11 @@ next-env.d.ts
 
 # misc artifacts
 screenshots/
+
+.vercel
+.env*
+
+# android build artifacts
+campusfeed-debug.apk
+*.apk
+android/.idea/

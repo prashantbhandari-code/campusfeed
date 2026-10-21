@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "@/lib/session";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { groupEmoji } from "@/lib/group-emoji";
 import {
   HiOutlineUsers,
   HiOutlinePlus,
@@ -41,30 +42,6 @@ const DEPARTMENTS = [
   "Biotechnology", "Chemical", "Aerospace", "Automobile", "Mechatronics",
   "Architecture", "Law", "Management", "Media & Communication", "Design", "Electrical",
 ];
-
-const GROUP_EMOJIS: Record<string, string> = {
-  CSE: "💻",
-  IT: "🌐",
-  ECE: "⚡",
-  EEE: "🔌",
-  Mechanical: "⚙️",
-  Civil: "🏗️",
-  "CSE (Data Science)": "📊",
-  "CSE (AI & ML)": "🤖",
-  "CSE (Cyber Security)": "🔐",
-  "CSE (IoT)": "📡",
-  Biotechnology: "🧬",
-  Chemical: "🧪",
-  Aerospace: "✈️",
-  Automobile: "🚗",
-  Mechatronics: "🔧",
-  Architecture: "🏛️",
-  Law: "⚖️",
-  Management: "📈",
-  "Media & Communication": "📺",
-  Design: "🎨",
-  Electrical: "⚡",
-};
 
 export default function GroupsPage() {
   const { data: session } = useSession();
@@ -337,7 +314,7 @@ export default function GroupsPage() {
         ) : (
           <div className="space-y-3">
             {groups.map((group) => {
-              const emoji = GROUP_EMOJIS[group.department || ""] || "👥";
+              const emoji = groupEmoji(group.department);
               return (
                 <Link
                   key={group.id}

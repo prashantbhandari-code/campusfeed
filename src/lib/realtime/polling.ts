@@ -11,6 +11,7 @@ let refs = 0;
 let timer: ReturnType<typeof setInterval> | null = null;
 let since = 0; // server timestamps; lags real time by a skew window (dedup absorbs re-sends)
 let inFlight = false; // never stack ticks — each one holds several DB connections
+let currentGroupId: string | null = null; // track current group for typing
 
 // Mobile browsers freeze timers in background tabs, so the loop stalls there.
 // When the tab wakes (or the network switches), force a catch-up poll
@@ -32,6 +33,14 @@ function armWakeListeners() {
 
 let disarmWake: (() => void) | null = null;
 
+function buildPollUrl(): string {
+  const params = new URLSearchParams();
+  params.set('since', String(since));
+  params.set('type', 'messages');
+  if (currentGroupId) params.set('groupId', currentGroupId);
+  return `/api/socketio?${params.toString()}`;
+}
+
 async function pollOnce(): Promise<void> {
   if (inFlight) return; // previous tick still running; skip rather than pile up
   inFlight = true;
@@ -40,7 +49,7 @@ async function pollOnce(): Promise<void> {
   const ctrl = new AbortController();
   const watchdog = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const res = await fetch(`/api/socketio?since=${since}&type=messages`, { signal: ctrl.signal });
+    const res = await fetch(buildPollUrl(), { signal: ctrl.signal });
     if (res.ok) {
       const data = await res.json();
       if (typeof data.nextSince === "number") since = data.nextSince;
@@ -59,7 +68,8 @@ async function pollOnce(): Promise<void> {
   }
 }
 
-export function startPolling(): void {
+export function startPolling(groupId?: string): void {
+  if (groupId) currentGroupId = groupId;
   refs++;
   if (!timer) {
     resetDeltaState();
@@ -76,5 +86,6 @@ export function stopPolling(): void {
     timer = null;
     disarmWake?.();
     disarmWake = null;
+    currentGroupId = null;
   }
 }

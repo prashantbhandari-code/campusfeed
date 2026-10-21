@@ -3,13 +3,11 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { sendPush } from "@/lib/push";
+import { pushTarget } from "@/lib/notification-target";
 import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
 import { withRateLimit } from "@/lib/rateLimit";
 import { parseBody, createCommentSchema, editCommentSchema, commentActionSchema } from "@/lib/validation";
-
-// Strip HTML tags to prevent stored XSS
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -59,14 +57,9 @@ export const POST = withRateLimit(
       if (!parsed.ok) return parsed.response;
       const { content } = parsed.data;
 
-      const sanitizedContent = sanitize(content);
-      if (!sanitizedContent) {
-        return NextResponse.json({ error: "Content required" }, { status: 400 });
-      }
-
       const comment = await prisma.comment.create({
         data: {
-          content: sanitizedContent,
+          content,
           postId: params.id,
           authorId: userId,
         },
@@ -84,8 +77,10 @@ export const POST = withRateLimit(
         });
         void sendPush(post.authorId, {
           title: comment.author?.name || "Someone",
-          body: `commented: ${sanitizedContent.slice(0, 80)}`,
-          url: `/posts/${params.id}`,
+          body: `commented: ${content.slice(0, 80)}`,
+          // No post-detail page exists — land on the feed with the post
+          // highlighted, same as the in-app notification row.
+          url: pushTarget({ type: "comment", postId: params.id }) || "/feed",
         });
       }
 
@@ -118,18 +113,13 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
     if (comment.authorId !== userId) {
       return NextResponse.json({ error: "You can only edit your own comments" }, { status: 403 });
     }
-
-    const sanitized = content ? sanitize(content) : "";
-    if (!sanitized) {
-      return NextResponse.json({ error: "Comment can't be empty" }, { status: 400 });
-    }
-    if (sanitized === comment.content) {
+    if (content === comment.content) {
       return NextResponse.json({ error: "No changes" }, { status: 400 });
     }
 
     const updated = await prisma.comment.update({
       where: { id: commentId },
-      data: { content: sanitized, editedAt: new Date() },
+      data: { content, editedAt: new Date() },
       include: { author: { select: { id: true, name: true, username: true, avatar: true } } },
     });
 

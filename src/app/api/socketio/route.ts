@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserIdFromCookieHeader } from '@/lib/session-token';
 import prisma from '@/lib/prisma';
 import { collectDelta, SKEW_MS } from '@/lib/realtime/collect-delta';
-import { setTyping, clearTyping, freshTypingFor } from '@/lib/realtime/typing-store';
+import { setTyping, clearTyping, freshTypingFor, setGroupTyping, clearGroupTyping, freshGroupTypingFor } from '@/lib/realtime/typing-store';
 import { parseBody, socketioSchema } from '@/lib/validation';
 import { Prisma } from '@prisma/client';
 
@@ -41,6 +41,22 @@ export async function POST(request: NextRequest) {
 
     if (action === 'stop-typing' && receiverId) {
       clearTyping(receiverId, userId);
+      return NextResponse.json({ success: true });
+    }
+
+    // Group chat typing indicators
+    if (action === 'group-typing' && receiverId) {
+      // receiverId here is actually the groupId for group typing
+      const sender = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      setGroupTyping(receiverId, userId, sender?.name ?? '');
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'group-stop-typing' && receiverId) {
+      clearGroupTyping(receiverId, userId);
       return NextResponse.json({ success: true });
     }
 
@@ -102,6 +118,12 @@ export async function GET(request: NextRequest) {
 
     if (type === 'typing') {
       return NextResponse.json({ typing: freshTypingFor(userId) });
+    }
+
+    if (type === 'group-typing') {
+      const groupId = url.searchParams.get('groupId');
+      if (!groupId) return NextResponse.json({ error: 'groupId required' }, { status: 400 });
+      return NextResponse.json({ typing: freshGroupTypingFor(groupId) });
     }
 
     const delta = await collectDelta(userId, since, Date.now());

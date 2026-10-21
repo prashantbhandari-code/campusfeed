@@ -7,14 +7,20 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/ThemeProvider";
 import { useUnreadNotifications } from "@/lib/useUnreadNotifications";
 import { useUnreadMessages } from "@/lib/useUnreadMessages";
-import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog } from "react-icons/hi";
+import { useUnreadGroups } from "@/lib/useUnreadGroups";
+import { messagesHref, isNavActive } from "@/lib/messages-inbox";
+import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog, HiOutlineDocumentText } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
     const user = session?.user;
   const unreadCount = useUnreadMessages();
+  const unreadGroups = useUnreadGroups(user?.id);
   const notifUnread = useUnreadNotifications();
+  // Groups has no nav entry of its own — it's a tab inside Messages, so the
+  // Messages badge is the inbox total: DMs + group messages.
+  const inboxTotal = unreadCount + unreadGroups;
 
   const Badge = ({ count }: { count: number }) =>
     count > 0 ? (
@@ -26,7 +32,10 @@ export default function Sidebar() {
   const menuItems = [
     { href: "/feed", icon: HiOutlineHome, label: "Home" },
     { href: "/explore", icon: HiOutlineSearch, label: "Explore" },
-    { href: "/messages", icon: HiOutlineChat, label: "Messages" },
+    // Group-only unread opens the Groups section directly, since Chats would
+    // be empty and the badge would have led nowhere.
+    { href: messagesHref(unreadCount, unreadGroups), icon: HiOutlineChat, label: "Messages" },
+    { href: "/blogs", icon: HiOutlineDocumentText, label: "Blogs" },
     { href: "/notifications", icon: HiOutlineBell, label: "Notifications" },
     { href: "/events", icon: HiOutlineCalendar, label: "Events" },
     { href: "/lms", icon: HiOutlineAcademicCap, label: "Learning" },
@@ -46,10 +55,10 @@ export default function Sidebar() {
       </Link>
       <div className="space-y-0.5">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = isNavActive(pathname, item.href);
           return (
             <Link
-              key={item.href}
+              key={item.href.split("?")[0]}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative ${
                 isActive
@@ -59,7 +68,7 @@ export default function Sidebar() {
             >
               <item.icon className="text-xl flex-shrink-0" />
               <span>{item.label}</span>
-              {item.href === "/messages" && <Badge count={unreadCount} />}
+              {item.href === "/messages" && <Badge count={inboxTotal} />}
               {item.href === "/notifications" && <Badge count={notifUnread} />}
             </Link>
           );

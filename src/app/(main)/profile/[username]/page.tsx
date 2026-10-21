@@ -353,7 +353,9 @@ export default function ProfilePage() {
                   className="relative aspect-square bg-dark-800 cursor-pointer group"
                   onClick={() => {
                     setActiveTab("posts");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    // <main> is the scroll container (window never scrolls), so
+                    // scrollTo on window would be a no-op here.
+                    document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 >
                   {firstImage ? (

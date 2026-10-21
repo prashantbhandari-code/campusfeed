@@ -10,6 +10,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatDate } from "@/lib/utils";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
+import { formatLastSeen } from "@/lib/heartbeat";
 
 export default function ChatPage() {
   const { data: session } = useSession();
@@ -344,8 +345,15 @@ export default function ChatPage() {
               <p className="font-semibold">{otherUser.name}</p>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-gray-400 dark:text-gray-500">@{otherUser.username}</p>
-                <span className={`w-2 h-2 rounded-full ${onlineUsers.includes(userId) ? "bg-green-400" : "bg-gray-500"}`} />
+                {onlineUsers.includes(userId) ? (
+                  <span className="w-2 h-2 rounded-full bg-green-400" title="Active now" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-gray-500" title={otherUser.lastSeen ? formatLastSeen(otherUser.lastSeen) : "Offline"} />
+                )}
               </div>
+              {!onlineUsers.includes(userId) && otherUser.lastSeen && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatLastSeen(otherUser.lastSeen)}</p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => startCall(otherUser, "audio")} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-green-500/20 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-400 flex items-center justify-center transition-all" title="Audio call"><HiPhone className="text-lg" /></button>

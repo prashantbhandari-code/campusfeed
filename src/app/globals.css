@@ -4,7 +4,7 @@
 /* Universal margin/padding reset removed for Tailwind v4: preflight already
    does this inside @layer base, and an unlayered `*` reset would outrank the
    layered utilities (v4 puts utilities in @layer utilities) and zero out
-   every pt-*/m-* class. */
+   every pt-* and m-* class. */
 
 /* ===== Dark Theme (default) — glassy premium ===== */
 body {
@@ -100,6 +100,23 @@ html.light .glass-card {
     linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.55)) border-box;
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 32px rgba(30, 64, 175, 0.08);
+}
+
+/* Fixed bottom nav bar.
+   Unlike glass-card, this sits OVER scrolling content, so it must be
+   effectively opaque — a 7%-alpha glass tint lets post text bleed through
+   the bar and look broken on mobile. We keep a near-solid tint matched to
+   each theme's page background plus a blur, so anything peeking past the
+   edges still reads as depth rather than a rendering bug. */
+.bottom-nav {
+  background: rgba(10, 10, 15, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+html.light .bottom-nav {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.05), 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 /* Glass input field */

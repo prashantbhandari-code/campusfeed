@@ -35,7 +35,7 @@ const SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: "8. Disclaimers & Changes",
-    body: "Campusfeed is provided \"as is\" without warranties of any kind. We may update these terms as the service evolves — continued use after changes means you accept the updated terms. Questions? Contact support@campusconnect.com.",
+    body: "Campusfeed is provided \"as is\" without warranties of any kind. We may update these terms as the service evolves — continued use after changes means you accept the updated terms. Questions? Contact support@campusfeed.com.",
   },
 ];
 

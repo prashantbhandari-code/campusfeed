@@ -3,11 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { parseBody, createGroupPostSchema } from "@/lib/validation";
 import { getBlockedIds } from "@/lib/blocking";
-
-// Strip HTML tags to prevent stored XSS
+import { sendPush } from "@/lib/push";
 
 // GET /api/groups/[id]/posts — list posts in a group
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
@@ -82,7 +80,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     const post = await prisma.groupPost.create({
       data: {
-        content: content ? sanitize(content) : null,
+        content: content || null,
         images: JSON.stringify(images || []),
         groupId,
         authorId: userId,
@@ -91,8 +89,47 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
         author: {
           select: { id: true, name: true, username: true, avatar: true, department: true },
         },
+        group: { select: { name: true } },
       },
     });
+
+    // Tell the rest of the group. Deliberately only for POSTS: chat messages
+    // stay on the Groups unread badge (the same split DMs use — "message
+    // alerts belong to the Messages badge, not the bell"), but a post has no
+    // other surface it could be discovered from.
+    try {
+      const members = await prisma.groupMember.findMany({
+        where: { groupId, userId: { not: userId } },
+        select: { userId: true },
+        take: 100, // same slice the group page renders
+      });
+
+      if (members.length > 0) {
+        await prisma.notification.createMany({
+          data: members.map((m) => ({
+            type: "group_post",
+            userId: m.userId,
+            fromUserId: userId,
+            // postId doubles as the notification's TARGET ref (the same way
+            // blog comments store the blog id) so the row can open the group.
+            postId: groupId,
+          })),
+        });
+
+        const authorName = post.author?.name || "Someone";
+        // Fire-and-forget per recipient: push delivery must never fail the post.
+        for (const m of members) {
+          void sendPush(m.userId, {
+            title: post.group?.name || "Your group",
+            body: `${authorName} posted in the group`,
+            url: `/messages?tab=groups&group=${groupId}`,
+          });
+        }
+      }
+    } catch (error) {
+      // A failed fan-out must not fail the post that already exists.
+      console.error("Group post notify error:", error);
+    }
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {

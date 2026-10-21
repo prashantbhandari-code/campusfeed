@@ -29,7 +29,7 @@ export default function ReportaProblemPage() {
     const body = encodeURIComponent(
       `Problem: ${category}\n\nDetails:\n${details.trim()}\n\nContact (email/phone, optional):\n${contact.trim() || "—"}\n\nPage: ${typeof window !== "undefined" ? window.location.href : ""}`
     );
-    window.location.href = `mailto:support@campusconnect.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:support@campusfeed.com?subject=${subject}&body=${body}`;
     toast.success("Opening your email app…");
   };
 

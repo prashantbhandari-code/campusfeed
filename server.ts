@@ -49,6 +49,10 @@ app.prepare().then(() => {
         return next(new Error("Authentication required"));
       }
       socket.data.userId = userId;
+      // Fetch user name for typing indicators
+      prisma.user.findUnique({ where: { id: userId }, select: { name: true } }).then((u) => {
+        if (u) socket.data.userName = u.name;
+      });
       return next();
     } catch (error) {
       next(new Error("Authentication failed"));
@@ -115,6 +119,28 @@ app.prepare().then(() => {
 
     socket.on("stop-typing", (data: { receiverId: string }) => {
       socket.to(`user:${data.receiverId}`).emit("user-stop-typing", {
+        senderId: userId,
+      });
+    });
+
+    // Group chat typing indicators
+    socket.on("group-typing", async (data: { groupId: string }) => {
+      // Verify membership before relaying
+      const membership = await prisma.groupMember.findUnique({
+        where: { groupId_userId: { groupId: data.groupId, userId } },
+      });
+      if (!membership) {
+        console.log(`⚠️ User ${userId} tried to send typing to group ${data.groupId} — not a member, rejected`);
+        return;
+      }
+      socket.to(`group:${data.groupId}`).emit("group-user-typing", {
+        senderId: userId,
+        senderName: socket.data.userName || "User",
+      });
+    });
+
+    socket.on("group-stop-typing", (data: { groupId: string }) => {
+      socket.to(`group:${data.groupId}`).emit("group-user-stop-typing", {
         senderId: userId,
       });
     });

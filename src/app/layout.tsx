@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import KeepAlive from "@/components/KeepAlive";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import HeartbeatProvider from "@/components/HeartbeatProvider";
 
 export const metadata: Metadata = {
   title: {
@@ -15,11 +16,11 @@ export const metadata: Metadata = {
   keywords: ["KIIT", "campus", "social network", "university", "students", "college", "Bhubaneswar", "education", "student community"],
   authors: [{ name: "Campusfeed" }],
   creator: "Campusfeed",
-  metadataBase: new URL("https://campusconnect-osm1.onrender.com"),
+  metadataBase: new URL("https://campusfeed-prashantbhandari-code.vercel.app"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://campusconnect-osm1.onrender.com",
+    url: "https://campusfeed-prashantbhandari-code.vercel.app",
     siteName: "Campusfeed",
     title: "Campusfeed - KIIT University",
     description: "The private social network for KIIT University students. Connect with your campus community.",
@@ -70,7 +71,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               name: "Campusfeed",
-              url: "https://campusconnect-osm1.onrender.com",
+              url: "https://campusfeed-prashantbhandari-code.vercel.app",
               description: "The private social network for KIIT University students.",
               applicationCategory: "SocialNetworkingApplication",
               operatingSystem: "Web",
@@ -82,7 +83,7 @@ export default function RootLayout({
               author: {
                 "@type": "Organization",
                 name: "Campusfeed",
-                url: "https://campusconnect-osm1.onrender.com",
+                url: "https://campusfeed-prashantbhandari-code.vercel.app",
               },
             }),
           }}
@@ -91,19 +92,21 @@ export default function RootLayout({
       <body className="bg-white dark:bg-dark-900 text-gray-900 dark:text-white">
         <ThemeProvider>
           <KeepAlive />
-          <AuthProvider>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                style: {
-                  background: '#1a1a1a',
-                  color: '#fff',
-                  border: '1px solid #333',
-                },
-              }}
-            />
-            {children}
-          </AuthProvider>
+          <HeartbeatProvider>
+            <AuthProvider>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  style: {
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    border: '1px solid #333',
+                  },
+                }}
+              />
+              {children}
+            </AuthProvider>
+          </HeartbeatProvider>
         </ThemeProvider>
       <script dangerouslySetInnerHTML={{ __html: `
       if ('serviceWorker' in navigator) {

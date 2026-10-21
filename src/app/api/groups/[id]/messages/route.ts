@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { emitToGroup } from "@/lib/socket";
 import { withRateLimit } from "@/lib/rateLimit";
 import { getBlockedIds } from "@/lib/blocking";
@@ -20,6 +19,19 @@ async function requireMember(req: Request, groupId: string) {
   });
   if (!membership) {
     return { error: NextResponse.json({ error: "Must be a member to view chat" }, { status: 403 }) };
+  }
+
+  // Blocking in groups: if the user has blocked or is blocked by any member
+  // of the group, deny access to the chat entirely. This mirrors DM behavior
+  // where blocked users can't message each other.
+  const blockedIds = await getBlockedIds(userId);
+  if (blockedIds.length > 0) {
+    const overlapping = await prisma.groupMember.count({
+      where: { groupId, userId: { in: blockedIds } },
+    });
+    if (overlapping > 0) {
+      return { error: NextResponse.json({ error: "You can't access this chat due to a blocked user" }, { status: 403 }) };
+    }
   }
   return { userId };
 }
@@ -68,7 +80,7 @@ export const POST = withRateLimit(async (req: Request, props: { params: Promise<
 
     const parsed = await parseBody(req, groupMessageSchema);
     if (!parsed.ok) return parsed.response;
-    const content = sanitize((parsed.data.content || "").trim());
+    const content = (parsed.data.content || "").trim();
     const fileUrl = parsed.data.fileUrl || null;
     const fileType = parsed.data.fileType || null;
     const fileName = parsed.data.fileName || null;

@@ -1,10 +1,10 @@
 {
-  "appId": "com.campusconnect.kiit",
-  "appName": "CampusConnect",
+  "appId": "com.campusfeed.kiit",
+  "appName": "CampusFeed",
   "webDir": "out",
   "server": {
     "androidScheme": "https",
-    "url": "https://campusconnect-osm1.onrender.com",
+    "url": "https://campusfeed-prashantbhandari-code.vercel.app/",
     "cleartext": false
   },
   "plugins": {

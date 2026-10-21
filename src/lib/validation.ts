@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 
+// Strip HTML tags from user input for validation — used by multiple schemas
+// to reject HTML-only payloads that would become empty after sanitization.
+const stripTags = (s: string) => s.replace(/<[^>]*>/g, "").trim();
+
 // Shared request-body validation (M2 from the code review).
 //
 // Routes previously parsed bodies with destructuring + manual `if (!field)`
@@ -53,7 +57,7 @@ export const sendMessageSchema = z.object({
   receiverId: id,
   // No route-level DM cap existed; 10k blocks megabyte payloads without
   // touching realistic messages.
-  content: z.string().max(10000).optional(),
+  content: z.string().max(10000).transform(stripTags).optional(),
   fileUrl: z.string().max(2048).nullable().optional(),
   fileType: z.string().max(100).nullable().optional(),
   fileName: z.string().max(255).nullable().optional(),
@@ -61,7 +65,7 @@ export const sendMessageSchema = z.object({
 });
 
 export const editMessageSchema = z.object({
-  content: z.string().min(1).max(10000),
+  content: z.string().max(10000).transform(stripTags).refine((v) => v.length >= 1, "Content must have at least 1 non-HTML character"),
 });
 
 export const messageReactionSchema = z.object({
@@ -72,12 +76,12 @@ export const messageReactionSchema = z.object({
 export const createPostSchema = z.object({
   // Generous type/length guard — the route keeps its own 5000-char rule
   // on the SANITIZED text (which can be shorter than the raw input).
-  content: z.string().max(10000).optional(),
+  content: z.string().max(10000).transform(stripTags).optional(),
   images: z.array(z.string().max(2048)).max(10).optional(),
 });
 
 export const createCommentSchema = z.object({
-  content: z.string().min(1).max(5000),
+  content: z.string().max(5000).transform(stripTags).refine((v) => v.length >= 1, "Content must have at least 1 non-HTML character"),
 });
 
 export const editCommentSchema = z.object({
@@ -102,7 +106,7 @@ export const createGroupSchema = z.object({
 });
 
 export const groupMessageSchema = z.object({
-  content: z.string().max(5000).optional(),
+  content: z.string().max(5000).transform(stripTags).optional(),
   fileUrl: z.string().max(2048).nullable().optional(),
   fileType: z.string().max(100).nullable().optional(),
   fileName: z.string().max(255).nullable().optional(),
@@ -171,16 +175,34 @@ export const createForumPostSchema = z.object({
   content: z.string().min(1).max(5000),
 });
 
-// The route still enforces non-empty AFTER sanitize strips markup
 export const createForumReplySchema = z.object({
-  content: z.string().max(5000).optional(),
+  content: z.string().max(5000).transform(stripTags).refine((v) => v.length >= 1, "Content must have at least 1 non-HTML character"),
 });
 
 // Same shape as createPostSchema — group/section posts previously accepted
 // unbounded image arrays with no per-item length cap.
 export const createGroupPostSchema = z.object({
-  content: z.string().max(10000).optional(),
+  content: z.string().max(10000).transform(stripTags).optional(),
   images: z.array(z.string().max(2048)).max(10).optional(),
+});
+
+// ---- Blogs ----
+// Long-form: 50k chars is ~8k words, far past any real campus post, while
+// still bounding payloads. Title min 3 so "a" can't be a blog.
+// We pre-sanitize to reject HTML-only payloads that would become empty.
+
+export const createBlogSchema = z.object({
+  title: z.string().min(3).max(150).transform(stripTags).refine((v) => v.length >= 3, "Title must have at least 3 non-HTML characters"),
+  content: z.string().max(50000).transform(stripTags).refine((v) => v.length >= 1, "Content must have at least 1 non-HTML character"),
+});
+
+export const updateBlogSchema = z.object({
+  title: z.string().min(3).max(150).transform(stripTags).refine((v) => v.length >= 3, "Title must have at least 3 non-HTML characters").optional(),
+  content: z.string().max(50000).transform(stripTags).refine((v) => v.length >= 1, "Content must have at least 1 non-HTML character").optional(),
+});
+
+export const createBlogCommentSchema = z.object({
+  content: z.string().min(1).max(5000).transform(stripTags).refine((v) => v.length >= 1, "Comment must have at least 1 non-HTML character"),
 });
 
 // ---- Events ----

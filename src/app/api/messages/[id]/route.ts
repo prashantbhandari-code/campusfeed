@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 import { isBlockedPair } from "@/lib/blocking";
 import { parseBody, editMessageSchema } from "@/lib/validation";
@@ -54,7 +53,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
           ],
         },
         include: {
-          sender: { select: { id: true, name: true, username: true, avatar: true } },
+          sender: { select: { id: true, name: true, username: true, avatar: true, lastSeen: true } },
           replyTo: {
             select: {
               id: true,
@@ -129,20 +128,17 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
 
     const parsed = await parseBody(req, editMessageSchema);
     if (!parsed.ok) return parsed.response;
-    const sanitized = sanitize(parsed.data.content);
-    if (!sanitized) {
-      return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
-    }
-    if (sanitized.length > 5000) {
+    const content = parsed.data.content;
+    if (content.length > 5000) {
       return NextResponse.json({ error: "Message too long (max 5000 characters)" }, { status: 400 });
     }
-    if (sanitized === message.content) {
+    if (content === message.content) {
       return NextResponse.json({ error: "No changes" }, { status: 400 });
     }
 
     const updated = await prisma.message.update({
       where: { id: params.id },
-      data: { content: sanitized, editedAt: new Date() },
+      data: { content, editedAt: new Date() },
       include: {
         sender: { select: { id: true, name: true, username: true, avatar: true } },
         replyTo: { select: { id: true, content: true, senderId: true, deletedForEveryone: true } },

@@ -24,6 +24,7 @@ model User {
   coverPhoto    String?
   verified      Boolean   @default(false)
   role          String    @default("student") // student, teacher, admin
+  lastSeen      DateTime? // last activity timestamp for "active now" / "last seen" status
   createdAt     DateTime  @default(now())
 
   posts         Post[]
@@ -56,6 +57,8 @@ courses         Course[]
   attendances   Attendance[]
   forumPosts    ForumPost[]
   forumReplies  ForumReply[]
+  blogs         Blog[]
+  blogComments  BlogComment[]
   createdEvents Event[]
   pushSubscriptions PushSubscription[]
   storyLikes     StoryLike[]
@@ -710,6 +713,41 @@ model ForumReply {
   @@index([authorId])
   @@index([postId, createdAt])
   @@map("forum_replies")
+}
+
+// Long-form campus blogs — separate from the feed's Post (no title, short
+// content) so blogs stay out of the feed and feed posts stay out of /blogs.
+model Blog {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments BlogComment[]
+
+  @@index([authorId])
+  @@index([createdAt])
+
+  @@map("blogs")
+}
+
+model BlogComment {
+  id        String   @id @default(uuid())
+  content   String
+  blogId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  blog   Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([blogId])
+  @@index([blogId, createdAt])
+
+  @@map("blog_comments")
 }
 
 model MessageReaction {

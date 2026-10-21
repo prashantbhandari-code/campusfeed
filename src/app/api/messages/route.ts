@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import prisma from "@/lib/prisma";
-import { sanitize } from "@/lib/sanitize";
 import { emitToUser } from "@/lib/socket";
 import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
 import { sendPush } from "@/lib/push";
@@ -45,8 +44,8 @@ export async function GET(req: Request) {
       ? await prisma.message.findMany({
           where: { id: { in: lastRows.map((r) => r.id) } },
           include: {
-            sender: { select: { id: true, name: true, username: true, avatar: true } },
-            receiver: { select: { id: true, name: true, username: true, avatar: true } },
+            sender: { select: { id: true, name: true, username: true, avatar: true, lastSeen: true } },
+            receiver: { select: { id: true, name: true, username: true, avatar: true, lastSeen: true } },
           },
         })
       : [];
@@ -116,7 +115,7 @@ export const POST = withRateLimit(
 
     const message = await prisma.message.create({
       data: {
-        content: content ? sanitize(content) : "",
+        content: content || "",
         senderId: session.user.id,
         receiverId,
         fileUrl: fileUrl || null,

@@ -35,7 +35,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Something isn't working. What should I do?",
-    a: "Use Settings → Report a Problem to send us the details, or email support@campusconnect.com. Include what you were doing and what you expected to happen.",
+    a: "Use Settings → Report a Problem to send us the details, or email support@campusfeed.com. Include what you were doing and what you expected to happen.",
   },
 ];
 

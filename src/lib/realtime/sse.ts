@@ -11,10 +11,14 @@ let refs = 0;
 let es: EventSource | null = null;
 let since = 0; // cursor; advanced by each delta frame and the final bye
 let stopped = true;
+let currentGroupId: string | null = null; // track current group for typing
 
 function connect() {
   if (stopped || es) return;
-  es = new EventSource(`/api/realtime?since=${since}`);
+  const params = new URLSearchParams();
+  params.set('since', String(since));
+  if (currentGroupId) params.set('groupId', currentGroupId);
+  es = new EventSource(`/api/realtime?${params.toString()}`);
 
   es.addEventListener("delta", (e) => {
     try {
@@ -62,7 +66,8 @@ function closeStream() {
   }
 }
 
-export function startSSE(): void {
+export function startSSE(groupId?: string): void {
+  if (groupId) currentGroupId = groupId;
   refs++;
   if (!stopped) return;
   stopped = false;
@@ -75,5 +80,6 @@ export function stopSSE(): void {
   if (refs === 0) {
     stopped = true;
     closeStream();
+    currentGroupId = null;
   }
 }

@@ -5,6 +5,7 @@ import { getServerSession } from "@/lib/server-auth";
 import prisma from "@/lib/prisma";
 import { emitToUser } from "@/lib/socket";
 import { sendPush } from "@/lib/push";
+import { pushTarget } from "@/lib/notification-target";
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -53,6 +54,12 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
 
     if (existing) {
       await prisma.follow.delete({ where: { id: existing.id } });
+      // Drop the follow notification too, mirroring what unliking a post
+      // already does — a follow/unfollow cycle shouldn't leave a stale alert
+      // pointing at a relationship that no longer exists.
+      await prisma.notification.deleteMany({
+        where: { type: "follow", userId: followingId, fromUserId: followerId },
+      });
       // Check mutual follow after unfollow
     const theyStillFollowUs = await prisma.follow.findUnique({
       where: { followerId_followingId: { followerId: followingId, followingId: followerId } },
@@ -84,7 +91,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
       void sendPush(followingId, {
         title: fromUser?.name || "Someone",
         body: "started following you",
-        url: `/profile/${fromUser?.username || ""}`,
+        url: pushTarget({ type: "follow", username: fromUser?.username }) || "/feed",
       });
     }
 

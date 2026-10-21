@@ -261,23 +261,26 @@ function PostCard({ post, onDelete }: PostCardProps) {
       ) : null}
 
       {/* Actions Bar — Instagram style */}
+      {/* Tap targets: the icons are 24px but each button gets p-2.5 (44px total)
+          to meet the touch-target minimum. gap-0 + padding reproduces the old
+          20px icon spacing exactly (10+10), so nothing moves visually. */}
       <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-5">
-          <button onClick={handleLike} className="transition-all" aria-label={isLiked ? "Unlike post" : "Like post"}>
+        <div className="flex items-center gap-0">
+          <button onClick={handleLike} className="transition-all p-2.5 -m-2.5" aria-label={isLiked ? "Unlike post" : "Like post"}>
             {isLiked ? (
               <HiHeart className={`text-2xl text-red-500 ${heartAnimation ? "animate-heart" : ""}`} />
             ) : (
               <HiOutlineHeart className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
             )}
           </button>
-          <button onClick={() => setShowComments(!showComments)} className="transition-all" aria-label="Show comments" aria-expanded={showComments}>
+          <button onClick={() => setShowComments(!showComments)} className="transition-all p-2.5" aria-label="Show comments" aria-expanded={showComments}>
             <HiOutlineChat className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400 -scale-x-100" />
           </button>
-          <button className="transition-all" aria-label="Share post">
+          <button className="transition-all p-2.5" aria-label="Share post">
             <HiOutlineShare className="text-2xl text-gray-500 dark:text-gray-200 hover:text-gray-400" />
           </button>
         </div>
-        <button onClick={handleSave} className="transition-all" aria-label={isSaved ? "Remove from saved" : "Save post"}>
+        <button onClick={handleSave} className="transition-all p-2.5 -m-2.5" aria-label={isSaved ? "Remove from saved" : "Save post"}>
           {isSaved ? (
             <HiBookmark className="text-2xl text-gray-700 dark:text-gray-200" />
           ) : (

@@ -17,13 +17,28 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  // Post to spotlight when arriving from a notification deep link. Seeded
+  // straight from the URL so it survives a remount (the layout can mount this
+  // page more than once while the session resolves).
+  const [highlightId, setHighlightId] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("post")
+  );
   const user = session?.user;
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchPosts(1, controller.signal);
+    // Deep link from a notification: /feed?post=<id> opens the feed scrolled to
+    // that post. There is no post-detail page, so this is where like/comment
+    // alerts land.
+    const target = new URLSearchParams(window.location.search).get("post");
+    (async () => {
+      const firstPage = await fetchPosts(1, controller.signal);
+      if (target) await jumpToPost(target, firstPage);
+    })();
     fetchSuggestions(controller.signal);
     return () => controller.abort();
   }, []);
@@ -48,19 +63,20 @@ export default function FeedPage() {
     return () => observerRef.current?.disconnect();
   }, [hasMore, loadingMore, page]);
 
-  const fetchPosts = async (pageNum: number, signal?: AbortSignal) => {
+  const fetchPosts = async (pageNum: number, signal?: AbortSignal): Promise<any[]> => {
     try {
       const res = await fetch(`/api/posts?page=${pageNum}`);
       const data = await res.json();
       // API errors return {error}, not an array — don't let that crash the feed
-      if (!Array.isArray(data)) { setHasMore(false); return; }
+      if (!Array.isArray(data)) { setHasMore(false); return []; }
       if (pageNum === 1) {
         setPosts(data);
       } else {
         setPosts((prev) => [...prev, ...data]);
       }
       setHasMore(data.length === 10); // If less than 10, no more posts
-    } catch (error) { console.error("Operation failed:", error); } finally {
+      return data;
+    } catch (error) { console.error("Operation failed:", error); return []; } finally {
       setLoading(false);
     }
   };
@@ -73,6 +89,50 @@ export default function FeedPage() {
     setPage(nextPage);
     setLoadingMore(false);
   }, [page, loadingMore, hasMore]);
+
+  // The feed pages 10 at a time and notifications only reference recent posts,
+  // so walking forward a few pages finds the target in practice. Bounded so a
+  // deep link can never crawl the entire feed.
+  const jumpToPost = async (target: string, firstPage: any[]) => {
+    setHighlightId(target);
+    const extra: any[] = [];
+    let found = firstPage.some((p) => p.id === target);
+    for (let pageNum = 2; !found && pageNum <= 5 && extra.length < 40; pageNum++) {
+      try {
+        const res = await fetch(`/api/posts?page=${pageNum}`);
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) break;
+        const fresh = data.filter(
+          (p: any) => !firstPage.some((x) => x.id === p.id) && !extra.some((x) => x.id === p.id)
+        );
+        extra.push(...fresh);
+        found = extra.some((p) => p.id === target);
+        if (data.length < 10) break; // last page reached
+      } catch {
+        break;
+      }
+    }
+    if (extra.length) setPosts((prev) => [...prev, ...extra]);
+    // Let the appended rows paint, then bring the post into view.
+    setTimeout(() => {
+      document.getElementById(`post-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+    // Hold the ring until the reader does something. A fixed timer can expire
+    // while the page is still settling, so interaction (or a long stop-gap)
+    // ends it instead.
+    const clearHighlight = () => {
+      setHighlightId(null);
+      window.removeEventListener("pointerdown", clearHighlight);
+      window.removeEventListener("keydown", clearHighlight);
+      window.removeEventListener("touchstart", clearHighlight);
+      window.removeEventListener("wheel", clearHighlight);
+    };
+    window.addEventListener("pointerdown", clearHighlight, { once: true });
+    window.addEventListener("keydown", clearHighlight, { once: true });
+    window.addEventListener("touchstart", clearHighlight, { once: true });
+    window.addEventListener("wheel", clearHighlight, { once: true });
+    setTimeout(clearHighlight, 30000);
+  };
 
   // Pull to refresh
   const handleRefresh = async () => {
@@ -148,7 +208,16 @@ export default function FeedPage() {
           <StaggeredList>
             {posts.map((post) => (
               <StaggeredItem key={post.id}>
-                <PostCard post={post} onDelete={() => setPosts(posts.filter((p) => p.id !== post.id))} />
+                <div
+                  id={`post-${post.id}`}
+                  className={`rounded-2xl transition-all ${
+                    highlightId === post.id
+                      ? "ring-2 ring-primary-500 ring-offset-2 ring-offset-gray-50 dark:ring-offset-dark-900"
+                      : ""
+                  }`}
+                >
+                  <PostCard post={post} onDelete={() => setPosts(posts.filter((p) => p.id !== post.id))} />
+                </div>
               </StaggeredItem>
             ))}
             {/* Load more trigger */}
@@ -163,7 +232,7 @@ export default function FeedPage() {
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-full">
                     <span className="text-gray-400 dark:text-gray-500 text-sm">No more posts</span>
                   </div>
-                  <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="block mx-auto mt-3 text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">
+                  <button onClick={() => document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" })} className="block mx-auto mt-3 px-4 py-2 rounded-full text-xs text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">
                     ↑ Back to top
                   </button>
                 </div>

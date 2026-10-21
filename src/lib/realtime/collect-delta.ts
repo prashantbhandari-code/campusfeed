@@ -3,6 +3,8 @@ import { USER_SELECT } from "@/lib/user";
 
 export { USER_SELECT };
 import { getBlockedIds } from "@/lib/blocking";
+import { countUnreadGroupMessages } from "@/lib/groupUnread";
+import { isMissingTable } from "@/lib/prisma-errors";
 
 // Shared delta collector for both realtime transports (SSE stream and the
 // JSON poll fallback). One source of truth for what "everything new/changed
@@ -50,6 +52,7 @@ export interface Delta {
   callSignals: Array<{ id: string; event: string; data: any }>;
   unreadNotifications: number;
   unreadMessages: number;
+  unreadGroupMessages: number;
   nextSince: number;
 }
 
@@ -69,7 +72,7 @@ export async function collectDelta(
 
   // Newest-first + take 50 so a first tick (since=0) can't skip recent
   // messages behind a full page of older history.
-  const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages, rawCallSignals] = await Promise.all([
+  const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages, unreadGroupMessages, rawCallSignals] = await Promise.all([
     prisma.message.findMany({
       where: { receiverId: userId, senderId: { notIn: blockedIds }, createdAt: { gt } },
       include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
@@ -86,7 +89,7 @@ export async function collectDelta(
       include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
       take: 50,
-    }),
+    }).catch(() => []), // Graceful fallback if groupMessage table doesn't exist
     prisma.messageReaction.findMany({
       where: {
         createdAt: { gt },
@@ -99,6 +102,12 @@ export async function collectDelta(
     // Message alerts belong to the Messages badge, not the bell
     prisma.notification.count({ where: { userId, read: false, NOT: { type: "message" } } }),
     prisma.message.count({ where: { receiverId: userId, read: false } }),
+    // Group unread is per-membership (its own lastReadAt per group), so unlike
+    // the DM count above it needs the join in groupUnread.ts.
+    countUnreadGroupMessages(userId).catch((e) => {
+      if (isMissingTable(e)) return 0;
+      throw e;
+    }),
     prisma.callSignal.findMany({
       where: { receiverId: userId, createdAt: { gt: signalFloor } },
       orderBy: { createdAt: "asc" },
@@ -141,7 +150,7 @@ export async function collectDelta(
       include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
       orderBy: { updatedAt: "desc" },
       take: 50,
-    }),
+    }).catch(() => []),
   ]);
 
   // Attach current reaction lists to changed rows so reaction removals sync
@@ -190,6 +199,7 @@ export async function collectDelta(
     callSignals: callSignalsOut,
     unreadNotifications,
     unreadMessages,
+    unreadGroupMessages,
     nextSince: now - SKEW_MS,
   };
 }

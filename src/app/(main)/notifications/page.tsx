@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
 import { formatDate } from "@/lib/utils";
-import { HiHeart, HiChat, HiUserAdd } from "react-icons/hi";
-import toast from "react-hot-toast";
+import { notificationTarget } from "@/lib/notification-target";
+import { groupNotifications } from "@/lib/group-notifications";
+import { HiHeart, HiChat, HiUserAdd, HiOutlineUserGroup, HiOutlineDocumentText, HiChevronRight } from "react-icons/hi";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -16,36 +18,13 @@ export default function NotificationsPage() {
   }, []);
 
   
-  // Group consecutive notifications from same user of same type
-  const deduplicateNotifications = (notifs: any[]) => {
-    const grouped: any[] = [];
-    let i = 0;
-    while (i < notifs.length) {
-      const current = notifs[i];
-      let count = 1;
-      // Look ahead for consecutive same-user, same-type notifications
-      while (
-        i + count < notifs.length &&
-        notifs[i + count].fromUserId === current.fromUserId &&
-        notifs[i + count].type === current.type
-      ) {
-        count++;
-      }
-      if (count > 1) {
-        grouped.push({ ...current, count });
-      } else {
-        grouped.push(current);
-      }
-      i += count;
-    }
-    return grouped;
-  };
-
   const fetchNotifications = async () => {
     try {
       const res = await fetch("/api/notifications");
       const data = await res.json();
-      setNotifications(data);
+      // API errors return {error}, not an array — an unguarded payload would
+      // render a blank page instead of the empty state.
+      setNotifications(Array.isArray(data) ? data : []);
     } catch (error) { console.error("Operation failed:", error); } finally {
       setLoading(false);
     }
@@ -62,6 +41,8 @@ export default function NotificationsPage() {
       case "like": return <HiHeart className="text-red-500" />;
       case "comment": return <HiChat className="text-blue-500" />;
       case "follow": return <HiUserAdd className="text-green-500" />;
+      case "group_post": return <HiOutlineUserGroup className="text-campus-400" />;
+      case "blog_comment": return <HiOutlineDocumentText className="text-pink-400" />;
       default: return null;
     }
   };
@@ -71,6 +52,8 @@ export default function NotificationsPage() {
       case "like": return "liked your post";
       case "comment": return "commented on your post";
       case "follow": return "started following you";
+      case "group_post": return "posted in your group";
+      case "blog_comment": return "commented on your blog";
       default: return "interacted with you";
     }
   };
@@ -99,24 +82,40 @@ export default function NotificationsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {deduplicateNotifications(notifications).map((notif) => (
-            <div
-              key={notif.id}
-              className={`glass-card rounded-xl p-4 flex items-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.03] ${
-                !notif.read ? "border-l-2 border-primary-500 bg-primary-50/50 dark:bg-primary-500/5" : ""
-              }`}
-            >
-              <UserAvatar user={notif.fromUser} size="md" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm">
-                  <span className="font-semibold">{notif.fromUser.name}</span>{" "}
-                  <span className="text-gray-400">{getMessage(notif)}</span>
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{formatDate(notif.createdAt)}</p>
+          {groupNotifications(notifications).map((notif) => {
+            const target = notificationTarget(notif);
+            const rowClass = `glass-card rounded-xl p-4 flex items-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.03] ${
+              !notif.read ? "border-l-2 border-primary-500 bg-primary-50/50 dark:bg-primary-500/5" : ""
+            } ${target ? "cursor-pointer active:bg-gray-100 dark:active:bg-white/[0.06]" : ""}`;
+            const body = (
+              <>
+                <UserAvatar user={notif.fromUser} size="md" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">
+                    <span className="font-semibold">{notif.fromUser.name}</span>{" "}
+                    <span className="text-gray-400">{getMessage(notif)}</span>
+                    {notif.count > 1 && (
+                      <span className="text-gray-400 dark:text-gray-500"> · {notif.count}×</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{formatDate(notif.createdAt)}</p>
+                </div>
+                <div className="text-lg">{getIcon(notif.type)}</div>
+                {target && <HiChevronRight className="text-gray-300 dark:text-gray-600 flex-shrink-0" />}
+              </>
+            );
+            // A row with a target opens it; one without (legacy or unknown
+            // type) stays inert rather than linking somewhere wrong.
+            return target ? (
+              <Link key={notif.id} href={target} className={rowClass}>
+                {body}
+              </Link>
+            ) : (
+              <div key={notif.id} className={rowClass}>
+                {body}
               </div>
-              <div className="text-lg">{getIcon(notif.type)}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

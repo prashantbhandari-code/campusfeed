@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "@/lib/session";
 import UserAvatar from "@/components/UserAvatar";
 import {
@@ -14,7 +14,15 @@ import {
   HiDotsHorizontal,
 } from "react-icons/hi";
 import { useSocket, useSocketEvent } from "@/lib/useSocket";
+import { startRealtime, stopRealtime } from "@/lib/realtime";
 import toast from "react-hot-toast";
+
+// Debounce delay for leaving a group room — prevents thrashing when the
+// parent Messages page switches between Chats/Groups tabs rapidly.
+const LEAVE_DEBOUNCE_MS = 1500;
+
+// Typing indicator debounce
+const TYPING_DEBOUNCE_MS = 2000;
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -49,7 +57,64 @@ export default function GroupChat({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { emit } = useSocket(user?.id);
+  const { emit, onlineUsers } = useSocket(user?.id);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasTypedRef = useRef(false);
+  const [typingUsers, setTypingUsers] = useState<{ id: string; name: string }[]>([]);
+
+  const handleTyping = () => {
+    if (!hasTypedRef.current) {
+      hasTypedRef.current = true;
+      emit("group-typing", { groupId });
+    }
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      hasTypedRef.current = false;
+      emit("group-stop-typing", { groupId });
+    }, TYPING_DEBOUNCE_MS);
+  };
+
+  const stopTyping = () => {
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    hasTypedRef.current = false;
+    emit("group-stop-typing", { groupId });
+  };
+
+  useSocketEvent(
+    "group-user-typing",
+    (data: { senderId: string; senderName: string }) => {
+      if (data.senderId !== user?.id) {
+        setTypingUsers((prev) => (prev.some((u) => u.id === data.senderId) ? prev : [...prev, { id: data.senderId, name: data.senderName }]));
+      }
+    },
+    [user?.id]
+  );
+
+  useSocketEvent(
+    "group-user-stop-typing",
+    (data: { senderId: string }) => {
+      setTypingUsers((prev) => prev.filter((u) => u.id !== data.senderId));
+    },
+    []
+  );
+
+  const joinGroup = useCallback(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    emit("join-group", { groupId });
+  }, [emit, groupId]);
+
+  const leaveGroup = useCallback(() => {
+    // Debounce leave so rapid tab switches don't cause churn
+    if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
+    leaveTimerRef.current = setTimeout(() => {
+      emit("leave-group", { groupId });
+      leaveTimerRef.current = null;
+    }, LEAVE_DEBOUNCE_MS);
+  }, [emit, groupId]);
 
   useEffect(() => {
     if (!isMember) {
@@ -57,6 +122,8 @@ export default function GroupChat({
       return;
     }
     let alive = true;
+    // Start realtime transport with groupId for typing indicators
+    startRealtime(groupId);
     (async () => {
       try {
         const res = await fetch(`/api/groups/${groupId}/messages`);
@@ -70,13 +137,18 @@ export default function GroupChat({
         if (alive) setLoading(false);
       }
     })();
-    emit("join-group", { groupId }); // joins the WS room; accepted as a no-op over REST
+    joinGroup();
     return () => {
       alive = false;
-      emit("leave-group", { groupId });
+      leaveGroup();
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+      stopRealtime();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, isMember]);
+  }, [groupId, isMember, joinGroup, leaveGroup]);
 
   useSocketEvent(
     "new-group-message",
@@ -353,6 +425,20 @@ export default function GroupChat({
             </div>
           );
         })}
+        {typingUsers.length > 0 && (
+          <div className="flex items-center gap-2 text-gray-500 text-xs px-2">
+            <span className="flex gap-0.5">
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </span>
+            {typingUsers.length === 1
+              ? `${typingUsers[0].name} is typing...`
+              : typingUsers.length === 2
+              ? `${typingUsers[0].name} and ${typingUsers[1].name} are typing...`
+              : `${typingUsers[0].name}, ${typingUsers[1].name} and ${typingUsers.length - 2} others are typing...`}
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -413,7 +499,8 @@ export default function GroupChat({
 
         <input
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); handleTyping(); }}
+          onBlur={stopTyping}
           placeholder={uploading ? "Uploading…" : recording ? "Recording… tap stop to send" : "Message the group…"}
           disabled={uploading}
           className="flex-1 min-w-0 glass-input rounded-xl px-4 py-2.5 text-sm disabled:opacity-60"

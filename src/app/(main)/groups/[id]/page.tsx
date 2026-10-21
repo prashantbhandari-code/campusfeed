@@ -1,23 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "@/lib/session";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import UserAvatar from "@/components/UserAvatar";
 import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChat, HiOutlineChatAlt2, HiOutlineUsers, HiDotsHorizontal, HiOutlineTrash, HiOutlineShieldCheck } from "react-icons/hi";
-import { useSocketEvent } from "@/lib/useSocket";
+import { useSocketEvent, useSocket } from "@/lib/useSocket";
+import { publish } from "@/lib/realtime/bus";
+import { groupEmoji } from "@/lib/group-emoji";
 import GroupChat from "@/components/GroupChat";
+import { formatLastSeen } from "@/lib/heartbeat";
 
 
-interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; section: string | null; allowMemberPosts: boolean; memberCount: number; postCount: number; isMember: boolean; myRole: string | null; unreadCount: number; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null } }[] }
+interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; section: string | null; allowMemberPosts: boolean; memberCount: number; postCount: number; isMember: boolean; myRole: string | null; unreadCount: number; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null; lastSeen: Date | string | null } }[] }
 
 interface Section { id: string; name: string; description: string | null; icon: string | null; color: string | null; order: number; postCount: number; createdBy: { id: string; name: string; avatar: string | null } }
 
 interface GroupPost { id: string; content: string | null; images: string; createdAt: string; author: { id: string; name: string; username: string; avatar: string | null; department: string | null } }
-
-const GROUP_EMOJIS: Record<string, string> = { CSE: "💻", IT: "🌐", ECE: "⚡", EEE: "🔌", Mechanical: "⚙️", Civil: "🏗️", "CSE (Data Science)": "📊", "CSE (AI & ML)": "🤖", "CSE (Cyber Security)": "🔐", Biotechnology: "🧬", Chemical: "🧪", Aerospace: "✈️", Automobile: "🚗", Mechatronics: "🔧", Architecture: "🏛️", Law: "⚖️", Management: "📈", "Media & Communication": "📺", Design: "🎨", Electrical: "⚡" };
 
 const SECTION_COLORS = [{ bg: "bg-blue-600/20", text: "text-blue-400", border: "border-blue-500/30" }, { bg: "bg-green-600/20", text: "text-green-400", border: "border-green-500/30" }, { bg: "bg-purple-600/20", text: "text-purple-400", border: "border-purple-500/30" }, { bg: "bg-orange-600/20", text: "text-orange-400", border: "border-orange-500/30" }, { bg: "bg-pink-600/20", text: "text-pink-400", border: "border-pink-500/30" }, { bg: "bg-cyan-600/20", text: "text-cyan-400", border: "border-cyan-500/30" }];
 
@@ -27,6 +28,7 @@ function timeAgo(date: string) { const s = Math.floor((Date.now() - new Date(dat
 export default function GroupDetailPage() {
   const { data: session } = useSession();
   const user = session?.user;
+  const { onlineUsers } = useSocket(user?.id);
   const params = useParams();
   const router = useRouter();
   const groupId = params.id as string;
@@ -48,8 +50,16 @@ export default function GroupDetailPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const [togglingAnnounce, setTogglingAnnounce] = useState(false);
+  // Deep link from the Messages > Groups tab: /groups/[id]?tab=chat opens the
+  // chat directly. Read via window on mount (not useSearchParams, which would
+  // force a Suspense boundary) and applied once the group has loaded.
+  const wantedTab = useRef<"posts" | "chat" | "sections" | "members" | null>(null);
 
-  useEffect(() => { fetchGroup(); fetchPosts(); fetchSections(); }, [groupId]);
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t === "posts" || t === "chat" || t === "sections" || t === "members") wantedTab.current = t;
+    fetchGroup(); fetchPosts(); fetchSections();
+  }, [groupId]);
   useEffect(() => { if (activeSection) fetchSectionPosts(activeSection); }, [activeSection]);
 
   const fetchGroup = async () => {
@@ -58,6 +68,10 @@ export default function GroupDetailPage() {
       const data = await res.json();
       setGroup(data);
       setUnreadCount(data.unreadCount || 0);
+      const wanted = wantedTab.current;
+      wantedTab.current = null;
+      // Honour the deep link, but never land a non-member on the chat tab.
+      if (wanted && (wanted !== "chat" || data.isMember)) setActiveTab(wanted);
     } catch { toast.error("Group not found"); router.push("/groups"); } finally { setLoading(false); }
   };
   const fetchPosts = async () => { try { const r = await fetch("/api/groups/" + groupId + "/posts"); if (r.ok) setPosts(await r.json()); } catch (error) { console.error("Operation failed:", error); } };
@@ -177,7 +191,7 @@ export default function GroupDetailPage() {
 
   if (loading) return <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-500" /></div>;
   if (!group) return null;
-  const emoji = GROUP_EMOJIS[group.department || ""] || "👥";
+  const emoji = groupEmoji(group.department);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 lg:pb-0">
@@ -256,8 +270,10 @@ export default function GroupDetailPage() {
           ))}
         </div>
 
+        {/* onRead fires once GroupChat's fetch has marked the group read server-side,
+            so that is the moment the nav badge total actually changed. */}
         {activeTab === "chat" && (
-          <GroupChat key={String(group.isMember)} groupId={groupId} isMember={group.isMember} isAdmin={isAdmin} onRead={() => setUnreadCount(0)} />
+          <GroupChat key={String(group.isMember)} groupId={groupId} isMember={group.isMember} isAdmin={isAdmin} onRead={() => { setUnreadCount(0); publish("groups-read"); }} />
         )}
 
         {activeTab === "posts" && (
@@ -378,13 +394,26 @@ export default function GroupDetailPage() {
             {group.members.map((member) => {
               const isSelf = member.user.id === user?.id;
               const menuOpen = memberMenuId === member.id;
+              const isOnline = onlineUsers?.includes(member.user.id) ?? false;
               return (
                 <div key={member.id} className="relative flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors">
                   <Link href={"/profile/" + member.user.username} className="flex items-center gap-3 flex-1 min-w-0">
-                    <UserAvatar user={member.user} size="sm" />
+                    <div className="relative">
+                      <UserAvatar user={member.user} size="sm" />
+                      {(isOnline || !isSelf) && (
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-dark-900 ${
+                          isOnline ? "bg-green-400" : "bg-gray-400"
+                        }`} title={isOnline ? "Active now" : formatLastSeen(member.user.lastSeen)} />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{member.user.name}{isSelf && " (you)"}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">@{member.user.username}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        @{member.user.username}
+                        {!isSelf && !isOnline && member.user.lastSeen && (
+                          <span className="text-gray-400 dark:text-gray-500">· {formatLastSeen(member.user.lastSeen)}</span>
+                        )}
+                      </p>
                     </div>
                     {member.role === "admin" && <span className="text-xs px-2 py-0.5 rounded-full bg-primary-600/20 text-primary-400">👑 Admin</span>}
                     {member.user.department && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-500 dark:text-gray-400">{member.user.department}</span>}

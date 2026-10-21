@@ -23,6 +23,9 @@ import {
   adminRoleSchema,
   adminVerifySchema,
   createGroupPostSchema,
+  createBlogSchema,
+  updateBlogSchema,
+  createBlogCommentSchema,
   pushSubscribeSchema,
   socketioSchema,
 } from "@/lib/validation";
@@ -97,6 +100,25 @@ describe("LMS / admin / push schemas", () => {
     expect(createGroupPostSchema.safeParse({ images: new Array(11).fill("u") }).success).toBe(false);
     expect(createGroupPostSchema.safeParse({ images: ["u".repeat(2049)] }).success).toBe(false);
     expect(createGroupPostSchema.safeParse({ images: ["https://x/y.png"] }).success).toBe(true);
+  });
+
+  it("blog schemas: title/content bounded, updates partial, comments capped", () => {
+    expect(createBlogSchema.safeParse({ title: "ab", content: "body" }).success).toBe(false);
+    expect(createBlogSchema.safeParse({ title: "a".repeat(151), content: "body" }).success).toBe(false);
+    expect(createBlogSchema.safeParse({ title: "Real title", content: "" }).success).toBe(false);
+    expect(createBlogSchema.safeParse({ title: "Real title", content: "x".repeat(50001) }).success).toBe(false);
+    expect(createBlogSchema.parse({ title: "Real title", content: "body" })).toEqual({
+      title: "Real title",
+      content: "body",
+    });
+
+    expect(updateBlogSchema.parse({})).toEqual({});
+    expect(updateBlogSchema.safeParse({ title: "okay" }).success).toBe(true);
+    expect(updateBlogSchema.safeParse({ title: "no" }).success).toBe(false);
+
+    expect(createBlogCommentSchema.safeParse({}).success).toBe(false);
+    expect(createBlogCommentSchema.safeParse({ content: "x".repeat(5001) }).success).toBe(false);
+    expect(createBlogCommentSchema.parse({ content: "nice" })).toEqual({ content: "nice" });
   });
 
   it("pushSubscribeSchema: endpoint must be a URL", () => {
