@@ -61,7 +61,12 @@ const BUILD_ID =
     ];
   },
 };
-module.exports = nextConfig;  // Initialize OpenNext Cloudflare for development
+module.exports = nextConfig;
+
+// Initialize OpenNext Cloudflare for development only (Freebuff/Wrangler
+// local preview). On Render/Vercel production builds this must not run.
+if (process.env.NODE_ENV === "development") {
   import('@opennextjs/cloudflare').then(m =>
     m.initOpenNextCloudflareForDev({ configPath: './freebuff.wrangler.jsonc' })
   );
+}

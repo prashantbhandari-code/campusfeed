@@ -1,0 +1,48 @@
+# Render blueprint: deploys the Next.js app as a Node web service.
+# First deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: campusfeed
+    runtime: node
+    repo: https://github.com/prashantbhandari-code/campusconnect
+    branch: master
+    plan: free
+    buildCommand: npm ci && npm run build
+    # start:realtime runs the custom server (Next.js + socket.io) via tsx.
+    # Use "npm start" instead if you don't need live socket.io on Render.
+    startCommand: npm run start:realtime
+    healthCheckPath: /api/keepalive
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      # Set in the Render dashboard (sync: false) - values are never in git.
+      - key: DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM
+        sync: false
+      - key: APPWRITE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APPWRITE_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: CLOUDFLARE_TURN_TOKEN_ID
+        sync: false
+      - key: CLOUDFLARE_TURN_TOKEN_SECRET
+        sync: false
