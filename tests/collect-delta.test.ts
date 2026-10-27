@@ -5,9 +5,12 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // tests pin the contract — cursor math, signal expiry, blocked-user filters,
 // reaction aggregation, and call-signal translation.
 
-vi.mock("@/lib/prisma", () => {
+vi.mock("@/lib/db/prisma", () => {
   return {
     default: {
+      // getUnreadCounts batches its two counts through Prisma's array-form
+      // transaction; mirror that here so the mocks resolve together.
+      $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
       message: { findMany: vi.fn(), count: vi.fn() },
       groupMessage: { findMany: vi.fn(), count: vi.fn() },
       groupMember: { findMany: vi.fn() },
@@ -18,12 +21,12 @@ vi.mock("@/lib/prisma", () => {
   };
 });
 
-vi.mock("@/lib/blocking", () => ({
+vi.mock("@/lib/security/blocking", () => ({
   getBlockedIds: vi.fn().mockResolvedValue([]),
 }));
 
-import prisma from "@/lib/prisma";
-import { getBlockedIds } from "@/lib/blocking";
+import prisma from "@/lib/db/prisma";
+import { getBlockedIds } from "@/lib/security/blocking";
 import { collectDelta, SKEW_MS } from "@/lib/realtime/collect-delta";
 
 const messageFindMany = prisma.message.findMany as ReturnType<typeof vi.fn>;

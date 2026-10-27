@@ -6,7 +6,7 @@ import { publish } from "./bus";
 // here so event semantics can't drift between SSE and polling.
 
 let typingFromSet = new Set<string>(); // everyone seen typing in the previous payload (DMs)
-let groupTypingFromMap = new Map<string, Set<string>>(); // groupId -> set of senderIds seen typing
+const groupTypingFromMap = new Map<string, Set<string>>(); // groupId -> set of senderIds seen typing
 const seenSignals = new Set<string>(); // call signals re-scan the skew window — drop repeats by id
 
 export function dispatchDelta(data: any): void {

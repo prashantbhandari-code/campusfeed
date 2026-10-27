@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { HiArrowLeft, HiOutlinePlus, HiOutlineCollection, HiOutlineChat, HiOutlineChatAlt2, HiOutlineUsers, HiDotsHorizontal, HiOutlineTrash, HiOutlineShieldCheck } from "react-icons/hi";
-import { useSocketEvent, useSocket } from "@/lib/useSocket";
+import { useSocketEvent, useSocket } from "@/lib/hooks/useSocket";
 import { publish } from "@/lib/realtime/bus";
-import { groupEmoji } from "@/lib/group-emoji";
-import GroupChat from "@/components/GroupChat";
-import { formatLastSeen } from "@/lib/heartbeat";
+import { groupEmoji } from "@/lib/chat/group-emoji";
+import GroupChat from "@/components/chat/GroupChat";
+import { formatLastSeen } from "@/lib/hooks/heartbeat";
 
 
 interface GroupDetail { id: string; name: string; description: string | null; avatar: string | null; coverPhoto: string | null; type: string; department: string | null; batchYear: number | null; section: string | null; allowMemberPosts: boolean; memberCount: number; postCount: number; isMember: boolean; myRole: string | null; unreadCount: number; createdBy: { id: string; name: string; username: string; avatar: string | null }; members: { id: string; role: string; user: { id: string; name: string; username: string; avatar: string | null; department: string | null; lastSeen: Date | string | null } }[] }

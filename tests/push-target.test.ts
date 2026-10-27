@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pushTarget } from "@/lib/notification-target";
+import { pushTarget } from "@/lib/notifications/notification-target";
 
 // A push notification and the matching in-app row must land in the same
 // place. Before this, the like and comment senders hand-built `/posts/${id}` —

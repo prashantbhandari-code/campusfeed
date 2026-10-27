@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
-import { withRateLimit } from "@/lib/rateLimit";
+import { withRateLimit } from "@/lib/security/rateLimit";
 
 /**
  * Password reset — verifies the 6-digit OTP emailed by /api/auth/forgot-password,

@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
 
 // GET /api/groups/[id]/sections — list sections in a group
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {

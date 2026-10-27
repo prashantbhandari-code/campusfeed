@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HiOutlineArrowLeft, HiOutlineBan } from "react-icons/hi";
 import toast from "react-hot-toast";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface BlockedUser {
   id: string;

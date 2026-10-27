@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
-import { withRateLimit } from "@/lib/rateLimit";
-import { parseBody, registerSchema } from "@/lib/validation";
-import { generateUsername } from "@/lib/user";
+import { withRateLimit } from "@/lib/security/rateLimit";
+import { parseBody, registerSchema } from "@/lib/security/validation";
+import { generateUsername } from "@/lib/auth/user";
 
 async function handler(req: Request) {
   try {

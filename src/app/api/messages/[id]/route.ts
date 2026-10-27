@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { emitToUser } from "@/lib/socket";
-import { isBlockedPair } from "@/lib/blocking";
-import { parseBody, editMessageSchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { emitToUser } from "@/lib/calls/socket";
+import { isBlockedPair } from "@/lib/security/blocking";
+import { parseBody, editMessageSchema } from "@/lib/security/validation";
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

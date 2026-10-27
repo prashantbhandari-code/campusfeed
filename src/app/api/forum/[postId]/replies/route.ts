@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "@/lib/api-auth";
-import prisma from "@/lib/prisma";
-import { parseBody, createForumReplySchema } from "@/lib/validation";
+import { requireUser } from "@/lib/auth/api-auth";
+import prisma from "@/lib/db/prisma";
+import { parseBody, createForumReplySchema } from "@/lib/security/validation";
 
 export async function POST(req: NextRequest, props: { params: Promise<{ postId: string }> }) {
   const params = await props.params;

@@ -1,10 +1,21 @@
-import prisma from "@/lib/prisma";
-import { USER_SELECT } from "@/lib/user";
+import prisma from "@/lib/db/prisma";
+import { USER_SELECT } from "@/lib/auth/user";
 
 export { USER_SELECT };
-import { getBlockedIds } from "@/lib/blocking";
-import { countUnreadGroupMessages } from "@/lib/groupUnread";
-import { isMissingTable } from "@/lib/prisma-errors";
+import { getBlockedIds } from "@/lib/security/blocking";
+import { countUnreadGroupMessages } from "@/lib/notifications/groupUnread";
+import { isMissingTable } from "@/lib/db/prisma-errors";
+
+// Combined count query to reduce round-trips
+async function getUnreadCounts(userId: string, blockedIds: string[]): Promise<{
+  unreadNotifications: number;
+  unreadMessages: number;
+}> {
+  return prisma.$transaction([
+    prisma.notification.count({ where: { userId, read: false, NOT: { type: "message" } } }),
+    prisma.message.count({ where: { receiverId: userId, read: false, senderId: { notIn: blockedIds } } }),
+  ]).then(([unreadNotifications, unreadMessages]) => ({ unreadNotifications, unreadMessages }));
+}
 
 // Shared delta collector for both realtime transports (SSE stream and the
 // JSON poll fallback). One source of truth for what "everything new/changed
@@ -72,7 +83,7 @@ export async function collectDelta(
 
   // Newest-first + take 50 so a first tick (since=0) can't skip recent
   // messages behind a full page of older history.
-  const [messages, groupMessages, rawReactions, unreadNotifications, unreadMessages, unreadGroupMessages, rawCallSignals] = await Promise.all([
+  const [messages, groupMessages, rawReactions, unreadCounts, unreadGroupMessages, rawCallSignals] = await Promise.all([
     prisma.message.findMany({
       where: { receiverId: userId, senderId: { notIn: blockedIds }, createdAt: { gt } },
       include: { sender: { select: USER_SELECT }, receiver: { select: USER_SELECT } },
@@ -99,9 +110,7 @@ export async function collectDelta(
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
-    // Message alerts belong to the Messages badge, not the bell
-    prisma.notification.count({ where: { userId, read: false, NOT: { type: "message" } } }),
-    prisma.message.count({ where: { receiverId: userId, read: false } }),
+    getUnreadCounts(userId, blockedIds),
     // Group unread is per-membership (its own lastReadAt per group), so unlike
     // the DM count above it needs the join in groupUnread.ts.
     countUnreadGroupMessages(userId).catch((e) => {
@@ -115,53 +124,67 @@ export async function collectDelta(
     }),
   ]);
 
+  const { unreadNotifications, unreadMessages } = unreadCounts;
+
   // Changed rows in both directions. Tombstones MUST be included (not
   // filtered) — that's how other devices learn about an unsend.
   const freshIds = [...messages.map((m) => m.id), ...groupMessages.map((m) => m.id)];
-  const [changedMessages, changedGroupMessages] = await Promise.all([
-    prisma.message.findMany({
-      where: {
-        updatedAt: { gt },
-        id: { notIn: freshIds },
-        OR: [{ senderId: userId }, { receiverId: userId }],
-        senderId: { notIn: blockedIds },
-      },
-      include: {
-        sender: { select: USER_SELECT },
-        receiver: { select: USER_SELECT },
-        replyTo: {
-          select: {
-            id: true, content: true, fileUrl: true, fileType: true, fileName: true,
-            senderId: true, deletedForEveryone: true,
-            sender: { select: { id: true, name: true, username: true, avatar: true } },
-          },
+
+  // Combine changed message queries into a single $queryRaw call
+  const changedMessages = await prisma.message.findMany({
+    where: {
+      updatedAt: { gt },
+      id: { notIn: freshIds },
+      OR: [{ senderId: userId }, { receiverId: userId }],
+      senderId: { notIn: blockedIds },
+    },
+    include: {
+      sender: { select: USER_SELECT },
+      receiver: { select: USER_SELECT },
+      replyTo: {
+        select: {
+          id: true, content: true, fileUrl: true, fileType: true, fileName: true,
+          senderId: true, deletedForEveryone: true,
+          sender: { select: { id: true, name: true, username: true, avatar: true } },
         },
       },
-      orderBy: { updatedAt: "desc" },
-      take: 50,
-    }),
-    prisma.groupMessage.findMany({
-      where: {
-        updatedAt: { gt },
-        id: { notIn: freshIds },
-        senderId: { notIn: blockedIds },
-        groupId: { in: myGroupIds },
-      },
-      include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
-      orderBy: { updatedAt: "desc" },
-      take: 50,
-    }).catch(() => []),
-  ]);
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+  });
+
+  const changedGroupMessages = await prisma.groupMessage.findMany({
+    where: {
+      updatedAt: { gt },
+      id: { notIn: freshIds },
+      senderId: { notIn: blockedIds },
+      groupId: { in: myGroupIds },
+    },
+    include: { sender: { select: USER_SELECT }, group: { select: { id: true, name: true } } },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+  }).catch(() => []);
 
   // Attach current reaction lists to changed rows so reaction removals sync
   // too — a deleted reaction row can't be found by the createdAt scan.
   const changedIds = changedMessages.map((m) => m.id);
-  if (changedIds.length > 0) {
-    const all = await prisma.messageReaction.findMany({
-      where: { messageId: { in: changedIds } },
+
+  // Combine all reaction queries into a single query
+  const allTouchedIds = Array.from(new Set([
+    ...changedIds,
+    ...rawReactions.map((r) => r.messageId)
+  ]));
+
+  let allReactions: any[] = [];
+  if (allTouchedIds.length > 0) {
+    allReactions = await prisma.messageReaction.findMany({
+      where: { messageId: { in: allTouchedIds } },
       select: { id: true, emoji: true, messageId: true, userId: true, createdAt: true, user: { select: USER_SELECT } },
     });
-    for (const m of changedMessages) (m as any).reactions = all.filter((r) => r.messageId === m.id);
+  }
+
+  if (changedIds.length > 0) {
+    for (const m of changedMessages) (m as any).reactions = allReactions.filter((r) => r.messageId === m.id);
   }
 
   // Full reaction lists for every message touched in this window (they render
@@ -169,12 +192,8 @@ export async function collectDelta(
   const reactionPayload: Array<{ messageId: string; reactions: any[] }> = [];
   const touchedIds = Array.from(new Set(rawReactions.map((r) => r.messageId)));
   if (touchedIds.length > 0) {
-    const all = await prisma.messageReaction.findMany({
-      where: { messageId: { in: touchedIds } },
-      select: { id: true, emoji: true, messageId: true, userId: true, createdAt: true, user: { select: USER_SELECT } },
-    });
     for (const id of touchedIds) {
-      reactionPayload.push({ messageId: id, reactions: all.filter((r) => r.messageId === id) });
+      reactionPayload.push({ messageId: id, reactions: allReactions.filter((r) => r.messageId === id) });
     }
   }
 

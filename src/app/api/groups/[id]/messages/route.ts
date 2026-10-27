@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { emitToGroup } from "@/lib/socket";
-import { withRateLimit } from "@/lib/rateLimit";
-import { getBlockedIds } from "@/lib/blocking";
-import { parseBody, groupMessageSchema } from "@/lib/validation";
-import { USER_SELECT } from "@/lib/user";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { emitToGroup } from "@/lib/calls/socket";
+import { withRateLimit } from "@/lib/security/rateLimit";
+import { getBlockedIds } from "@/lib/security/blocking";
+import { parseBody, groupMessageSchema } from "@/lib/security/validation";
+import { USER_SELECT } from "@/lib/auth/user";
 
 async function requireMember(req: Request, groupId: string) {
   const session = await getServerSession(req);

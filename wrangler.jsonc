@@ -7,6 +7,14 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	"hyperdrive": [
+		{
+			// Supabase session pooler, via Cloudflare Hyperdrive connection pooling.
+			// src/lib/prisma.ts reads env.HYPERDRIVE.connectionString.
+			"binding": "HYPERDRIVE",
+			"id": "ad2ac7ad100a4677bee3b109930e74ce"
+		}
+	],
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"

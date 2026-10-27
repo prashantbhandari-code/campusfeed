@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { HiSearch, HiHeart } from "react-icons/hi";
 import { parseImages } from "@/lib/utils";
-import { useSocket } from "@/lib/useSocket";
+import { useSocket } from "@/lib/hooks/useSocket";
 
 export default function ExplorePage() {
   const router = useRouter();

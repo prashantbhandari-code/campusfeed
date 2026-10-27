@@ -4,7 +4,7 @@ import {
   messagesHref,
   isNavActive,
   parseInboxDeepLink,
-} from "@/lib/messages-inbox";
+} from "@/lib/chat/messages-inbox";
 
 // The Messages inbox holds two sections, and the nav badge counts both. The
 // rule worth pinning is the landing section: group-only unread must not drop

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import AuthProvider from "@/components/AuthProvider";
+import AuthProvider from "@/components/providers/AuthProvider";
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
-import KeepAlive from "@/components/KeepAlive";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import HeartbeatProvider from "@/components/HeartbeatProvider";
+import KeepAlive from "@/components/providers/KeepAlive";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import HeartbeatProvider from "@/components/providers/HeartbeatProvider";
 
 export const metadata: Metadata = {
   title: {

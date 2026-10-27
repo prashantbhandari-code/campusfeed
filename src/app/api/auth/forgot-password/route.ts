@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { withRateLimit } from "@/lib/rateLimit";
+import prisma from "@/lib/db/prisma";
+import { withRateLimit } from "@/lib/security/rateLimit";
 import { generateOtp, sendOtpEmail } from "@/lib/email";
 
 // Same "sent" answer whether or not the account exists, so this can't probe for users.

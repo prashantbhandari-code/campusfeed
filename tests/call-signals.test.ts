@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { stashIceCandidate, attachIceConsumer, detachIceConsumer } from "@/lib/call-signals";
+import { stashIceCandidate, attachIceConsumer, detachIceConsumer } from "@/lib/calls/call-signals";
 
 describe("call-signals ICE buffer", () => {
   it("parks candidates when no consumer is attached", () => {

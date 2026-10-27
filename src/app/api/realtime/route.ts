@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel cap; the stream self-closes well before this
 
 import { NextRequest } from 'next/server';
-import { getUserIdFromCookieHeader } from '@/lib/session-token';
+import { getUserIdFromCookieHeader } from '@/lib/auth/session-token';
 import { collectDelta } from '@/lib/realtime/collect-delta';
 import { freshTypingFor, freshGroupTypingFor } from '@/lib/realtime/typing-store';
 
@@ -59,6 +59,23 @@ export async function GET(request: NextRequest) {
         }
       };
 
+      /**
+       * Single guarded write path. Enqueuing after the client has gone throws
+       * "Invalid state: Controller is already closed" — which used to surface
+       * as a spurious "SSE delta error" on every tab close. Returns false when
+       * the frame could not be written, so callers can stop the tick.
+       */
+      const emit = (frame: string): boolean => {
+        if (closed) return false;
+        try {
+          controller.enqueue(encoder.encode(frame));
+          return true;
+        } catch {
+          close();
+          return false;
+        }
+      };
+
       let cursor = since;
       let idleTicks = 0;
       // Track unread counts across ticks so badge changes emit as deltas
@@ -72,6 +89,9 @@ export async function GET(request: NextRequest) {
         const now = Date.now();
         try {
           const delta = await collectDelta(userId, cursor, now);
+          // The query is async: the client can disconnect while it runs, so
+          // re-check before touching the controller.
+          if (closed) return;
           cursor = delta.nextSince;
 
           const hasContent =
@@ -90,13 +110,13 @@ export async function GET(request: NextRequest) {
             lastUnreadNotifications = delta.unreadNotifications;
             lastUnreadMessages = delta.unreadMessages;
             lastUnreadGroupMessages = delta.unreadGroupMessages;
-            controller.enqueue(encoder.encode(sseFrame("delta", { ...delta, typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] })));
+            if (!emit(sseFrame("delta", { ...delta, typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] }))) return;
           } else {
             idleTicks++;
             // Always send a typing frame on quiet ticks — even an empty one —
             // so the client's differ notices a typist going silent within a
             // second instead of whenever the next content frame happens.
-            controller.enqueue(encoder.encode(sseFrame("typing", { typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] })));
+            if (!emit(sseFrame("typing", { typing: freshTypingFor(userId), groupId, groupTyping: groupId ? freshGroupTypingFor(groupId) : [] }))) return;
           }
         } catch (error) {
           console.error("SSE delta error:", error);
@@ -104,9 +124,7 @@ export async function GET(request: NextRequest) {
 
         if (closed) return; // aborted while the delta was in flight
         if (Date.now() - startedAt >= STREAM_BUDGET_MS || idleTicks >= IDLE_LIMIT) {
-          try {
-            controller.enqueue(encoder.encode(sseFrame("bye", { since: cursor })));
-          } catch { /* platform closed first */ }
+          emit(sseFrame("bye", { since: cursor }));
           close();
         }
       };

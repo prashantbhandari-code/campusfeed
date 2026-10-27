@@ -1,13 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/api-auth";
-import prisma from "@/lib/prisma";
-import { emitToUser } from "@/lib/socket";
-import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
-import { sendPush } from "@/lib/push";
-import { parseBody, sendMessageSchema } from "@/lib/validation";
-import { withRateLimit } from "@/lib/rateLimit";
+import { requireUser } from "@/lib/auth/api-auth";
+import prisma from "@/lib/db/prisma";
+import { emitToUser } from "@/lib/calls/socket";
+import { getBlockedIds, isBlockedPair } from "@/lib/security/blocking";
+import { sendPush } from "@/lib/notifications/push";
+import { parseBody, sendMessageSchema } from "@/lib/security/validation";
+import { withRateLimit } from "@/lib/security/rateLimit";
 
 // Strip HTML tags to prevent stored XSS
 

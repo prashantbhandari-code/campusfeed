@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { notificationTarget } from "@/lib/notification-target";
+import { notificationTarget } from "@/lib/notifications/notification-target";
 
 // Tap targets for the notification list. The interesting cases are the legacy
 // rows written before a target was stored: they must still land somewhere

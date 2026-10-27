@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useParams } from "next/navigation";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { HiArrowLeft, HiPaperAirplane, HiPhone, HiVideoCamera, HiPaperClip, HiMicrophone, HiStop, HiDocumentText, HiMusicNote, HiX, HiDotsHorizontal } from "react-icons/hi";
-import { useCall } from "@/components/CallProvider";
+import { useCall } from "@/components/call/CallProvider";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatDate } from "@/lib/utils";
-import { useSocket, useSocketEvent } from "@/lib/useSocket";
-import { formatLastSeen } from "@/lib/heartbeat";
+import { useSocket, useSocketEvent } from "@/lib/hooks/useSocket";
+import { formatLastSeen } from "@/lib/hooks/heartbeat";
 
 export default function ChatPage() {
   const { data: session } = useSession();
@@ -127,13 +127,20 @@ export default function ChatPage() {
         if (msg) {
           setOtherUser(msg.sender);
         } else {
-          const userRes = await fetch(`/api/users?userId=${userId}`);
+          const userRes = await fetch(`/api/users?userId=${userId}`, { signal });
           const users = await userRes.json();
           if (Array.isArray(users) && users.length > 0) setOtherUser(users[0]);
         }
       }
-    } catch (error) { console.error("Message operation failed:", error); } finally {
-      setLoading(false);
+    } catch (error) {
+      // Aborting on unmount is not a failure — don't log it as one.
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Message operation failed:", error);
+      }
+    } finally {
+      // After an abort the component is unmounting; setting state here would
+      // be a no-op at best and a warning at worst.
+      if (!signal?.aborted) setLoading(false);
     }
   };
 

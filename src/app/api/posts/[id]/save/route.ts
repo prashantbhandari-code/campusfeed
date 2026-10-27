@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { checkUserRateLimit } from "@/lib/security/rate-limit";
 
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -10,6 +11,11 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const session = await getServerSession(req);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { success } = await checkUserRateLimit(session.user.id, "like");
+    if (!success) {
+      return NextResponse.json({ error: "Rate limited." }, { status: 429 });
     }
 
     const postId = params.id;

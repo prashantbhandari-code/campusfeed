@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { createSessionToken, verifySessionToken, getUserIdFromCookieHeader } from "@/lib/session-token";
+import { createSessionToken, verifySessionToken, getUserIdFromCookieHeader } from "@/lib/auth/session-token";
 
 beforeAll(() => {
   process.env.SESSION_SECRET = "test-secret-for-vitest";

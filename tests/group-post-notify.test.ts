@@ -5,8 +5,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // who gets notified, who doesn't, and that a failed fan-out can never cost
 // someone their post.
 
-vi.mock("@/lib/server-auth", () => ({ getServerSession: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/auth/server-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/db/prisma", () => ({
   default: {
     groupMember: { findUnique: vi.fn(), findMany: vi.fn() },
     groupPost: { create: vi.fn() },
@@ -14,12 +14,12 @@ vi.mock("@/lib/prisma", () => ({
     notification: { createMany: vi.fn() },
   },
 }));
-vi.mock("@/lib/blocking", () => ({ getBlockedIds: vi.fn().mockResolvedValue([]) }));
-vi.mock("@/lib/push", () => ({ sendPush: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/security/blocking", () => ({ getBlockedIds: vi.fn().mockResolvedValue([]) }));
+vi.mock("@/lib/notifications/push", () => ({ sendPush: vi.fn().mockResolvedValue(undefined) }));
 
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { sendPush } from "@/lib/push";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { sendPush } from "@/lib/notifications/push";
 import { POST } from "@/app/api/groups/[id]/posts/route";
 
 const getSession = getServerSession as ReturnType<typeof vi.fn>;

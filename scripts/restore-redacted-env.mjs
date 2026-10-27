@@ -20,6 +20,7 @@ const local = readFileSync(localPath, "utf8");
 const pulled = parse(readFileSync(pullPath, "utf8"));
 
 let restored = 0;
+let stillRedacted = 0;
 const lines = local.split(/\r?\n/).map((line) => {
   const i = line.indexOf("=");
   if (i < 1 || !/^[A-Za-z_]/.test(line)) return line;
@@ -30,6 +31,14 @@ const lines = local.split(/\r?\n/).map((line) => {
     console.log(`MISSING in prod: ${key}`);
     return line;
   }
+  // Vercel stores the literal placeholder for secrets it was never given, so a
+  // pull can return REDACTED for a key. Copying that across would report a
+  // restore that never happened. Only a real value counts.
+  if (value.trim() === REDACTED) {
+    console.log(`STILL REDACTED in prod: ${key}`);
+    stillRedacted++;
+    return line;
+  }
   restored++;
   console.log(`restored: ${key}`);
   return `${key}=${value}`;
@@ -37,3 +46,8 @@ const lines = local.split(/\r?\n/).map((line) => {
 
 writeFileSync(localPath, lines.join("\n"));
 console.log(`\n${restored} keys restored, nothing else touched.`);
+if (stillRedacted > 0) {
+  console.log(
+    `${stillRedacted} key(s) are placeholders in Vercel too and were left alone.`
+  );
+}

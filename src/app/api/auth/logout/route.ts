@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { clearSessionCookie } from "@/lib/session-cookie";
+import { clearSessionCookie } from "@/lib/auth/session-cookie";
 
 /**
  * Clears the signed cc_session cookie on sign-out. The Appwrite SDK session

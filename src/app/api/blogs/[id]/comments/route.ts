@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { parseBody, createBlogCommentSchema, commentActionSchema } from "@/lib/validation";
-import { sendPush } from "@/lib/push";
-import { isMissingTable, notProvisioned } from "@/lib/prisma-errors";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { parseBody, createBlogCommentSchema, commentActionSchema } from "@/lib/security/validation";
+import { sendPush } from "@/lib/notifications/push";
+import { isMissingTable, notProvisioned } from "@/lib/db/prisma-errors";
 
 const authorSelect = {
   select: { id: true, name: true, username: true, avatar: true, department: true },

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getUserIdFromCookieHeader } from "@/lib/session-token";
+import prisma from "@/lib/db/prisma";
+import { getUserIdFromCookieHeader } from "@/lib/auth/session-token";
 
 export const dynamic = "force-dynamic";
 

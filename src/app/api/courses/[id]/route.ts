@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from "@/lib/api-auth";
-import prisma from '@/lib/prisma';
-import { getCourseMembership, canManageCourse, canParticipateInCourse } from '@/lib/lms-auth';
+import { requireUser } from "@/lib/auth/api-auth";
+import prisma from '@/lib/db/prisma';
+import { getCourseMembership, canManageCourse, canParticipateInCourse } from '@/lib/auth/lms-auth';
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

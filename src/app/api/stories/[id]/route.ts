@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/api-auth";
-import prisma from "@/lib/prisma";
-import { parseBody, storyActionSchema } from "@/lib/validation";
+import { requireUser } from "@/lib/auth/api-auth";
+import prisma from "@/lib/db/prisma";
+import { parseBody, storyActionSchema } from "@/lib/security/validation";
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   try {
@@ -46,16 +46,20 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
     const body = parsed.data;
 
     if (body.action === "like") {
-      const existing = await prisma.storyLike.findUnique({
-        where: { userId_storyId: { userId, storyId: params.id } },
+      // Use transaction to prevent race conditions (duplicate likes/phantom unlikes)
+      const result = await prisma.$transaction(async (tx) => {
+        const existing = await tx.storyLike.findUnique({
+          where: { userId_storyId: { userId, storyId: params.id } },
+        });
+        if (existing) {
+          await tx.storyLike.delete({ where: { id: existing.id } });
+          return { liked: false };
+        } else {
+          await tx.storyLike.create({ data: { userId, storyId: params.id } });
+          return { liked: true };
+        }
       });
-      if (existing) {
-        await prisma.storyLike.delete({ where: { id: existing.id } });
-        return NextResponse.json({ liked: false });
-      } else {
-        await prisma.storyLike.create({ data: { userId, storyId: params.id } });
-        return NextResponse.json({ liked: true });
-      }
+      return NextResponse.json(result);
     }
 
     if (body.action === "comment" && body.content?.trim()) {

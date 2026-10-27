@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-import { useSession, signOut } from "@/lib/session";
+import { useSession, signOut } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,9 +13,9 @@ import {
   HiOutlineMoon, HiOutlineSun, HiOutlineLanguage,
   HiOutlineDocumentText, HiOutlineFlag,
 } from "react-icons/hi2";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import toast from "react-hot-toast";
-import { usePushNotifications } from "@/lib/usePushNotifications";
+import { usePushNotifications } from "@/lib/hooks/usePushNotifications";
 
 const MENU_SECTIONS = [
   {

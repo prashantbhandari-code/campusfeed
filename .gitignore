@@ -61,3 +61,6 @@ android/.idea/
 .wrangler
 .dev.vars*
 !.dev.vars.example
+/freebuff-sites-build/
+/.open-next/
+/.wrangler/

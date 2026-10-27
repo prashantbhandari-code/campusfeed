@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { getServerSession } from "@/lib/server-auth";
-import { withRateLimit } from "@/lib/rateLimit";
+import prisma from "@/lib/db/prisma";
+import { getServerSession } from "@/lib/auth/server-auth";
+import { withRateLimit } from "@/lib/security/rateLimit";
 import { checkEmailHealth } from "@/lib/email";
 
 async function handler(request: Request) {

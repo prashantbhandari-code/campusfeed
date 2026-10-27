@@ -2,10 +2,11 @@ import { createServer } from "http";
 import { parse } from "url";
 import next from "next";
 import { Server as SocketIOServer, Socket } from "socket.io";
-import { setIO } from "./src/lib/socket";
-import prisma from "./src/lib/prisma";
+import { setIO } from "./src/lib/calls/socket";
+import prisma from "./src/lib/db/prisma";
 import { NextResponse } from "next/server";
-import { getUserIdFromCookieHeader } from "./src/lib/session-token";
+import { getUserIdFromCookieHeader } from "./src/lib/auth/session-token";
+import { addSignal, startFlush, stopFlush } from "./src/lib/calls/signal-batcher";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -184,6 +185,10 @@ app.prepare().then(() => {
         candidate: data.candidate,
         fromUserId: userId,
       });
+
+      // Batch ICE candidates for database persistence
+      startFlush(data.targetUserId);
+      addSignal(data.targetUserId, "ice-candidate", { candidate: data.candidate } as any, userId);
     });
 
     socket.on("disconnect", () => {
@@ -197,6 +202,9 @@ app.prepare().then(() => {
         }
         broadcastOnlineUsers();
         console.log(`👤 User ${userId} offline`);
+
+        // Flush any pending signals for this user
+        stopFlush(userId);
       } else {
         console.log("🔌 Socket disconnected:", socket.id);
       }

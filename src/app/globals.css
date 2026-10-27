@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
+@config "../../tailwind.config.mjs";
 
 /* Universal margin/padding reset removed for Tailwind v4: preflight already
    does this inside @layer base, and an unlayered `*` reset would outrank the

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from "@/lib/api-auth";
-import prisma from '@/lib/prisma';
-import { getCourseMembership, canParticipateInCourse } from '@/lib/lms-auth';
-import { parseBody, quizTakeSchema } from '@/lib/validation';
+import { requireUser } from "@/lib/auth/api-auth";
+import prisma from '@/lib/db/prisma';
+import { getCourseMembership, canParticipateInCourse } from '@/lib/auth/lms-auth';
+import { parseBody, quizTakeSchema } from '@/lib/security/validation';
 
 // Question fields sent to students — `answer` must never appear here.
 const quizQuestionSelect = {

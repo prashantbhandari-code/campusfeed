@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOut } from "@/lib/session";
+import { useSession, signOut } from "@/lib/auth/session";
 import { useParams, useRouter } from "next/navigation";
-import PostImage from "@/components/PostImage";
-import UserAvatar from "@/components/UserAvatar";
-import PostCard from "@/components/PostCard";
-import EditProfile from "@/components/EditProfile";
-import FollowersModal from "@/components/FollowersModal";
+import PostImage from "@/components/posts/PostImage";
+import UserAvatar from "@/components/ui/UserAvatar";
+import PostCard from "@/components/posts/PostCard";
+import EditProfile from "@/components/profile/EditProfile";
+import FollowersModal from "@/components/profile/FollowersModal";
 import { HiOutlineMail, HiCamera, HiHeart, HiOutlineLogout, HiOutlinePlus } from "react-icons/hi";
 import Link from "next/link";
 import { parseImages } from "@/lib/utils";

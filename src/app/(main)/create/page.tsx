@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { HiOutlinePhotograph, HiX } from "react-icons/hi";
 import toast from "react-hot-toast";
-import { useFileUpload } from "@/lib/useFileUpload";
+import { useFileUpload } from "@/lib/hooks/useFileUpload";
 
 export default function CreatePage() {
   const { data: session } = useSession();

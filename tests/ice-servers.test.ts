@@ -24,8 +24,8 @@ describe("getIceServers resolution order", () => {
   it("falls back to the static defaults with no env configured (no fetch)", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const { getIceServers } = await import("@/lib/ice-servers");
-    const { DEFAULT_ICE_SERVERS } = await import("@/lib/ice-servers");
+    const { getIceServers } = await import("@/lib/calls/ice-servers");
+    const { DEFAULT_ICE_SERVERS } = await import("@/lib/calls/ice-servers");
     expect(await getIceServers()).toEqual(DEFAULT_ICE_SERVERS);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -34,7 +34,7 @@ describe("getIceServers resolution order", () => {
     process.env[OVERRIDE] = JSON.stringify([{ urls: "stun:override.example" }]);
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
-    const { getIceServers } = await import("@/lib/ice-servers");
+    const { getIceServers } = await import("@/lib/calls/ice-servers");
     expect(await getIceServers()).toEqual([{ urls: "stun:override.example" }]);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -51,7 +51,7 @@ describe("getIceServers resolution order", () => {
       json: async () => ({ iceServers: cfIceServers }),
     });
     vi.stubGlobal("fetch", fetchSpy);
-    const { getIceServers } = await import("@/lib/ice-servers");
+    const { getIceServers } = await import("@/lib/calls/ice-servers");
     expect(await getIceServers()).toEqual(cfIceServers);
 
     const [url, init] = fetchSpy.mock.calls[0];
@@ -67,7 +67,7 @@ describe("getIceServers resolution order", () => {
     process.env[KEY] = KEY_ID;
     process.env[SECRET] = "test-key-secret";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
-    const mod = await import("@/lib/ice-servers");
+    const mod = await import("@/lib/calls/ice-servers");
     expect(await mod.getIceServers()).toEqual(mod.DEFAULT_ICE_SERVERS);
   });
 
@@ -75,13 +75,13 @@ describe("getIceServers resolution order", () => {
     process.env[KEY] = KEY_ID;
     process.env[SECRET] = "test-key-secret";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
-    const mod = await import("@/lib/ice-servers");
+    const mod = await import("@/lib/calls/ice-servers");
     expect(await mod.getIceServers()).toEqual(mod.DEFAULT_ICE_SERVERS);
   });
 
   it("treats a malformed NEXT_PUBLIC_ICE_SERVERS override as absent", async () => {
     process.env[OVERRIDE] = "{not json";
-    const mod = await import("@/lib/ice-servers");
+    const mod = await import("@/lib/calls/ice-servers");
     expect(await mod.getIceServers()).toEqual(mod.DEFAULT_ICE_SERVERS);
   });
 });

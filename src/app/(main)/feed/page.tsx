@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession } from "@/lib/session";
-import PostCard from "@/components/PostCard";
-import { StaggeredList, StaggeredItem } from "@/components/PageTransition";
-import StoryBar from "@/components/StoryBar";
-import UserAvatar from "@/components/UserAvatar";
+import { useSession } from "@/lib/auth/session";
+import PostCard from "@/components/posts/PostCard";
+import { StaggeredList, StaggeredItem } from "@/components/layout/PageTransition";
+import StoryBar from "@/components/posts/StoryBar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import Link from "next/link";
 
 export default function FeedPage() {

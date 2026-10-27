@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { groupEmoji } from "@/lib/group-emoji";
+import { groupEmoji } from "@/lib/chat/group-emoji";
 import {
   HiOutlineUsers,
   HiOutlinePlus,

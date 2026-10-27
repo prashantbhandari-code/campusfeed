@@ -1,26 +1,57 @@
 export const dynamic = "force-dynamic";
 
+import crypto from "crypto";
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { createSessionCookie } from "@/lib/session-cookie";
-import { generateUsername } from "@/lib/user";
+import prisma from "@/lib/db/prisma";
+import {
+  createSessionCookie,
+  clearOauthStateCookie,
+  readCookie,
+  OAUTH_STATE_COOKIE,
+} from "@/lib/auth/session-cookie";
+import { generateUsername } from "@/lib/auth/user";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
+/** Constant-time comparison, so the state check cannot be timing-probed. */
+function stateMatches(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  const origin = url.origin;
+
+  /** Every exit spends the state cookie, whether it succeeded or not. */
+  const done = (res: NextResponse) => {
+    res.headers.append("Set-Cookie", clearOauthStateCookie());
+    return res;
+  };
+
   try {
+    // --- CSRF check, run BEFORE any code is exchanged -------------------
+    // Google echoes `state` back unchanged, and the HttpOnly cookie proves
+    // this browser started the flow. A missing or mismatched pair means the
+    // callback was forged, so no session is minted.
+    const returnedState = url.searchParams.get("state") || "";
+    const expectedState = readCookie(req.headers.get("cookie"), OAUTH_STATE_COOKIE) || "";
+    if (!returnedState || !expectedState || !stateMatches(returnedState, expectedState)) {
+      console.error("Google OAuth state mismatch — rejecting callback (possible login CSRF)");
+      const stateFailUrl = new URL("/login", origin);
+      stateFailUrl.searchParams.set("error", "google-state");
+      return done(NextResponse.redirect(stateFailUrl));
+    }
+
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
-
-    // Get the origin from the request
-    const origin = url.origin;
 
     if (error || !code) {
       const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
-      return NextResponse.redirect(loginUrl);
+      return done(NextResponse.redirect(loginUrl));
     }
 
     // 1. Exchange auth code for tokens
@@ -41,7 +72,7 @@ export async function GET(req: Request) {
       console.error("Google token exchange failed:", tokenRes.status);
       const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
-      return NextResponse.redirect(loginUrl);
+      return done(NextResponse.redirect(loginUrl));
     }
 
     const tokens = await tokenRes.json();
@@ -55,7 +86,7 @@ export async function GET(req: Request) {
       console.error("Google profile fetch failed:", profileRes.status);
       const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
-      return NextResponse.redirect(loginUrl);
+      return done(NextResponse.redirect(loginUrl));
     }
 
     const googleProfile = await profileRes.json();
@@ -64,7 +95,7 @@ export async function GET(req: Request) {
     if (!email) {
       const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "google-failed");
-      return NextResponse.redirect(loginUrl);
+      return done(NextResponse.redirect(loginUrl));
     }
 
     // University mail required — `hd` above is only a hint, this is the check
@@ -72,7 +103,7 @@ export async function GET(req: Request) {
     if (!email.endsWith("@kiit.ac.in")) {
       const loginUrl = new URL("/login", origin);
       loginUrl.searchParams.set("error", "not-kiit");
-      return NextResponse.redirect(loginUrl);
+      return done(NextResponse.redirect(loginUrl));
     }
 
     // 3. Check if user exists in PostgreSQL
@@ -89,7 +120,9 @@ export async function GET(req: Request) {
           name: name || "",
           username,
           email,
-          password: "google-managed-" + Math.random().toString(36).slice(2),
+          // Placeholder only — login rejects any `google-managed-` password.
+          // Uses a CSPRNG rather than Math.random for defence in depth.
+          password: "google-managed-" + crypto.randomBytes(32).toString("hex"),
           avatar: picture || null,
           collegeEmail: email,
           verified: true,
@@ -104,11 +137,11 @@ export async function GET(req: Request) {
 
     response.headers.append("Set-Cookie", createSessionCookie(user.id));
 
-    return response;
+    return done(response);
   } catch (error) {
     console.error("Google OAuth callback error:", error);
     const loginUrl = new URL("/login", url.origin);
     loginUrl.searchParams.set("error", "google-failed");
-    return NextResponse.redirect(loginUrl);
+    return done(NextResponse.redirect(loginUrl));
   }
 }

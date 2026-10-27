@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/api-auth";
-import { getIceServers } from "@/lib/ice-servers";
+import { requireUser } from "@/lib/auth/api-auth";
+import { getIceServers } from "@/lib/calls/ice-servers";
 
 // Signed per-request TURN credentials for the calling client. Auth-gated so
 // the relay can't be farmed anonymously; the provider secret stays server-side.

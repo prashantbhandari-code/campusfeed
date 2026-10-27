@@ -5,16 +5,23 @@ const BUILD_ID =
   process.env.NEXT_PUBLIC_BUILD_ID_OVERRIDE ||
   process.env.VERCEL_GIT_COMMIT_SHA ||
   process.env.CF_PAGES_COMMIT_SHA ||
-  `build-${Date.now()}`;
-
-const nextConfig = {
-  env: {
-    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
-  },
+  `build-${Date.now()}`;  const nextConfig = {
+    env: {
+      NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+    },
+    // Keep Prisma's generated client out of the bundler so OpenNext can ship
+    // it to workerd with its WASM query engine intact.
+    serverExternalPackages: ['@prisma/client', '.prisma/client'],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
     ],
+    // Seeded and Google-created avatars are SVGs (dicebear). Next's optimizer
+    // refuses SVG unless this is enabled, which broke those avatars with
+    // 'type "image/svg+xml" but dangerouslyAllowSVG is disabled'.
+    // The CSP below neutralises the usual SVG script risk: no scripts, sandboxed.
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   async headers() {
     return [
@@ -54,7 +61,7 @@ const nextConfig = {
     ];
   },
 };
-module.exports = nextConfig;
-
-// Initialize OpenNext Cloudflare for development
-import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());
+module.exports = nextConfig;  // Initialize OpenNext Cloudflare for development
+  import('@opennextjs/cloudflare').then(m =>
+    m.initOpenNextCloudflareForDev({ configPath: './freebuff.wrangler.jsonc' })
+  );

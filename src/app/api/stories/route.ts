@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { getBlockedIds } from "@/lib/blocking";
-import { parseBody, createStorySchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { getBlockedIds } from "@/lib/security/blocking";
+import { parseBody, createStorySchema } from "@/lib/security/validation";
 
 export async function GET(req: Request) {
   try {

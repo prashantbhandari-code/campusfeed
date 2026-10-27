@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupNotifications } from "@/lib/group-notifications";
+import { groupNotifications } from "@/lib/notifications/group-notifications";
 
 // Rows are links now, so collapsing may only merge rows that open the SAME
 // destination — otherwise "· 3×" advertises three events while the link opens

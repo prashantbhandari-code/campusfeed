@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireUser } from "@/lib/api-auth";
-import { parseBody, createCourseSchema } from '@/lib/validation';
-import prisma from '@/lib/prisma';
+import { requireUser } from "@/lib/auth/api-auth";
+import { parseBody, createCourseSchema } from '@/lib/security/validation';
+import prisma from '@/lib/db/prisma';
 
 export async function GET(req: NextRequest) {
   try {

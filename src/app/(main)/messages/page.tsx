@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
-import { useSocket } from "@/lib/useSocket";
-import { useUnreadGroups } from "@/lib/useUnreadGroups";
-import { groupEmoji } from "@/lib/group-emoji";
+import { useSocket } from "@/lib/hooks/useSocket";
+import { useUnreadGroups } from "@/lib/notifications/useUnreadGroups";
+import { groupEmoji } from "@/lib/chat/group-emoji";
 import { subscribe, publish } from "@/lib/realtime/bus";
-import { parseInboxDeepLink, type MessagesTab } from "@/lib/messages-inbox";
-import GroupChat from "@/components/GroupChat";
+import { parseInboxDeepLink, type MessagesTab } from "@/lib/chat/messages-inbox";
+import GroupChat from "@/components/chat/GroupChat";
 import { HiArrowLeft } from "react-icons/hi";
 import { HiPencilSquare, HiArrowsPointingOut, HiChevronRight } from "react-icons/hi2";
-import { formatLastSeen } from "@/lib/heartbeat";
+import { formatLastSeen } from "@/lib/hooks/heartbeat";
 
 // The group whose chat is open INSIDE this inbox. Opening a group from Messages
 // must not navigate away to the group page — the conversation stands on this

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate } from "@/lib/utils";
 import {
   HiArrowLeft,

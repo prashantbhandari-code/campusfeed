@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate } from "@/lib/utils";
 import { HiOutlinePencilSquare, HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { parseBody, adminRoleSchema } from '@/lib/validation';
-import { requireAdmin } from '@/lib/api-auth';
+import prisma from '@/lib/db/prisma';
+import { parseBody, adminRoleSchema } from '@/lib/security/validation';
+import { requireAdmin } from '@/lib/auth/api-auth';
 
 export async function PATCH(request: NextRequest, props: { params: Promise<{ userId: string }> }) {
   const params = await props.params;

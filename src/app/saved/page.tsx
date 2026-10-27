@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HiOutlineArrowLeft, HiOutlineBookmark } from "react-icons/hi";
 import toast from "react-hot-toast";
-import PostCard from "@/components/PostCard";
+import PostCard from "@/components/posts/PostCard";
 
 export default function SavedPage() {
   const router = useRouter();

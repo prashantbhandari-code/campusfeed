@@ -1,15 +1,15 @@
 "use client";
 
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
-import BottomNav from "@/components/BottomNav";
-import PageTransition from "@/components/PageTransition";
-import IncomingCallListener from "@/components/IncomingCallListener";
-import CapacitorCallListener from "@/components/CapacitorCallListener";
-import { CallProvider } from "@/components/CallProvider";
+import Navbar from "@/components/layout/Navbar";
+import Sidebar from "@/components/layout/Sidebar";
+import BottomNav from "@/components/layout/BottomNav";
+import PageTransition from "@/components/layout/PageTransition";
+import IncomingCallListener from "@/components/call/IncomingCallListener";
+import CapacitorCallListener from "@/components/call/CapacitorCallListener";
+import { CallProvider } from "@/components/call/CallProvider";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();

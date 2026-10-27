@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { HiChatBubbleLeftRight, HiPencilSquare } from "react-icons/hi2";
 import { format } from "date-fns";
 

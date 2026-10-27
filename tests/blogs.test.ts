@@ -5,20 +5,20 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // that you never notify yourself, and that a broken fan-out (notification or
 // push) can never cost someone their comment.
 
-vi.mock("@/lib/server-auth", () => ({ getServerSession: vi.fn() }));
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/auth/server-auth", () => ({ getServerSession: vi.fn() }));
+vi.mock("@/lib/db/prisma", () => ({
   default: {
     blog: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     blogComment: { create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
     notification: { create: vi.fn() },
   },
 }));
-vi.mock("@/lib/push", () => ({ sendPush: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("@/lib/blocking", () => ({ getBlockedIds: vi.fn().mockResolvedValue([]) }));
+vi.mock("@/lib/notifications/push", () => ({ sendPush: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/security/blocking", () => ({ getBlockedIds: vi.fn().mockResolvedValue([]) }));
 
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { sendPush } from "@/lib/push";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { sendPush } from "@/lib/notifications/push";
 import { POST, DELETE } from "@/app/api/blogs/[id]/comments/route";
 import { GET as listBlogs } from "@/app/api/blogs/route";
 

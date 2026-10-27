@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { HiCheckCircle, HiExclamationTriangle, HiClock, HiCheckBadge, HiPencilSquare, HiUserGroup, HiChevronDown } from "react-icons/hi2";
 import { format } from "date-fns";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface AttendanceRecord {
   id: string; studentId: string; status: string; date: string; notes?: string;

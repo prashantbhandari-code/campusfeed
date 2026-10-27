@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { parseBody, updateProfileSchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { parseBody, updateProfileSchema } from "@/lib/security/validation";
 
 export async function PUT(req: Request) {
   try {

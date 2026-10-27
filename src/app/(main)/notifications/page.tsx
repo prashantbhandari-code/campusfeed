@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { formatDate } from "@/lib/utils";
-import { notificationTarget } from "@/lib/notification-target";
-import { groupNotifications } from "@/lib/group-notifications";
+import { notificationTarget } from "@/lib/notifications/notification-target";
+import { groupNotifications } from "@/lib/notifications/group-notifications";
 import { HiHeart, HiChat, HiUserAdd, HiOutlineUserGroup, HiOutlineDocumentText, HiChevronRight } from "react-icons/hi";
 
 export default function NotificationsPage() {

@@ -1,11 +1,19 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
-import { createSessionCookie } from "@/lib/session-cookie";
-import { withRateLimit } from "@/lib/rateLimit";
-import { parseBody, loginSchema } from "@/lib/validation";
+import { createSessionCookie } from "@/lib/auth/session-cookie";
+import { withRateLimit } from "@/lib/security/rateLimit";
+import { parseBody, loginSchema } from "@/lib/security/validation";
+
+/**
+ * A real cost-12 bcrypt hash of a value no account can have. It exists only
+ * to burn the same CPU as a genuine comparison when the account is unknown,
+ * so login timing does not reveal whether an email/username exists.
+ */
+const DUMMY_PASSWORD_HASH =
+  "$2a$12$6ep1zG20RLw.isSJ.s0Vie6zmGvhzoqolVRF3j.uRa6hrRO2OJpFK";
 
 /**
  * Direct login endpoint: verifies email/password against PostgreSQL,
@@ -27,6 +35,9 @@ async function handler(req: Request) {
       },
     });
     if (!user) {
+      // Equalise the work against the password-mismatch path below; returning
+      // straight away would make unknown accounts measurably faster.
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 

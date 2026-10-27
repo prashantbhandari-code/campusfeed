@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { sendPush } from "@/lib/push";
-import { pushTarget } from "@/lib/notification-target";
-import { isBlockedPair } from "@/lib/blocking";
-import { withRateLimit } from "@/lib/rateLimit";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { sendPush } from "@/lib/notifications/push";
+import { pushTarget } from "@/lib/notifications/notification-target";
+import { isBlockedPair } from "@/lib/security/blocking";
+import { withRateLimit } from "@/lib/security/rateLimit";
+import { checkUserRateLimit } from "@/lib/security/rate-limit";
 
 export const POST = withRateLimit(
   async (req: Request, props: { params: Promise<{ id: string }> }) => {
@@ -15,6 +16,11 @@ export const POST = withRateLimit(
       const session = await getServerSession(req);
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const { success } = await checkUserRateLimit(session.user.id, "like");
+      if (!success) {
+        return NextResponse.json({ error: "Rate limited. Please wait before liking again." }, { status: 429 });
       }
 
       const postId = params.id;

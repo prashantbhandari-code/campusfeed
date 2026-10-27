@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { sendPush } from "@/lib/push";
-import { pushTarget } from "@/lib/notification-target";
-import { getBlockedIds, isBlockedPair } from "@/lib/blocking";
-import { withRateLimit } from "@/lib/rateLimit";
-import { parseBody, createCommentSchema, editCommentSchema, commentActionSchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { sendPush } from "@/lib/notifications/push";
+import { pushTarget } from "@/lib/notifications/notification-target";
+import { getBlockedIds, isBlockedPair } from "@/lib/security/blocking";
+import { withRateLimit } from "@/lib/security/rateLimit";
+import { checkUserRateLimit } from "@/lib/security/rate-limit";
+import { parseBody, createCommentSchema, editCommentSchema, commentActionSchema } from "@/lib/security/validation";
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -51,6 +52,11 @@ export const POST = withRateLimit(
       }
       if (await isBlockedPair(userId, post.authorId)) {
         return NextResponse.json({ error: "You can't comment on this post" }, { status: 403 });
+      }
+
+      const { success } = await checkUserRateLimit(userId, "comment");
+      if (!success) {
+        return NextResponse.json({ error: "Rate limited. Please wait before commenting again." }, { status: 429 });
       }
 
       const parsed = await parseBody(req, createCommentSchema);

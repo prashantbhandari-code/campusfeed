@@ -1,8 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import { countUnreadGroupMessages } from "@/lib/groupUnread";
+import { getServerSession } from "@/lib/auth/server-auth";
+import { countUnreadGroupMessages } from "@/lib/notifications/groupUnread";
 
 // GET /api/groups/unread — total unread group messages, for the Groups badge.
 //

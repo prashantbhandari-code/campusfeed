@@ -1,10 +1,16 @@
 export const dynamic = "force-dynamic";
 
+import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { oauthStateCookie } from "@/lib/auth/session-cookie";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+function getGoogleAuthUrl(origin: string, state: string) {
+  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 
-function getGoogleAuthUrl(origin: string) {
+  if (!GOOGLE_CLIENT_ID) {
+    console.error("Missing GOOGLE_CLIENT_ID in environment variables");
+  }
+
   // Use request origin for redirect URI
   const base = origin;
   const redirectUri = `${base}/api/auth/google/callback`;
@@ -20,6 +26,11 @@ function getGoogleAuthUrl(origin: string) {
     // Pre-filter the account chooser to university accounts.
     // Google treats `hd` as a hint only — the callback re-verifies the domain.
     hd: "kiit.ac.in",
+    // CSRF binding: echoed back unchanged on the callback, where it is
+    // compared against an HttpOnly cookie set below. Without this, a victim
+    // can be handed an attacker's `code` and silently logged into the
+    // attacker's account.
+    state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
@@ -27,6 +38,12 @@ function getGoogleAuthUrl(origin: string) {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const origin = url.origin;
-  const authUrl = getGoogleAuthUrl(origin);
-  return NextResponse.redirect(authUrl);
+
+  // 32 random bytes: unguessable, and never reused between flows.
+  const state = crypto.randomBytes(32).toString("hex");
+  const authUrl = getGoogleAuthUrl(origin, state);
+
+  const response = NextResponse.redirect(authUrl);
+  response.headers.append("Set-Cookie", oauthStateCookie(state));
+  return response;
 }

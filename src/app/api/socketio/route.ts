@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserIdFromCookieHeader } from '@/lib/session-token';
-import prisma from '@/lib/prisma';
+import { getUserIdFromCookieHeader } from '@/lib/auth/session-token';
+import prisma from '@/lib/db/prisma';
 import { collectDelta, SKEW_MS } from '@/lib/realtime/collect-delta';
 import { setTyping, clearTyping, freshTypingFor, setGroupTyping, clearGroupTyping, freshGroupTypingFor } from '@/lib/realtime/typing-store';
-import { parseBody, socketioSchema } from '@/lib/validation';
+import { parseBody, socketioSchema } from '@/lib/security/validation';
 import { Prisma } from '@prisma/client';
+import { addSignal, startFlush, stopFlush } from '@/lib/calls/signal-batcher';
 
 // JSON polling fallback for the realtime transport. The primary client
 // transport is SSE (/api/realtime); this route stays for environments where
@@ -79,15 +80,22 @@ export async function POST(request: NextRequest) {
     if (targetKey) {
       const targetId = body[targetKey as 'receiverId' | 'callerId' | 'otherUserId' | 'targetUserId'];
       if (!targetId) return NextResponse.json({ error: 'Missing target' }, { status: 400 });
-      await prisma.callSignal.create({
-        data: {
-          senderId: userId,
-          receiverId: targetId,
-          type: action,
-          // Call payloads (offer/answer/ICE) pass through verbatim
-          payload: body as unknown as Prisma.InputJsonValue,
-        },
-      });
+
+      // Use batched writes for ICE candidates (high volume); direct write for others.
+      if (action === 'ice-candidate') {
+        startFlush(targetId);
+        addSignal(targetId, action, body as unknown as Prisma.InputJsonValue, userId);
+      } else {
+        await prisma.callSignal.create({
+          data: {
+            senderId: userId,
+            receiverId: targetId,
+            type: action,
+            payload: body as unknown as Prisma.InputJsonValue,
+          },
+        });
+      }
+
       // Signals are only deliverable for 30s — sweep expired rows here.
       await prisma.callSignal.deleteMany({
         where: { createdAt: { lt: new Date(Date.now() - 5 * 60 * 1000) } },

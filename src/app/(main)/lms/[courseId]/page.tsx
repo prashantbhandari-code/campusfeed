@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect, use } from "react";
-import { useSession } from "@/lib/session";
+import { useSession } from "@/lib/auth/session";
 import { useRouter } from "next/navigation";
 import { HiPlus, HiDocumentText, HiAcademicCap, HiArrowLeft, HiCheckCircle, HiCheckBadge, HiUserGroup, HiUserMinus } from "react-icons/hi2";
 import { format } from "date-fns";
 import AttendanceTab from "@/components/lms/AttendanceTab";
 import ForumTab from "@/components/lms/ForumTab";
-import UserAvatar from "@/components/UserAvatar";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 interface Course {
   id: string; name: string; code: string; description?: string; department?: string; semester?: number; credits: number;

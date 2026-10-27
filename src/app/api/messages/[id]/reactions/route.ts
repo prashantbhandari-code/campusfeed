@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { requireUser } from "@/lib/api-auth";
-import { emitToUser } from "@/lib/socket";
-import { parseBody, messageReactionSchema } from "@/lib/validation";
+import prisma from "@/lib/db/prisma";
+import { requireUser } from "@/lib/auth/api-auth";
+import { emitToUser } from "@/lib/calls/socket";
+import { parseBody, messageReactionSchema } from "@/lib/security/validation";
 
 export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

@@ -25,14 +25,14 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href: typeof href === "string" ? href : "#", ...rest }, children),
 }));
 
-vi.mock("@/lib/session", () => ({
+vi.mock("@/lib/auth/session", () => ({
   useSession: () => ({ data: { user: { id: "u1", name: "Me", username: "me" } } }),
 }));
 
 // Attendance/forum/avatars are unrelated boundaries — stub to inert.
 vi.mock("@/components/lms/AttendanceTab", () => ({ default: () => null }));
 vi.mock("@/components/lms/ForumTab", () => ({ default: () => null }));
-vi.mock("@/components/UserAvatar", () => ({ default: () => null }));
+vi.mock("@/components/ui/UserAvatar", () => ({ default: () => null }));
 
 const errorResponse = (body: unknown, ok = true) =>
   ({ ok, json: () => Promise.resolve(body) }) as Response;

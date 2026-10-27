@@ -4,15 +4,15 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // per-membership: each group carries its own read marker, so a single global
 // timestamp would be wrong for anyone in more than one group.
 
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/db/prisma", () => ({
   default: {
     groupMember: { findMany: vi.fn() },
     groupMessage: { count: vi.fn() },
   },
 }));
 
-import prisma from "@/lib/prisma";
-import { countUnreadGroupMessages } from "@/lib/groupUnread";
+import prisma from "@/lib/db/prisma";
+import { countUnreadGroupMessages } from "@/lib/notifications/groupUnread";
 
 const groupMemberFindMany = prisma.groupMember.findMany as ReturnType<typeof vi.fn>;
 const groupMessageCount = prisma.groupMessage.count as ReturnType<typeof vi.fn>;

@@ -5,19 +5,19 @@ import { NextResponse } from "next/server";
 // leans on after the hardening pass. These tests pin the 401/403 contract
 // and the schema rules that guard the LMS/events/push/socketio bodies.
 
-vi.mock("@/lib/server-auth", () => ({
+vi.mock("@/lib/auth/server-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
-vi.mock("@/lib/prisma", () => ({
+vi.mock("@/lib/db/prisma", () => ({
   default: {
     user: { findUnique: vi.fn() },
   },
 }));
 
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { requireUser, requireAdmin } from "@/lib/api-auth";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { requireUser, requireAdmin } from "@/lib/auth/api-auth";
 import {
   quizTakeSchema,
   adminRoleSchema,
@@ -28,8 +28,8 @@ import {
   createBlogCommentSchema,
   pushSubscribeSchema,
   socketioSchema,
-} from "@/lib/validation";
-import { generateUsername } from "@/lib/user";
+} from "@/lib/security/validation";
+import { generateUsername } from "@/lib/auth/user";
 
 const getSession = getServerSession as ReturnType<typeof vi.fn>;
 const userFindUnique = prisma.user.findUnique as ReturnType<typeof vi.fn>;

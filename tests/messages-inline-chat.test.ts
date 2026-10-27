@@ -32,16 +32,16 @@ vi.mock("next/link", () => ({
     ),
 }));
 
-vi.mock("@/lib/session", () => ({
+vi.mock("@/lib/auth/session", () => ({
   useSession: () => ({ data: { user: { id: "u1", name: "Me", username: "me" } } }),
 }));
 
-vi.mock("@/lib/useSocket", () => ({
+vi.mock("@/lib/hooks/useSocket", () => ({
   useSocket: () => ({ onlineUsers: [], emit: vi.fn() }),
   useSocketEvent: vi.fn(),
 }));
 
-vi.mock("@/lib/useUnreadGroups", () => ({ useUnreadGroups: () => 0 }));
+vi.mock("@/lib/notifications/useUnreadGroups", () => ({ useUnreadGroups: () => 0 }));
 
 vi.mock("@/lib/realtime/bus", () => ({
   subscribe: () => () => {},
@@ -50,7 +50,7 @@ vi.mock("@/lib/realtime/bus", () => ({
 
 // GroupChat is a boundary (socket rooms, media recorder): what matters here is
 // that it renders, in place, with the right id/membership.
-vi.mock("@/components/GroupChat", () => ({
+vi.mock("@/components/chat/GroupChat", () => ({
   default: (props: any) => {
     h.chatProps.push({ groupId: props.groupId, isMember: props.isMember, isAdmin: props.isAdmin });
     return React.createElement("div", { "data-testid": "group-chat" }, `chat:${props.groupId}`);

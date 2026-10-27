@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { parseBody, createGroupSchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { parseBody, createGroupSchema } from "@/lib/security/validation";
 
 // GET /api/groups — list all groups with membership info
 export async function GET(req: Request) {

@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { getServerSession } from "@/lib/server-auth";
-import prisma from "@/lib/prisma";
-import { getBlockedIds } from "@/lib/blocking";
-import { parseBody, createGroupPostSchema } from "@/lib/validation";
+import { getServerSession } from "@/lib/auth/server-auth";
+import prisma from "@/lib/db/prisma";
+import { getBlockedIds } from "@/lib/security/blocking";
+import { parseBody, createGroupPostSchema } from "@/lib/security/validation";
 
 // GET /api/sections/[id]/posts — list posts in a section
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
