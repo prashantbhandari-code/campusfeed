@@ -86,7 +86,7 @@ export default function ExplorePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-0 md:px-4 py-6">
+    <div className="max-w-2xl md:max-w-4xl mx-auto px-0 md:px-4 py-6">
       <h1 className="text-2xl font-bold mb-4 px-4">Explore</h1>
 
       {/* Blogs entry point — the mobile bar has no free slot for a 7th item,

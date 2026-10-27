@@ -327,7 +327,7 @@ export default function GroupChat({
 
   return (
     <div className="px-4 py-4 flex flex-col gap-3" onClick={() => setMenuMsgId(null)}>
-      <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
+      <div className="flex flex-col gap-2 max-h-[55vh] md:max-h-[65vh] overflow-y-auto pr-1">
         {loading && <p className="text-xs text-gray-400 py-4 text-center">Loading chat…</p>}
         {!loading && messages.length === 0 && (
           <p className="text-xs text-gray-400 py-4 text-center">No messages yet — say hi 👋</p>

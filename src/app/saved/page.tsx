@@ -30,7 +30,7 @@ export default function SavedPage() {
   }, []);
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all">
           <HiOutlineArrowLeft className="text-xl text-gray-600 dark:text-gray-400" />

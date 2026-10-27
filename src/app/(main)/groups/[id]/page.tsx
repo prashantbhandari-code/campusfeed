@@ -196,7 +196,7 @@ export default function GroupDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 lg:pb-0">
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-white/[0.06]">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-2xl md:max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => router.back()} className="p-1 text-gray-600 dark:text-gray-400"><HiArrowLeft className="text-xl" /></button>
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-gray-900 dark:text-white truncate">{group.name}</h1>
@@ -207,7 +207,7 @@ export default function GroupDetailPage() {
           </button>
         </div>
       </div>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl md:max-w-4xl mx-auto">
         <div className="h-32 bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center"><span className="text-6xl">{emoji}</span></div>
         <div className="px-4 py-3 border-b border-gray-200 dark:border-white/[0.06]">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">{group.name}</h2>

@@ -12,7 +12,7 @@ import { subscribe, publish } from "@/lib/realtime/bus";
 import { parseInboxDeepLink, type MessagesTab } from "@/lib/chat/messages-inbox";
 import GroupChat from "@/components/chat/GroupChat";
 import { HiArrowLeft } from "react-icons/hi";
-import { HiPencilSquare, HiArrowsPointingOut, HiChevronRight } from "react-icons/hi2";
+import { HiPencilSquare, HiArrowsPointingOut, HiArrowsPointingIn, HiChevronRight } from "react-icons/hi2";
 import { formatLastSeen } from "@/lib/hooks/heartbeat";
 
 // The group whose chat is open INSIDE this inbox. Opening a group from Messages
@@ -52,6 +52,10 @@ export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MessagesTab>(() =>
     typeof window === "undefined" ? "chats" : parseInboxDeepLink(window.location.search).tab
   );
+  // Desktop: the header's expand control toggles the inbox between the
+  // centred mobile-first card and a full-width layout that uses the space
+  // next to the sidebar instead of leaving a small card on an empty page.
+  const [expanded, setExpanded] = useState(false);
   const [openGroup, setOpenGroup] = useState<OpenGroup | null>(() => {
     if (typeof window === "undefined") return null;
     const { group } = parseInboxDeepLink(window.location.search);
@@ -201,15 +205,20 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 md:py-8">
+    <div className={`mx-auto w-full px-4 py-4 md:py-8 transition-[max-width] ${expanded ? "max-w-none" : "max-w-lg md:max-w-4xl"}`}>
       {/* Instagram-style card */}
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.06]">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Messages</h2>
           <div className="flex items-center gap-3">
-            <button className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" title="Expand">
-              <HiArrowsPointingOut className="w-5 h-5" />
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              title={expanded ? "Exit expanded view" : "Expand"}
+              aria-label={expanded ? "Exit expanded view" : "Expand"}
+            >
+              {expanded ? <HiArrowsPointingIn className="w-5 h-5" /> : <HiArrowsPointingOut className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -241,7 +250,7 @@ export default function MessagesPage() {
 
         {/* Section body — the chat pane scrolls itself, so the list's scroller
             only applies to the list. */}
-        <div className={activeTab === "groups" && openGroup ? "" : "max-h-[60vh] overflow-y-auto"}>
+        <div className={activeTab === "groups" && openGroup ? "" : "max-h-[60vh] md:max-h-[70vh] overflow-y-auto"}>
           {activeTab === "chats" ? (
             loading ? (
               <div className="p-4 space-y-4">

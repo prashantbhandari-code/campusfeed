@@ -161,7 +161,7 @@ export default function GroupsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 pb-20 lg:pb-0">
       {/* Header */}
       <div className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-white/[0.06]">
-        <div className="max-w-2xl mx-auto px-4 py-3">
+        <div className="max-w-2xl md:max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">Groups</h1>
             <button
@@ -207,7 +207,7 @@ export default function GroupsPage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-4">
+      <div className="max-w-2xl md:max-w-5xl mx-auto px-4 py-4">
         {/* Create Group Modal */}
         {showCreate && (
           <div className="glass-card rounded-2xl p-5 mb-4">
