@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { oauthStateCookie } from "@/lib/auth/session-cookie";
+import { publicOrigin } from "@/lib/auth/public-origin";
 
 function getGoogleAuthUrl(origin: string, state: string) {
   const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
@@ -37,7 +38,9 @@ function getGoogleAuthUrl(origin: string, state: string) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const origin = url.origin;
+  // Behind Render's proxy url.origin is the internal bind address
+  // (https://localhost:10000) - Google needs the public origin.
+  const origin = publicOrigin(req, url);
 
   // 32 random bytes: unguessable, and never reused between flows.
   const state = crypto.randomBytes(32).toString("hex");

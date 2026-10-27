@@ -9,6 +9,7 @@ import {
   readCookie,
   OAUTH_STATE_COOKIE,
 } from "@/lib/auth/session-cookie";
+import { publicOrigin } from "@/lib/auth/public-origin";
 import { generateUsername } from "@/lib/auth/user";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
@@ -23,7 +24,10 @@ function stateMatches(a: string, b: string): boolean {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const origin = url.origin;
+  // The token exchange must send Google the same public redirect_uri the
+  // browser arrived with - behind Render's proxy url.origin is the internal
+  // bind address (https://localhost:10000), which Google would reject.
+  const origin = publicOrigin(req, url);
 
   /** Every exit spends the state cookie, whether it succeeded or not. */
   const done = (res: NextResponse) => {
@@ -140,7 +144,7 @@ export async function GET(req: Request) {
     return done(response);
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    const loginUrl = new URL("/login", url.origin);
+    const loginUrl = new URL("/login", origin);
     loginUrl.searchParams.set("error", "google-failed");
     return done(NextResponse.redirect(loginUrl));
   }
