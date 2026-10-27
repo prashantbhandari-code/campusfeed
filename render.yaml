@@ -7,8 +7,13 @@ services:
     repo: https://github.com/prashantbhandari-code/campusfeed
     branch: master
     plan: free
-    buildCommand: npm ci && npm run build
-    # start:realtime runs the custom server (Next.js + socket.io) via tsx.
+    # --include=dev is required: Render sets NODE_ENV=production for the build,
+    # which makes plain `npm ci` skip devDependencies - and typescript,
+    # tailwindcss, @tailwindcss/postcss and tsx all live there, so the build
+    # dies with "Cannot find module '@tailwindcss/postcss'" without this flag.
+    buildCommand: npm ci --include=dev && npm run build
+    # start:realtime runs the custom server (Next.js + socket.io) via tsx
+    # (a devDependency, present because the build installs dev deps).
     # Use "npm start" instead if you don't need live socket.io on Render.
     startCommand: npm run start:realtime
     healthCheckPath: /api/keepalive
