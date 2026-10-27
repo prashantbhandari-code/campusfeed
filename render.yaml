@@ -4,7 +4,7 @@ services:
   - type: web
     name: campusfeed
     runtime: node
-    repo: https://github.com/prashantbhandari-code/campusconnect
+    repo: https://github.com/prashantbhandari-code/campusfeed
     branch: master
     plan: free
     buildCommand: npm ci && npm run build
