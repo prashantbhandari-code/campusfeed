@@ -64,3 +64,14 @@ android/.idea/
 /freebuff-sites-build/
 /.open-next/
 /.wrangler/
+
+# Render API key (local only, never committed)
+.render-key
+
+# Local debugging artifacts. probe/ holds captured HTTP/WS traffic and cookie
+# jars with live cc_session cookies (valid for a year) — committing it would
+# publish working credentials.
+probe/
+*.jar
+sse.log
+ws.log

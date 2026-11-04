@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/api-auth";
 import prisma from "@/lib/db/prisma";
-import { getCourseMembership, canManageCourse } from "@/lib/auth/lms-auth";
+import { getCourseMembership, canManageCourse, canParticipateInCourse } from "@/lib/auth/lms-auth";
 import { parseBody, markAttendanceSchema } from "@/lib/security/validation";
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -23,11 +23,35 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (!membership.courseExists) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
-    if (targetStudentId !== session.user.id && !canManageCourse(membership)) {
+
+    // Checking *yourself* in still requires being on the course. Without this
+    // any authenticated user could mark themselves "present" in any course by
+    // posting its id, which quietly corrupts attendance stats.
+    if (!canParticipateInCourse(membership)) {
       return NextResponse.json(
-        { error: "Only the course teacher can mark attendance for others" },
+        { error: "You must be enrolled in this course to mark attendance" },
         { status: 403 }
       );
+    }
+
+    if (targetStudentId !== session.user.id) {
+      if (!canManageCourse(membership)) {
+        return NextResponse.json(
+          { error: "Only the course teacher can mark attendance for others" },
+          { status: 403 }
+        );
+      }
+      // Don't create attendance rows for people who aren't on the course.
+      const targetEnrollment = await prisma.courseEnrollment.findUnique({
+        where: { courseId_studentId: { courseId, studentId: targetStudentId } },
+        select: { id: true },
+      });
+      if (!targetEnrollment) {
+        return NextResponse.json(
+          { error: "That student is not enrolled in this course" },
+          { status: 404 }
+        );
+      }
     }
 
     const attendance = await prisma.attendance.upsert({
