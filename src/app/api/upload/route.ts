@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/server-auth";
 import { withRateLimit } from "@/lib/security/rateLimit";
 import { checkUserRateLimit } from "@/lib/security/rate-limit";
+import prisma from "@/lib/db/prisma";
+import { getBlockedIds, isBlockedPair } from "@/lib/security/blocking";
 
 const APPWRITE_ENDPOINT = "https://cloud.appwrite.io/v1";
 const APPWRITE_PROJECT = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "";
@@ -51,6 +53,9 @@ export const POST = withRateLimit(async (req: Request) => {
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const isChatAttachment = formData.get("purpose") === "chat";
+    const chatGroupId = isChatAttachment ? String(formData.get("groupId") || "") : "";
+    const chatRecipientId = isChatAttachment ? String(formData.get("recipientId") || "") : "";
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
@@ -83,6 +88,38 @@ export const POST = withRateLimit(async (req: Request) => {
       return NextResponse.json({ error: "File content doesn't match declared type" }, { status: 400 });
     }
 
+    if (isChatAttachment) {
+      if (!APPWRITE_KEY || !APPWRITE_PROJECT) {
+        return NextResponse.json({ error: "File storage is not configured" }, { status: 503 });
+      }
+      if (Boolean(chatGroupId) === Boolean(chatRecipientId)) {
+        return NextResponse.json({ error: "Choose one chat recipient" }, { status: 400 });
+      }
+      if (chatGroupId) {
+        const [membership, blockedIds] = await Promise.all([
+          prisma.groupMember.findUnique({
+            where: { groupId_userId: { groupId: chatGroupId, userId: session.user.id } },
+          }),
+          getBlockedIds(session.user.id),
+        ]);
+        if (!membership) return NextResponse.json({ error: "Group membership required" }, { status: 403 });
+        if (blockedIds.length > 0) {
+          const blockedMemberCount = await prisma.groupMember.count({
+            where: { groupId: chatGroupId, userId: { in: blockedIds } },
+          });
+          if (blockedMemberCount > 0) {
+            return NextResponse.json({ error: "You can't share files in this group due to a blocked user" }, { status: 403 });
+          }
+        }
+      } else {
+        if (await isBlockedPair(session.user.id, chatRecipientId)) {
+          return NextResponse.json({ error: "You can't share files with this user" }, { status: 403 });
+        }
+        const recipient = await prisma.user.findUnique({ where: { id: chatRecipientId }, select: { id: true } });
+        if (!recipient) return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
+      }
+    }
+
     // Free Appwrite plan allows one bucket — every upload shares it
     const bucketId = "posts";
 
@@ -93,15 +130,25 @@ export const POST = withRateLimit(async (req: Request) => {
     const uploadForm = new FormData();
     uploadForm.append("fileId", fileId);
     uploadForm.append("file", file); // Stream directly from request - no full buffer in memory
-    // Remove public read permission - use signed URLs instead
-    // uploadForm.append("permissions[]", 'read("any")'); // REMOVED
+    // Appwrite requires an explicit file permission for API-key uploads when
+    // file-level security is enabled. Chat attachments stay private in Appwrite;
+    // recipients access them through /api/files after server-side membership
+    // checks. Other upload uses (profile and posts) retain their existing public
+    // URL behavior.
+    uploadForm.append(
+      "permissions[]",
+      isChatAttachment ? `read("user:${session.user.id}")` : 'read("any")'
+    );
+    if (isChatAttachment && chatRecipientId) {
+      uploadForm.append("permissions[]", `read("user:${chatRecipientId}")`);
+    }
 
     // Create abort controller for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
 
     try {
-      const result = await fetch(`${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files?project=${APPWRITE_PROJECT}`, {
+      const response = await fetch(`${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files?project=${APPWRITE_PROJECT}`, {
         method: "POST",
         headers: {
           "X-Appwrite-Key": APPWRITE_KEY,
@@ -109,19 +156,21 @@ export const POST = withRateLimit(async (req: Request) => {
         },
         body: uploadForm,
         signal: controller.signal,
-      }).then(r => r.json());
+      });
+      const result = await response.json();
 
       clearTimeout(timeoutId);
 
-      if (result.code) {
+      if (!response.ok || result.code) {
         console.error("Appwrite upload error:", result);
         return NextResponse.json({ error: result.message || "Upload failed" }, { status: 500 });
       }
 
-      // Generate signed URL with short TTL (1 hour default)
-      const signedUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${result.$id}/view?project=${APPWRITE_PROJECT}&mode=view`;
+      const viewUrl = isChatAttachment
+        ? `/api/files/${encodeURIComponent(result.$id)}${chatGroupId ? `?groupId=${encodeURIComponent(chatGroupId)}&preview=1` : `?recipientId=${encodeURIComponent(chatRecipientId)}&preview=1`}`
+        : `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${result.$id}/view?project=${APPWRITE_PROJECT}&mode=view`;
       return NextResponse.json({
-        url: signedUrl,
+        url: viewUrl,
         fileType,
         fileName: file.name,
         fileSize: file.size,

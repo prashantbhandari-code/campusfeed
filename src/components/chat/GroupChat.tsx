@@ -175,6 +175,8 @@ export default function GroupChat({
   const uploadToServer = async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("purpose", "chat");
+    formData.append("groupId", groupId);
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     return res.json().catch(() => ({}));
   };

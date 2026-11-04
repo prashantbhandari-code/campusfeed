@@ -183,6 +183,8 @@ export default function ChatPage() {
   const uploadToServer = async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("purpose", "chat");
+    formData.append("recipientId", userId);
     const res = await fetch("/api/upload", { method: "POST", body: formData });
     return res.json().catch(() => ({}));
   };
