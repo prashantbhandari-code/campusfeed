@@ -11,7 +11,7 @@ export async function GET() {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
-      "x-build-id": process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || "",
+      "x-build-id": process.env.NEXT_PUBLIC_BUILD_ID || "",
     },
   });
 }

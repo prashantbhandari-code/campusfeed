@@ -7,6 +7,10 @@ import KeepAlive from "@/components/providers/KeepAlive";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import HeartbeatProvider from "@/components/providers/HeartbeatProvider";
 
+// Canonical origin for metadata, Open Graph tags and JSON-LD. This pointed at
+// the retired Vercel mirror; Render is the live deployment.
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://campusfeed.onrender.com";
+
 export const metadata: Metadata = {
   title: {
     default: "Campusfeed - KIIT University",
@@ -16,11 +20,11 @@ export const metadata: Metadata = {
   keywords: ["KIIT", "campus", "social network", "university", "students", "college", "Bhubaneswar", "education", "student community"],
   authors: [{ name: "Campusfeed" }],
   creator: "Campusfeed",
-  metadataBase: new URL("https://campusfeed-prashantbhandari-code.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://campusfeed-prashantbhandari-code.vercel.app",
+    url: SITE_URL,
     siteName: "Campusfeed",
     title: "Campusfeed - KIIT University",
     description: "The private social network for KIIT University students. Connect with your campus community.",
@@ -71,7 +75,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebApplication",
               name: "Campusfeed",
-              url: "https://campusfeed-prashantbhandari-code.vercel.app",
+              url: SITE_URL,
               description: "The private social network for KIIT University students.",
               applicationCategory: "SocialNetworkingApplication",
               operatingSystem: "Web",
@@ -83,7 +87,7 @@ export default function RootLayout({
               author: {
                 "@type": "Organization",
                 name: "Campusfeed",
-                url: "https://campusfeed-prashantbhandari-code.vercel.app",
+                url: SITE_URL,
               },
             }),
           }}

@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://campusfeed-prashantbhandari-code.vercel.app';
+  // The Vercel mirror is retired; Render is the live origin.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://campusfeed.onrender.com';
 
   return [
     {

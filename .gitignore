@@ -45,7 +45,6 @@ next-env.d.ts
 # misc artifacts
 screenshots/
 
-.vercel
 .env*
 
 # android build artifacts
@@ -53,17 +52,6 @@ campusfeed-debug.apk
 *.apk
 android/.idea/
 .local-pg-data/
-
-# OpenNext
-.open-next
-
-# wrangler files
-.wrangler
-.dev.vars*
-!.dev.vars.example
-/freebuff-sites-build/
-/.open-next/
-/.wrangler/
 
 # Render API key (local only, never committed)
 .render-key

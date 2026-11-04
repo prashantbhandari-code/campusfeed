@@ -4,7 +4,7 @@
   "webDir": "out",
   "server": {
     "androidScheme": "https",
-    "url": "https://campusfeed-prashantbhandari-code.vercel.app/",
+    "url": "https://campusfeed.onrender.com/",
     "cleartext": false
   },
   "plugins": {

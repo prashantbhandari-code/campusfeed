@@ -53,7 +53,7 @@ export default function AboutPage() {
       </div>
 
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-white/[0.08] p-4 text-xs text-gray-500 dark:text-gray-400 space-y-1.5">
-        <p><span className="font-semibold text-gray-700 dark:text-gray-300">Live site:</span> campusfeed-prashantbhandari-code.vercel.app</p>
+        <p><span className="font-semibold text-gray-700 dark:text-gray-300">Live site:</span> campusfeed.onrender.com</p>
         <p><span className="font-semibold text-gray-700 dark:text-gray-300">Built with:</span> Next.js, Appwrite, Prisma &amp; PostgreSQL</p>
         <p><span className="font-semibold text-gray-700 dark:text-gray-300">Support:</span> support@campusfeed.com</p>
         <p><span className="font-semibold text-gray-700 dark:text-gray-300">©</span> 2026 Campusfeed. All rights reserved.</p>

@@ -1,16 +1,15 @@
 /** @type {import('next').NextConfig} */
 // Baked into client bundles at build time; /api/keepalive reports the live
 // deployment's id so stale tabs can offer a reload after a new deploy.
-const BUILD_ID =
-  process.env.NEXT_PUBLIC_BUILD_ID_OVERRIDE ||
-  process.env.VERCEL_GIT_COMMIT_SHA ||
-  process.env.CF_PAGES_COMMIT_SHA ||
-  `build-${Date.now()}`;  const nextConfig = {
+// Falls back to a timestamp, so every build has a distinct id on any host.
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID_OVERRIDE || `build-${Date.now()}`;
+
+const nextConfig = {
     env: {
       NEXT_PUBLIC_BUILD_ID: BUILD_ID,
     },
-    // Keep Prisma's generated client out of the bundler so OpenNext can ship
-    // it to workerd with its WASM query engine intact.
+    // Keep Prisma's generated client out of the bundler so its native query
+    // engine is loaded at runtime rather than traced into the server bundle.
     serverExternalPackages: ['@prisma/client', '.prisma/client'],
   images: {
     remotePatterns: [
@@ -62,11 +61,3 @@ const BUILD_ID =
   },
 };
 module.exports = nextConfig;
-
-// Initialize OpenNext Cloudflare for development only (Freebuff/Wrangler
-// local preview). On Render/Vercel production builds this must not run.
-if (process.env.NODE_ENV === "development") {
-  import('@opennextjs/cloudflare').then(m =>
-    m.initOpenNextCloudflareForDev({ configPath: './freebuff.wrangler.jsonc' })
-  );
-}
