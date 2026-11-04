@@ -3,8 +3,7 @@
 import { useSession } from "@/lib/auth/session";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { HiHome, HiUser, HiOutlineUserGroup } from "react-icons/hi2";
-import { HiSearch, HiCalendar } from "react-icons/hi";
+import { HiHome, HiUser, HiUserGroup, HiOutlineUserGroup, HiInformationCircle } from "react-icons/hi2";
 import { useUnreadMessages } from "@/lib/notifications/useUnreadMessages";
 import { useUnreadGroups } from "@/lib/notifications/useUnreadGroups";
 import { messagesHref, isNavActive } from "@/lib/chat/messages-inbox";
@@ -17,18 +16,25 @@ export default function BottomNav() {
   const user = session?.user;
   const router = useRouter();
 
-  // Groups has no slot of its own — it's a tab inside Messages, so the
-  // Messages badge is the inbox total: DMs + group messages. Each item takes
-  // an equal share of the bar (flex-1) with min-w-0 so nothing overflows on
-  // 360px-wide phones.
+  // The five slots: Home, Messages, Info, Profile, Groups. Search moved to
+  // the TOP (this navbar's sibling TopSearch on mobile, the sticky bar above
+  // the content column on desktop), so Explore and Events lost their bottom
+  // slots — Events stays reachable from the desktop sidebar and the new
+  // /info page, Explore from the top search bar and the sidebar.
+  //
+  // Group CHAT unread still rides the Messages badge (not the Groups badge):
+  // groups landing in /groups is the discovery list, while the conversations
+  // live in /messages — so messagesHref keeps opening the Groups section when
+  // that's all that's new, and the badge never leads to a page without it.
+  // Each item takes an equal share of the bar (flex-1) with min-w-0 so
+  // nothing overflows on 360px-wide phones.
   const navItems = [
     { href: "/feed", icon: HiHome, label: "Home", unread: 0 },
-    { href: "/explore", icon: HiSearch, label: "Search", unread: 0 },
     // icon kept for a uniform tuple type; the isMessages branch draws its own SVG.
-    // Group-only unread lands on the Groups section — see messagesHref.
     { href: messagesHref(unreadMessages, unreadGroups), icon: HiOutlineUserGroup, label: "Messages", isMessages: true, unread: unreadMessages + unreadGroups },
-    { href: "/events", icon: HiCalendar, label: "Events", unread: 0 },
+    { href: "/info", icon: HiInformationCircle, label: "Info", unread: 0 },
     { href: `/profile/${user?.username}`, icon: HiUser, label: "Profile", unread: 0 },
+    { href: "/groups", icon: HiUserGroup, label: "Groups", unread: 0 },
   ];
 
   const Badge = ({ count }: { count: number }) =>

@@ -9,7 +9,7 @@ import { useUnreadNotifications } from "@/lib/notifications/useUnreadNotificatio
 import { useUnreadMessages } from "@/lib/notifications/useUnreadMessages";
 import { useUnreadGroups } from "@/lib/notifications/useUnreadGroups";
 import { messagesHref, isNavActive } from "@/lib/chat/messages-inbox";
-import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog, HiOutlineDocumentText } from "react-icons/hi";
+import { HiAcademicCap, HiCog, HiOutlineCalendar, HiOutlineHome, HiOutlineSearch, HiOutlineBell, HiOutlineChat, HiOutlineUser, HiOutlineAcademicCap, HiOutlineCog, HiOutlineDocumentText, HiOutlineInformationCircle } from "react-icons/hi";
 
 export default function Sidebar() {
   const { data: session } = useSession();
@@ -39,6 +39,7 @@ export default function Sidebar() {
     { href: "/notifications", icon: HiOutlineBell, label: "Notifications" },
     { href: "/events", icon: HiOutlineCalendar, label: "Events" },
     { href: "/lms", icon: HiOutlineAcademicCap, label: "Learning" },
+    { href: "/info", icon: HiOutlineInformationCircle, label: "Info" },
     { href: `/profile/${user?.username}`, icon: HiOutlineUser, label: "Profile" },
     { href: "/settings", icon: HiOutlineCog, label: "Settings" },
   ];
