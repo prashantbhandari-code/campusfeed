@@ -11,7 +11,15 @@ async function handler(req: Request) {
   try {
     const parsed = await parseBody(req, registerSchema);
     if (!parsed.ok) return parsed.response;
-    const { name, username, email, password, phone, department, batchYear } = parsed.data;
+    const { name, username, email, password, phone, department, batchYear, rollNumber, section, currentSemester } = parsed.data;
+
+    // Academic identifiers are optional at signup but, when supplied, are what
+    // the student dashboard shows instead of "not set".
+    const academic = {
+      rollNumber: rollNumber ? rollNumber.trim() : null,
+      section: section ? section.trim() : null,
+      currentSemester: currentSemester ?? null,
+    };
 
     // Business rule stays in the handler: schema validates shape/length,
     // this validates the campus-domain policy.
@@ -65,6 +73,7 @@ async function handler(req: Request) {
           phone: phone || null,
           department: department || null,
           batchYear: batchYear ?? null,
+          ...academic,
           collegeEmail: email,
           verified: true,
         },
@@ -84,6 +93,7 @@ async function handler(req: Request) {
         phone: phone || null,
         department: department || null,
         batchYear: batchYear ?? null,
+        ...academic,
         collegeEmail: email,
         verified: true,
       },

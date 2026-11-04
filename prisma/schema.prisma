@@ -1,6 +1,6 @@
 generator client {
-	provider        = "prisma-client-js"
-	previewFeatures = ["driverAdapters"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -9,65 +9,68 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  appwriteId    String?   @unique
-  name          String
-  username      String    @unique
-  email         String    @unique
-  password      String
-  avatar        String?
-  bio           String?
-  collegeEmail  String?   @unique
-  rollNumber    String?   @unique
-  phone         String?
-  department    String?
-  batchYear     Int?
-  coverPhoto    String?
-  verified      Boolean   @default(false)
-  role          String    @default("student") // student, teacher, admin
-  lastSeen      DateTime? // last activity timestamp for "active now" / "last seen" status
-  createdAt     DateTime  @default(now())
+  id              String    @id @default(uuid())
+  appwriteId      String?   @unique
+  name            String
+  username        String    @unique
+  email           String    @unique
+  password        String
+  avatar          String?
+  bio             String?
+  collegeEmail    String?   @unique
+  rollNumber      String?   @unique
+  phone           String?
+  department      String?
+  batchYear       Int?
+  section         String? // class section, e.g. "CSE-3A"
+  currentSemester Int? // semester the student is currently in, e.g. 3
+  coverPhoto      String?
+  verified        Boolean   @default(false)
+  role            String    @default("student") // student, teacher, admin
+  lastSeen        DateTime? // last activity timestamp for "active now" / "last seen" status
+  createdAt       DateTime  @default(now())
 
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  saves         Save[]
-  stories       Story[]
-  sentMessages     Message[] @relation("Sender")
-  receivedMessages Message[] @relation("Receiver")
+  posts            Post[]
+  comments         Comment[]
+  likes            Like[]
+  saves            Save[]
+  stories          Story[]
+  sentMessages     Message[]         @relation("Sender")
+  receivedMessages Message[]         @relation("Receiver")
   messageReactions MessageReaction[]
-  notifications    Notification[] @relation("NotifUser")
-  notifFrom        Notification[] @relation("NotifFrom")
+  notifications    Notification[]    @relation("NotifUser")
+  notifFrom        Notification[]    @relation("NotifFrom")
 
-  followers     Follow[] @relation("Following")
-  following     Follow[] @relation("Follower")
-  groups        Group[]
-  groupMembers  GroupMember[]
-  groupMessages GroupMessage[]
-  groupPosts    GroupPost[]
-courses         Course[]
-  createdSections Section[]
-  assignments     Assignment[]
-  submissions     Submission[]
-  quizzes         Quiz[]
-  quizAttempts    QuizAttempt[]
-  courseMaterials  CourseMaterial[]
-  grades          Grade[]
-  sectionPosts  SectionPost[]
-  enrollments   CourseEnrollment[]
-  attendances   Attendance[]
-  forumPosts    ForumPost[]
-  forumReplies  ForumReply[]
-  blogs         Blog[]
-  blogComments  BlogComment[]
-  createdEvents Event[]
-  pushSubscriptions PushSubscription[]
-  storyLikes     StoryLike[]
-  storyComments  StoryComment[]
+  followers           Follow[]             @relation("Following")
+  following           Follow[]             @relation("Follower")
+  groups              Group[]
+  groupMembers        GroupMember[]
+  groupMessages       GroupMessage[]
+  groupPosts          GroupPost[]
+  courses             Course[]
+  createdSections     Section[]
+  assignments         Assignment[]
+  submissions         Submission[]
+  quizzes             Quiz[]
+  quizAttempts        QuizAttempt[]
+  courseMaterials     CourseMaterial[]
+  grades              Grade[]
+  sectionPosts        SectionPost[]
+  enrollments         CourseEnrollment[]
+  attendances         Attendance[]
+  forumPosts          ForumPost[]
+  forumReplies        ForumReply[]
+  blogs               Blog[]
+  blogComments        BlogComment[]
+  createdEvents       Event[]
+  pushSubscriptions   PushSubscription[]
+  storyLikes          StoryLike[]
+  storyComments       StoryComment[]
   passwordResetTokens PasswordResetToken[]
 
-  blockedUsers   BlockedUser[] @relation("Blocker")
-  blockedBy      BlockedUser[] @relation("Blocked")
+  blockedUsers BlockedUser[] @relation("Blocker")
+  blockedBy    BlockedUser[] @relation("Blocked")
+  marks        Mark[]
 
   // Indexes for common queries
   @@index([email])
@@ -75,7 +78,6 @@ courses         Course[]
   @@index([department])
   @@index([batchYear])
   @@index([createdAt])
-
   @@map("users")
 }
 
@@ -95,16 +97,15 @@ model Post {
   @@index([authorId])
   @@index([createdAt])
   @@index([authorId, createdAt])
-
   @@map("posts")
 }
 
 model Comment {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   content   String
   postId    String
   authorId  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   editedAt  DateTime?
 
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -114,7 +115,6 @@ model Comment {
   @@index([postId])
   @@index([authorId])
   @@index([postId, createdAt])
-
   @@map("comments")
 }
 
@@ -155,41 +155,41 @@ model Story {
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
+  likes    StoryLike[]
+  comments StoryComment[]
+
   // Index for story expiry cleanup
   @@index([authorId])
   @@index([expiresAt])
   @@index([createdAt])
-
-  likes    StoryLike[]
-  comments StoryComment[]
-
   @@map("stories")
 }
 
 model Message {
-  id         String   @id @default(uuid())
-  content    String   @default("")
+  id         String    @id @default(uuid())
+  content    String    @default("")
   senderId   String
   receiverId String
   fileUrl    String?
   fileType   String?
   fileName   String?
-  read       Boolean  @default(false)
+  read       Boolean   @default(false)
   readAt     DateTime?
   replyToId  String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt // bumped on edits/deletes/reaction changes so device polls can find them
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt // bumped on edits/deletes/reaction changes so device polls can find them
 
   // Edit / delete (WhatsApp-style)
   editedAt           DateTime?
-  deletedForEveryone Boolean @default(false) // unsend: content cleared, both sides see a tombstone
-  deletedForSender   Boolean @default(false) // "delete for me" when viewer is the sender
-  deletedForReceiver Boolean @default(false) // "delete for me" when viewer is the receiver
+  deletedForEveryone Boolean   @default(false) // unsend: content cleared, both sides see a tombstone
+  deletedForSender   Boolean   @default(false) // "delete for me" when viewer is the sender
+  deletedForReceiver Boolean   @default(false) // "delete for me" when viewer is the receiver
 
-  sender   User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  replyTo  Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies  Message[] @relation("MessageReplies")
+  sender    User              @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User              @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyTo   Message?          @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[]         @relation("MessageReplies")
+  reactions MessageReaction[]
 
   // Indexes for message queries
   @@index([senderId])
@@ -198,8 +198,6 @@ model Message {
   @@index([receiverId, read])
   @@index([createdAt])
   @@index([updatedAt])
-  reactions  MessageReaction[]
-
   @@map("messages")
 }
 
@@ -232,7 +230,6 @@ model Notification {
   @@index([userId])
   @@index([userId, read])
   @@index([userId, createdAt])
-
   @@map("notifications")
 }
 
@@ -261,7 +258,6 @@ model VerificationToken {
   @@index([email])
   @@index([token])
   @@index([type])
-
   @@map("verification_tokens")
 }
 
@@ -277,26 +273,25 @@ model BlockedUser {
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
-
   @@map("blocked_users")
 }
 
 model Group {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  avatar      String?
-  coverPhoto  String?
-  type        String   @default("custom")
-  department  String?
-  batchYear   Int?
-  section     String? // class section label, e.g. "A" for CSE-2027-Sec-A
-  allowMemberPosts Boolean @default(true) // false = announcement mode (admins only)
-  createdById String
-  memberCount Int      @default(0)
-  createdAt   DateTime @default(now())
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  avatar           String?
+  coverPhoto       String?
+  type             String   @default("custom")
+  department       String?
+  batchYear        Int?
+  section          String? // class section label, e.g. "A" for CSE-2027-Sec-A
+  allowMemberPosts Boolean  @default(true) // false = announcement mode (admins only)
+  createdById      String
+  memberCount      Int      @default(0)
+  createdAt        DateTime @default(now())
 
-  createdBy User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy User           @relation(fields: [createdById], references: [id], onDelete: Cascade)
   members   GroupMember[]
   posts     GroupPost[]
   sections  Section[]
@@ -305,17 +300,16 @@ model Group {
   @@index([type])
   @@index([department])
   @@index([createdById])
-
   @@map("groups")
 }
 
 model GroupMember {
-  id      String   @id @default(uuid())
-  groupId String
-  userId  String
-  role    String   @default("member")
+  id         String    @id @default(uuid())
+  groupId    String
+  userId     String
+  role       String    @default("member")
   lastReadAt DateTime? // group chat read marker for the unread badge
-  joinedAt DateTime @default(now())
+  joinedAt   DateTime  @default(now())
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -323,28 +317,26 @@ model GroupMember {
   @@unique([groupId, userId])
   @@index([groupId])
   @@index([userId])
-
   @@map("group_members")
 }
 
 model GroupMessage {
-  id        String   @id @default(uuid())
-  content   String   @default("")
-  fileUrl   String?
-  fileType  String?
-  fileName  String?
-  groupId   String
-  senderId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt // bumped on deletion so device polls can find the tombstone
-  deletedForEveryone Boolean @default(false) // sender/admin unsend: content cleared, everyone sees a tombstone
+  id                 String   @id @default(uuid())
+  content            String   @default("")
+  fileUrl            String?
+  fileType           String?
+  fileName           String?
+  groupId            String
+  senderId           String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt // bumped on deletion so device polls can find the tombstone
+  deletedForEveryone Boolean  @default(false) // sender/admin unsend: content cleared, everyone sees a tombstone
 
   group  Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([groupId, createdAt])
   @@index([updatedAt])
-
   @@map("group_messages")
 }
 
@@ -362,7 +354,6 @@ model GroupPost {
   @@index([groupId])
   @@index([authorId])
   @@index([groupId, createdAt])
-
   @@map("group_posts")
 }
 
@@ -377,13 +368,12 @@ model Section {
   createdById String
   createdAt   DateTime @default(now())
 
-  group     Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy User        @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  group     Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
   posts     SectionPost[]
 
   @@index([groupId])
   @@index([groupId, order])
-
   @@map("sections")
 }
 
@@ -401,35 +391,34 @@ model SectionPost {
   @@index([sectionId])
   @@index([authorId])
   @@index([sectionId, createdAt])
-
   @@map("section_posts")
 }
 
 model Event {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
   location    String?
   startTime   DateTime
   endTime     DateTime?
   imageUrl    String?
-  type        String   @default("meetup") // meetup, fest, workshop, seminar
+  type        String    @default("meetup") // meetup, fest, workshop, seminar
   createdBy   String
-  createdAt   DateTime @default(now())
-  
+  createdAt   DateTime  @default(now())
+
   creator User @relation(fields: [createdBy], references: [id])
-  
+
   @@index([startTime])
   @@index([createdBy])
 }
 
 model PushSubscription {
-  id           String   @id @default(cuid())
-  endpoint     String
-  p256dh       String
-  auth         String
-  userId       String
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  endpoint  String
+  p256dh    String
+  auth      String
+  userId    String
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
@@ -464,7 +453,6 @@ model StoryComment {
   @@index([userId])
 }
 
-
 model Course {
   id          String   @id @default(uuid())
   name        String
@@ -477,11 +465,12 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  creator   User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
-  modules    CourseModule[]
-  materials  CourseMaterial[]
+  creator     User               @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  modules     CourseModule[]
+  materials   CourseMaterial[]
   enrollments CourseEnrollment[]
   attendances Attendance[]
+  marks       Mark[]
   forumPosts  ForumPost[]
 
   @@index([createdBy])
@@ -495,10 +484,10 @@ model CourseModule {
   name        String
   description String?
   order       Int      @default(0)
-  courseId     String
+  courseId    String
   createdAt   DateTime @default(now())
 
-  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   assignments Assignment[]
   quizzes     Quiz[]
 
@@ -508,15 +497,15 @@ model CourseModule {
 }
 
 model Assignment {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   title       String
   description String?
   moduleId    String
   dueDate     DateTime?
-  maxScore    Int      @default(100)
-  allowLate   Boolean  @default(false)
+  maxScore    Int       @default(100)
+  allowLate   Boolean   @default(false)
   createdBy   String
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   creator     User         @relation(fields: [createdBy], references: [id], onDelete: Cascade)
@@ -528,16 +517,16 @@ model Assignment {
 }
 
 model Submission {
-  id          String   @id @default(uuid())
+  id           String   @id @default(uuid())
   assignmentId String
-  studentId   String
-  content     String?
-  fileUrl     String?
-  fileName    String?
-  score       Int?
-  feedback    String?
-  status      String   @default("submitted")
-  submittedAt DateTime @default(now())
+  studentId    String
+  content      String?
+  fileUrl      String?
+  fileName     String?
+  score        Int?
+  feedback     String?
+  status       String   @default("submitted")
+  submittedAt  DateTime @default(now())
 
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -558,8 +547,8 @@ model Quiz {
   createdBy   String
   createdAt   DateTime @default(now())
 
-  module    CourseModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  creator   User          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  module    CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  creator   User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   questions QuizQuestion[]
   attempts  QuizAttempt[]
 
@@ -579,24 +568,24 @@ model QuizQuestion {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
-  quiz     Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
   @@map("quiz_questions")
 }
 
 model QuizAttempt {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   quizId    String
   studentId String
-  answers   String   @default("[]")
-  score     Int      @default(0)
-  completed Boolean  @default(false)
-  startedAt DateTime @default(now())
+  answers   String    @default("[]")
+  score     Int       @default(0)
+  completed Boolean   @default(false)
+  startedAt DateTime  @default(now())
   endedAt   DateTime?
 
-  quiz    Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
   @@index([studentId])
@@ -604,14 +593,14 @@ model QuizAttempt {
 }
 
 model CourseMaterial {
-  id        String   @id @default(uuid())
+  id         String   @id @default(uuid())
   courseId   String
-  title     String
-  fileUrl   String
-  fileName  String
-  fileType  String?
+  title      String
+  fileUrl    String
+  fileName   String
+  fileType   String?
   uploadedBy String
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   uploader User   @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
@@ -622,15 +611,15 @@ model CourseMaterial {
 }
 
 model Grade {
-  id        String   @id @default(uuid())
-  courseId   String
-  studentId String
+  id           String   @id @default(uuid())
+  courseId     String
+  studentId    String
   assignmentId String?
-  quizId    String?
-  score     Int
-  maxScore  Int
-  comment   String?
-  createdAt DateTime @default(now())
+  quizId       String?
+  score        Int
+  maxScore     Int
+  comment      String?
+  createdAt    DateTime @default(now())
 
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -641,11 +630,11 @@ model Grade {
 }
 
 model CourseEnrollment {
-  id        String   @id @default(uuid())
+  id         String   @id @default(uuid())
   courseId   String
-  studentId String
-  role      String   @default("student") // student, teaching_assistant
-  status    String   @default("active")  // active, dropped, completed
+  studentId  String
+  role       String   @default("student") // student, teaching_assistant
+  status     String   @default("active") // active, dropped, completed
   enrolledAt DateTime @default(now())
 
   course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -659,7 +648,7 @@ model CourseEnrollment {
 
 model Attendance {
   id        String   @id @default(uuid())
-  courseId   String
+  courseId  String
   studentId String
   date      DateTime @default(now())
   status    String   @default("present") // present, absent, late, excused
@@ -680,7 +669,7 @@ model Attendance {
 
 model ForumPost {
   id        String   @id @default(uuid())
-  courseId   String
+  courseId  String
   authorId  String
   title     String
   content   String
@@ -731,7 +720,6 @@ model Blog {
 
   @@index([authorId])
   @@index([createdAt])
-
   @@map("blogs")
 }
 
@@ -747,7 +735,6 @@ model BlogComment {
 
   @@index([blogId])
   @@index([blogId, createdAt])
-
   @@map("blog_comments")
 }
 
@@ -764,6 +751,7 @@ model MessageReaction {
   @@unique([messageId, userId, emoji])
   @@index([messageId])
 }
+
 model PasswordResetToken {
   id        String   @id @default(uuid())
   userId    String
@@ -777,4 +765,34 @@ model PasswordResetToken {
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+}
+
+// Per-subject exam marks. Separate from the older `Grade` table, which has no
+// foreign keys, no exam-type column, and is never written by the application —
+// this one is the record the student dashboard and the grading UI use.
+//
+// examType is one of: "internal", "mid_sem", "end_sem". Stored as a string
+// (like every other state column in this schema) with the allowed values
+// enforced at the API boundary by Zod.
+model Mark {
+  id        String   @id @default(uuid())
+  courseId  String
+  studentId String
+  examType  String
+  score     Float
+  maxScore  Float    @default(100)
+  markedBy  String? // teacher/admin user id that recorded it
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // One mark per student, per subject, per exam type — the upsert key.
+  @@unique([courseId, studentId, examType])
+  @@index([courseId])
+  @@index([studentId])
+  @@index([courseId, studentId])
+  @@map("marks")
 }

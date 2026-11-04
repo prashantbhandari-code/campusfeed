@@ -15,7 +15,7 @@ export async function PUT(req: Request) {
     const userId = session.user.id;
     const parsed = await parseBody(req, updateProfileSchema);
     if (!parsed.ok) return parsed.response;
-    const { name, username, bio, department, batchYear, rollNumber, avatar, coverPhoto } = parsed.data;
+    const { name, username, bio, department, batchYear, rollNumber, section, currentSemester, avatar, coverPhoto } = parsed.data;
 
     // Check if username is taken by someone else
     if (username) {
@@ -52,6 +52,8 @@ export async function PUT(req: Request) {
         ...(department !== undefined && { department }),
         ...(batchYear !== undefined && { batchYear }),
         ...(rollNumber !== undefined && { rollNumber: rollNumber || null }),
+        ...(section !== undefined && { section: section || null }),
+        ...(currentSemester !== undefined && { currentSemester }),
         ...(avatar !== undefined && { avatar }),
         ...(coverPhoto !== undefined && { coverPhoto }),
       },
@@ -64,6 +66,8 @@ export async function PUT(req: Request) {
         bio: true,
         collegeEmail: true,
         rollNumber: true,
+        section: true,
+        currentSemester: true,
         department: true,
         batchYear: true,
         coverPhoto: true,

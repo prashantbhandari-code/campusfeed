@@ -17,6 +17,10 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [batchYear, setBatchYear] = useState("");
+  // Optional academic identifiers — they populate the student's Info record.
+  const [rollNumber, setRollNumber] = useState("");
+  const [section, setSection] = useState("");
+  const [semester, setSemester] = useState("");
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
@@ -42,6 +46,9 @@ export default function RegisterPage() {
           confirmPassword,
           department,
           batchYear: parseInt(batchYear) || null,
+          rollNumber: rollNumber.trim() || null,
+          section: section.trim() || null,
+          currentSemester: parseInt(semester) || null,
         }),
       });
 
@@ -253,6 +260,43 @@ export default function RegisterPage() {
                   <option value="2021">2021</option>
                   <option value="2020">2020</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">9. Roll number <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                  type="text"
+                  value={rollNumber}
+                  onChange={(e) => setRollNumber(e.target.value)}
+                  placeholder="e.g. 23053912"
+                  className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">10. Section <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={section}
+                    onChange={(e) => setSection(e.target.value)}
+                    placeholder="e.g. CSE-4B"
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">11. Semester <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <select
+                    value={semester}
+                    onChange={(e) => setSemester(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-500 rounded-xl focus:outline-none focus:border-primary-500 transition-colors text-gray-900 dark:text-white"
+                  >
+                    <option value="">Select</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <button

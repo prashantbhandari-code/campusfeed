@@ -34,6 +34,17 @@ const usernameField = z
   .max(30)
   .regex(/^[a-zA-Z0-9_.]+$/, "letters, digits, _ . only");
 
+// Academic identifiers. A cleared form field arrives as "" and must become NULL
+// rather than an empty string, while an absent key must stay absent so partial
+// updates don't wipe columns.
+const nullableText = (max: number) =>
+  z.preprocess((v) => (v === "" ? null : v), z.string().max(max).nullable().optional());
+
+const nullableSemester = z.preprocess(
+  (v) => (v === "" ? null : v),
+  z.union([z.null(), z.coerce.number().int().min(1).max(12)]).optional()
+);
+
 // ---- Auth ----
 export const loginSchema = z.object({
   // Identifier may be an email OR a username — length only.
@@ -50,6 +61,11 @@ export const registerSchema = z.object({
   phone: z.string().max(20).nullable().optional(),
   department: z.string().max(100).nullable().optional(),
   batchYear: batchYearField,
+  // Captured at signup so the academic dashboard is populated from day one
+  // instead of waiting for a profile edit.
+  rollNumber: z.string().max(30).nullable().optional(),
+  section: nullableText(30),
+  currentSemester: nullableSemester,
 });
 
 // ---- Messages ----
@@ -131,6 +147,8 @@ export const updateProfileSchema = z.object({
   department: z.string().max(100).nullable().optional(),
   batchYear: batchYearField,
   rollNumber: z.string().max(30).nullable().optional(),
+  section: nullableText(30),
+  currentSemester: nullableSemester,
   avatar: z.string().max(2048).nullable().optional(),
   coverPhoto: z.string().max(2048).nullable().optional(),
 });
@@ -145,6 +163,20 @@ export const markAttendanceSchema = z.object({
   status: z.enum(["present", "absent", "late", "excused"]).optional(),
   date: z.string().max(40).optional(),
   notes: z.string().max(500).nullable().optional(),
+});
+
+// ---- Marks ----
+// The three exam columns the student dashboard shows per subject.
+export const EXAM_TYPES = ["internal", "mid_sem", "end_sem"] as const;
+export type ExamType = (typeof EXAM_TYPES)[number];
+
+export const upsertMarkSchema = z.object({
+  courseId: id,
+  studentId: id,
+  examType: z.enum(EXAM_TYPES),
+  score: z.coerce.number().min(0).max(1000),
+  maxScore: z.coerce.number().min(1).max(1000).optional(),
+  comment: z.string().max(300).nullable().optional(),
 });
 
 export const createCourseSchema = z.object({

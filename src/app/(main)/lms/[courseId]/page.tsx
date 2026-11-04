@@ -250,7 +250,17 @@ export default function CourseDetail(props: { params: Promise<{ courseId: string
       {tab === "grades" && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center">
           <HiAcademicCap className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400">Grades will appear here after assignments are graded</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            {isCreator
+              ? "Record internal, mid-sem and end-sem marks for every enrolled student."
+              : "Your attendance and marks for this course appear in your record."}
+          </p>
+          <button
+            onClick={() => router.push(isCreator ? `/lms/${courseId}/marks` : "/info")}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
+          >
+            {isCreator ? "Enter marks" : "View my record"}
+          </button>
         </div>
       )}
     </div>
