@@ -10,6 +10,16 @@ import { HiSearch } from "react-icons/hi";
  * actual searching lives on /explore, so submitting navigates there with
  * ?q=... which the explore page seeds into its own query state.
  */
+/**
+ * The global search bar belongs to the home feed only. Every other page has
+ * its own header or search surface (explore seeds its own query state, the
+ * inbox has its own filter), so showing the bar there duplicates chrome and
+ * costs the page its top row.
+ */
+export function shouldShowTopSearch(pathname: string | null): boolean {
+  return pathname === "/feed";
+}
+
 export default function TopSearch({ className = "" }: { className?: string }) {
   const router = useRouter();
   const [term, setTerm] = useState("");

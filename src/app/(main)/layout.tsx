@@ -1,10 +1,10 @@
 "use client";
 
 import { useSession } from "@/lib/auth/session";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
-import TopSearch from "@/components/layout/TopSearch";
+import TopSearch, { shouldShowTopSearch } from "@/components/layout/TopSearch";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import PageTransition from "@/components/layout/PageTransition";
@@ -15,6 +15,10 @@ import { CallProvider } from "@/components/call/CallProvider";
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  // The search bar is home-page chrome: on /messages a sticky bar on top of the
+  // chat header costs the conversation its first row for nothing.
+  const showTopSearch = shouldShowTopSearch(pathname);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -41,8 +45,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             content height, the window scrolls instead, and the fixed bottom
             nav covers the last row of content. */}
         {/* pt-28 (112px) clears the two-row fixed mobile navbar: logo row
-            (h-14) + search row (h-14). */}
-        <div className="flex-1 flex pt-28 lg:pt-0 min-h-0">
+            (h-14) + search row (h-14). Off the feed there is no search row, so
+            pt-14 clears the single remaining row. */}
+        <div className={`flex-1 flex min-h-0 ${showTopSearch ? "pt-28" : "pt-14"} lg:pt-0`}>
           {/* Desktop sidebar */}
           <Sidebar />
           {/* Main content — offset by sidebar width on desktop; pb-24 clears
@@ -51,9 +56,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               desktop half of "search on top"), so page headers that stick at
               top-0 use lg:top-14 to park directly beneath it. */}
           <main className="flex-1 lg:ml-64 min-h-0 overflow-y-auto pb-24 lg:pb-6">
-            <div className="hidden lg:flex sticky top-0 z-30 h-14 items-center px-6 border-b border-gray-200 dark:border-white/[0.06] bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm">
-              <TopSearch className="w-full max-w-xl" />
-            </div>
+            {showTopSearch && (
+              <div className="hidden lg:flex sticky top-0 z-30 h-14 items-center px-6 border-b border-gray-200 dark:border-white/[0.06] bg-white/95 dark:bg-dark-900/95 backdrop-blur-sm">
+                <TopSearch className="w-full max-w-xl" />
+              </div>
+            )}
             <PageTransition>{children}</PageTransition>
           </main>
         </div>

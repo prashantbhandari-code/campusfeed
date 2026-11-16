@@ -4,7 +4,16 @@
 // Falls back to a timestamp, so every build has a distinct id on any host.
 const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID_OVERRIDE || `build-${Date.now()}`;
 
+// Hosts allowed to load dev-only resources (HMR, dev chunks). Set through the
+// ALLOWED_DEV_ORIGINS env var so a preview hostname never gets baked into the
+// repo; empty in production.
+const devOrigins = (process.env.ALLOWED_DEV_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const nextConfig = {
+    allowedDevOrigins: devOrigins,
     env: {
       NEXT_PUBLIC_BUILD_ID: BUILD_ID,
     },

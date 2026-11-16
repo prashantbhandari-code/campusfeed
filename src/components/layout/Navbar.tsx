@@ -6,7 +6,7 @@ import Link from "next/link";
 import { HiBell, HiCog, HiAcademicCap, HiSun, HiMoon } from "react-icons/hi";
 import { useUnreadNotifications } from "@/lib/notifications/useUnreadNotifications";
 import { useTheme } from "@/components/providers/ThemeProvider";
-import TopSearch from "@/components/layout/TopSearch";
+import TopSearch, { shouldShowTopSearch } from "@/components/layout/TopSearch";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -14,6 +14,7 @@ export default function Navbar() {
   const unread = useUnreadNotifications();
   const { theme, toggleTheme } = useTheme();
   const user = session?.user;
+  const showSearch = shouldShowTopSearch(pathname);
 
   // Desktop: no top navbar (a sticky search bar sits above the content
   // column instead — see MainLayout).
@@ -64,12 +65,14 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Search row — the mobile half of "search on top". Kept as its own
-          h-14 row so the total navbar height stays predictable for the
-          pt-28 offset in MainLayout. */}
-      <div className="px-4 h-14 flex items-center border-t border-white/[0.06]">
-        <TopSearch className="w-full" />
-      </div>
+      {/* Search row — the mobile half of "search on top", shown on the feed
+          only. Kept as its own h-14 row so the navbar height stays
+          predictable: 112px with the bar, 56px without (MainLayout matches). */}
+      {showSearch && (
+        <div className="px-4 h-14 flex items-center border-t border-white/[0.06]">
+          <TopSearch className="w-full" />
+        </div>
+      )}
     </nav>
   );
 }
